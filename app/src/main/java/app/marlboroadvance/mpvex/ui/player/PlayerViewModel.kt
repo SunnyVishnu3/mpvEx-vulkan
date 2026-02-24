@@ -140,18 +140,11 @@ class PlayerViewModel(
       _isOnlineSectionExpanded.value = !_isOnlineSectionExpanded.value
   }
 
-  // Cache for video metadata to avoid re-extracting - limited size to prevent unbounded growth
-  private val metadataCache = LinkedHashMap<String, Pair<String, String>>(101, 1f, true) // key: uri.toString(), value: (duration, resolution)
-  private val METADATA_CACHE_MAX_SIZE = 100
+  // Cache for video metadata to avoid re-extracting — LruCache handles bounds + thread-safety
+  private val metadataCache = object : android.util.LruCache<String, Pair<String, String>>(100) {}
 
   private fun updateMetadataCache(key: String, value: Pair<String, String>) {
-    synchronized(metadataCache) {
-      metadataCache[key] = value
-      // Remove oldest entry if cache exceeds max size
-      if (metadataCache.size > METADATA_CACHE_MAX_SIZE) {
-        metadataCache.remove(metadataCache.keys.firstOrNull())
-      }
-    }
+    metadataCache.put(key, value)
   }
 
   // MPV properties with efficient collection
@@ -1645,7 +1638,7 @@ class PlayerViewModel(
       if (updatedItems != null) {
         // Clear cache if playlist size changed
         if (_playlistItems.value.size != updatedItems.size) {
-          metadataCache.clear()
+          metadataCache.evictAll()
         }
 
         _playlistItems.value = updatedItems
@@ -1680,8 +1673,8 @@ class PlayerViewModel(
         batch.forEach { item ->
           val cacheKey = item.uri.toString()
 
-          // Skip if already in cache (synchronized access)
-          if (!synchronized(metadataCache) { metadataCache.containsKey(cacheKey) }) {
+          // Skip if already in cache (LruCache is thread-safe)
+          if (metadataCache.get(cacheKey) == null) {
             // Extract metadata
             val (durationStr, resolutionStr) = getVideoMetadata(item.uri)
 
