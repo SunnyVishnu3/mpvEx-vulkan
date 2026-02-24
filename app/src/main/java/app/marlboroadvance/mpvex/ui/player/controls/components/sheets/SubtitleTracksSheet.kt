@@ -47,7 +47,7 @@ fun SubtitlesSheet(
         list.add(SubtitleItem.Header(if (internal.isNotEmpty()) "Embedded Subtitles" else "Local Subtitles"))
         list.addAll(internal.map { SubtitleItem.Track(it) })
         if (internal.isNotEmpty() && external.isNotEmpty()) {
-          list.add(SubtitleItem.Divider)
+          list.add(SubtitleItem.Header("External Subtitles"))
         }
         list.addAll(external.map { SubtitleItem.Track(it) })
     }
@@ -110,6 +110,9 @@ fun SubtitlesSheet(
             )
         }
       }
+    },
+    footer = {
+      Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
     },
     modifier = modifier,
   )
