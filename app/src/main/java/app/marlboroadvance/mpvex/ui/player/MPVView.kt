@@ -98,6 +98,23 @@ class MPVView(
     setVo(if (decoderPreferences.gpuNext.get()) "gpu-next" else "gpu")
     MPVLib.setOptionString("profile", "fast")
 
+    // Determine the active API from the config
+    val gpuContext = MPVLib.getPropertyString("gpu-context") ?: "androidvk"
+    val isVulkan = gpuContext.contains("vk") || gpuContext.contains("vulkan")
+    if (isVulkan) {
+        // --- UNIVERSAL VULKAN 1.3+ OPTIMIZATIONS ---
+        MPVLib.setOptionString("gpu-context", "androidvk")
+        MPVLib.setOptionString("vulkan-async-compute", "yes")
+        MPVLib.setOptionString("vulkan-async-transfer", "yes")
+        MPVLib.setOptionString("vulkan-queue-count", "1") // Best for mobile ARM/Adreno GPUs
+    } else {
+        // --- OPENGL OPTIMIZATIONS ---
+        MPVLib.setOptionString("gpu-context", "android")
+        MPVLib.setOptionString("opengl-es", "yes")
+        MPVLib.setOptionString("opengl-pbo", "yes")
+        MPVLib.setOptionString("opengl-early-flush", "no")
+    }
+
     // Set hwdec with fallback order: HW+ (mediacodec) -> HW (mediacodec-copy) -> SW (no)
     MPVLib.setOptionString(
       "hwdec",
@@ -372,11 +389,6 @@ class MPVView(
       val shaderChain = anime4kManager.getShaderChain(mode, quality)
       
       if (shaderChain.isNotEmpty()) {
-        // GPU optimizations for better performance
-        MPVLib.setOptionString("opengl-pbo", "yes")
-        MPVLib.setOptionString("vd-lavc-dr", "yes")
-        MPVLib.setOptionString("opengl-early-flush", "no")
-        
         // Apply shaders (MUST use setOptionString in initOptions!)
         MPVLib.setOptionString("glsl-shaders", shaderChain)
       } else {
