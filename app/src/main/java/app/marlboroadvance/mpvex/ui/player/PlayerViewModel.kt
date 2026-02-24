@@ -382,14 +382,27 @@ class PlayerViewModel(
           val jsonString = playerPreferences.customButtons.get()
           if (jsonString.isNotBlank()) {
             try {
-               val customButtonsList = json.decodeFromString<List<app.marlboroadvance.mpvex.ui.preferences.CustomButton>>(jsonString)
-               
-               customButtonsList.filter { it.isActive }.forEach { btn ->
-                 val safeId = btn.id.replace("-", "_")
-                 processButton(btn.id, safeId, btn.title, btn.content, btn.longPressContent, btn.onStartup, btn.isLeft, buttons)
+               // Try new slot-based format first
+               val slotsData = json.decodeFromString<app.marlboroadvance.mpvex.ui.preferences.CustomButtonSlots>(jsonString)
+               slotsData.slots.forEachIndexed { index, btn ->
+                 if (btn != null) {
+                   val safeId = btn.id.replace("-", "_")
+                   val isLeft = index < 4 // Slots 0-3 are left, 4-7 are right
+                   processButton(btn.id, safeId, btn.title, btn.content, btn.longPressContent, btn.onStartup, isLeft, buttons)
+                 }
                }
             } catch (e: Exception) {
-               e.printStackTrace()
+               // Fallback to old format for backward compatibility
+               try {
+                 val customButtonsList = json.decodeFromString<List<app.marlboroadvance.mpvex.ui.preferences.CustomButton>>(jsonString)
+                 customButtonsList.forEachIndexed { index, btn ->
+                   val safeId = btn.id.replace("-", "_")
+                   val isLeft = index < 4 // First 4 are left buttons, rest are right
+                   processButton(btn.id, safeId, btn.title, btn.content, btn.longPressContent, btn.onStartup, isLeft, buttons)
+                 }
+               } catch (e2: Exception) {
+                 e2.printStackTrace()
+               }
             }
           }
         }
@@ -694,13 +707,13 @@ class PlayerViewModel(
   private fun fetchTvShowDetails(id: Int) {
     viewModelScope.launch {
       _isFetchingTvDetails.value = true
-        wyzieRepository.getTvShowDetails(id)
-          .onSuccess { details ->
-            val validSeasons = details.seasons.filter { it.season_number > 0 }.sortedBy { it.season_number }
-            _selectedTvShow.value = details.copy(seasons = validSeasons)
-            _selectedSeason.value = null
-            _seasonEpisodes.value = emptyList()
-          }
+      wyzieRepository.getTvShowDetails(id)
+        .onSuccess { details ->
+          val validSeasons = details.seasons.filter { it.season_number > 0 }.sortedBy { it.season_number }
+          _selectedTvShow.value = details.copy(seasons = validSeasons)
+          _selectedSeason.value = null
+          _seasonEpisodes.value = emptyList()
+        }
         .onFailure {
           showToast("Failed to load series details: ${it.message}")
         }
