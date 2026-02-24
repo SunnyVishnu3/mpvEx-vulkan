@@ -21,6 +21,7 @@ import app.marlboroadvance.mpvex.ui.player.controls.components.sheets.MoreSheet
 import app.marlboroadvance.mpvex.ui.player.controls.components.sheets.PlaybackSpeedSheet
 import app.marlboroadvance.mpvex.ui.player.controls.components.sheets.PlaylistSheet
 import app.marlboroadvance.mpvex.ui.player.controls.components.sheets.SubtitlesSheet
+import app.marlboroadvance.mpvex.ui.player.controls.components.sheets.OnlineSubtitleSearchSheet
 import app.marlboroadvance.mpvex.ui.player.controls.components.sheets.VideoZoomSheet
 import app.marlboroadvance.mpvex.utils.media.MediaInfoParser
 import dev.vivvvek.seeker.Segment
@@ -116,6 +117,20 @@ fun PlayerSheets(
           )
       }
 
+      SubtitlesSheet(
+        tracks = subtitles.toImmutableList(),
+        onToggleSubtitle = onToggleSubtitle,
+        isSubtitleSelected = isSubtitleSelected,
+        onAddSubtitle = { showFilePicker = true },
+        onRemoveSubtitle = onRemoveSubtitle,
+        onOpenSubtitleSettings = { onOpenPanel(Panels.SubtitleSettings) },
+        onOpenSubtitleDelay = { onOpenPanel(Panels.SubtitleDelay) },
+        onOpenOnlineSearch = { onShowSheet(Sheets.OnlineSubtitleSearch) },
+        onDismissRequest = onDismissRequest
+      )
+    }
+
+    Sheets.OnlineSubtitleSearch -> {
       val isSearching by viewModel.isSearchingSub.composeCollectAsState()
       val isDownloading by viewModel.isDownloadingSub.composeCollectAsState()
       val results by viewModel.wyzieSearchResults.composeCollectAsState()
@@ -132,23 +147,10 @@ fun PlayerSheets(
       val seasonEpisodes by viewModel.seasonEpisodes.composeCollectAsState()
       val isFetchingEpisodes by viewModel.isFetchingEpisodes.composeCollectAsState()
       val selectedEpisode by viewModel.selectedEpisode.composeCollectAsState()
-      
-      SubtitlesSheet(
-        tracks = subtitles.toImmutableList(),
-        onToggleSubtitle = onToggleSubtitle,
-        isSubtitleSelected = isSubtitleSelected,
-        onAddSubtitle = { showFilePicker = true },
-        onSearchOnline = { query ->
-          val mediaInfo = MediaInfoParser.parse(viewModel.currentMediaTitle)
-          val s = selectedSeason?.season_number
-          val e = selectedEpisode?.episode_number
-          viewModel.searchSubtitles(query ?: mediaInfo.title, s, e)
-        },
-        onDownloadOnline = { viewModel.downloadSubtitle(it) },
-        onRemoveSubtitle = onRemoveSubtitle,
-        onOpenSubtitleSettings = { onOpenPanel(Panels.SubtitleSettings) },
-        onOpenSubtitleDelay = { onOpenPanel(Panels.SubtitleDelay) },
+
+      OnlineSubtitleSearchSheet(
         onDismissRequest = onDismissRequest,
+        onDownloadOnline = { viewModel.downloadSubtitle(it) },
         isSearching = isSearching,
         isDownloading = isDownloading,
         searchResults = results.toImmutableList(),
@@ -158,7 +160,13 @@ fun PlayerSheets(
         // Autocomplete & Series Selection
         mediaSearchResults = mediaResults.toImmutableList(),
         isSearchingMedia = isSearchingMedia,
-        onSearchMedia = { viewModel.searchMedia(it) },
+        onSearchMedia = { 
+          viewModel.searchMedia(it)
+          val mediaInfo = MediaInfoParser.parse(viewModel.currentMediaTitle)
+          val s = selectedSeason?.season_number
+          val e = selectedEpisode?.episode_number
+          viewModel.searchSubtitles(it, s, e)
+        },
         onSelectMedia = { viewModel.selectMedia(it) },
         selectedTvShow = selectedTvShow,
         isFetchingTvDetails = isFetchingTvDetails,
