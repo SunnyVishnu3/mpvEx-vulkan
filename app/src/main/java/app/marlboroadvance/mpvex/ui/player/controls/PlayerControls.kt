@@ -443,10 +443,18 @@ fun PlayerControls(
           enter = fadeIn(playerControlsEnterAnimationSpec()),
           exit = fadeOut(playerControlsExitAnimationSpec()),
           modifier =
-            Modifier.constrainAs(playerUpdates) {
-              linkTo(parent.start, parent.end)
-              top.linkTo(parent.top, if (isPortrait) 104.dp else 64.dp)
-            },
+            Modifier
+              .then(
+                if (showSystemStatusBar) {
+                  Modifier.windowInsetsPadding(WindowInsets.statusBars)
+                } else {
+                  Modifier
+                }
+              )
+              .constrainAs(playerUpdates) {
+                linkTo(parent.start, parent.end)
+                top.linkTo(parent.top, if (isPortrait) 104.dp else 64.dp)
+              },
         ) {
           when (currentPlayerUpdate) {
             is PlayerUpdates.MultipleSpeed -> MultipleSpeedPlayerUpdate(currentSpeed = holdForMultipleSpeed)
@@ -491,7 +499,7 @@ fun PlayerControls(
               val zoomPercentage = (videoZoom * 100).toInt()
               TextPlayerUpdate(
                 text = String.format("Zoom:%3d%%", zoomPercentage), 
-                modifier = Modifier.width(160.dp),
+                modifier = Modifier, // Let content size determine width
               )
             }
 
