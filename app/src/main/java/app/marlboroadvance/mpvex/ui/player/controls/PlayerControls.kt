@@ -247,8 +247,8 @@ fun PlayerControls(
     isUnlockSliderDragging,
   ) {
     if (controlsShown && paused == false && !isSeeking && !isUnlockSliderDragging) {
-      // Use 2.5 second delay when controls are locked, otherwise use user preference
-      val delayTime = if (areControlsLocked) 2500L else playerTimeToDisappear.toLong()
+      // Use 2 second delay when controls are locked, otherwise use user preference
+      val delayTime = if (areControlsLocked) 2000L else playerTimeToDisappear.toLong()
       delay(delayTime)
       viewModel.hideControls()
     }

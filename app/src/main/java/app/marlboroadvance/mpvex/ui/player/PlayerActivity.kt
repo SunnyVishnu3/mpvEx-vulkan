@@ -477,11 +477,6 @@ class PlayerActivity :
       return
     }
 
-    if (!viewModel.controlsShown.value) {
-      viewModel.showControls()
-      return
-    }
-
     // Check if auto PIP is enabled - enter PIP mode instead of finishing
     if (playerPreferences.autoPiPOnNavigation.get() && isReady) {
       pipHelper.enterPipMode()
@@ -690,10 +685,8 @@ class PlayerActivity :
   @RequiresApi(Build.VERSION_CODES.P)
   override fun finish() {
     runCatching {
-      // Restore UI immediately for responsive exit
-      if (!isInPictureInPictureMode) {
-        restoreSystemUI()
-      }
+      // Don't restore UI during normal finish to prevent flickering
+      // System will handle UI restoration automatically
       isReady = false
       setReturnIntent()
     }.onFailure { e ->
@@ -706,10 +699,8 @@ class PlayerActivity :
   @RequiresApi(Build.VERSION_CODES.P)
   override fun finishAndRemoveTask() {
     runCatching {
-      // Restore UI immediately for responsive exit (same as finish())
-      if (!isInPictureInPictureMode) {
-        restoreSystemUI()
-      }
+      // Don't restore UI during normal finish to prevent flickering
+      // System will handle UI restoration automatically
       isReady = false
       isUserFinishing = true
       setReturnIntent()

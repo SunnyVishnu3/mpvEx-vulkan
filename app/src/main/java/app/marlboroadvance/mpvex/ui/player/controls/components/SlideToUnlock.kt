@@ -74,7 +74,7 @@ fun SlideToUnlock(
     Box(
       modifier = Modifier
         .matchParentSize()
-        .padding(start = 45.dp)
+        .padding(start = 55.dp)
         .alpha(if (maxOffset > 0f) 1f - (offsetX.value / maxOffset).coerceIn(0f, 1f) else 1f),
       contentAlignment = Alignment.Center,
     ) {
