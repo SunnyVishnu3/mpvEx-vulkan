@@ -21,7 +21,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -279,133 +279,135 @@ data class LuaScriptEditorScreen(
       }
     }
     
-    Scaffold(
-      topBar = {
-        TopAppBar(
-          title = {
-            Column {
-              androidx.compose.foundation.text.BasicTextField(
-                value = fileName,
-                onValueChange = {
-                  fileName = it
-                  hasUnsavedChanges = true
-                },
-                textStyle = MaterialTheme.typography.headlineSmall.copy(
-                  fontWeight = FontWeight.ExtraBold,
-                  color = MaterialTheme.colorScheme.primary
-                ),
-                cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
-                decorationBox = { innerTextField ->
-                  Box {
-                    if (fileName.isEmpty()) {
-                      Text(
-                        text = "Script name",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                          fontWeight = FontWeight.ExtraBold,
-                          color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        )
+    Column(
+      modifier = Modifier.fillMaxSize()
+    ) {
+      // Fixed TopAppBar
+      TopAppBar(
+        title = {
+          Column {
+            androidx.compose.foundation.text.BasicTextField(
+              value = fileName,
+              onValueChange = {
+                fileName = it
+                hasUnsavedChanges = true
+              },
+              textStyle = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary
+              ),
+              cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+              decorationBox = { innerTextField ->
+                Box {
+                  if (fileName.isEmpty()) {
+                    Text(
+                      text = "Script name",
+                      style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                       )
-                    }
-                    innerTextField()
+                    )
                   }
+                  innerTextField()
                 }
-              )
-              if (hasUnsavedChanges) {
-                Text(
-                  text = "Unsaved changes",
-                  style = MaterialTheme.typography.bodySmall,
-                  color = MaterialTheme.colorScheme.secondary,
-                )
               }
-            }
-          },
-          navigationIcon = {
-            IconButton(onClick = backStack::removeLastOrNull) {
-              Icon(
-                Icons.AutoMirrored.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.secondary,
+            )
+            if (hasUnsavedChanges) {
+              Text(
+                text = "Unsaved changes",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
               )
             }
-          },
-          actions = {
-            // Share button (only for existing scripts)
-            if (!isNewScript) {
-              IconButton(
-                onClick = { shareScript() },
-                modifier = Modifier
-                  .padding(horizontal = 4.dp)
-                  .size(40.dp),
-                colors = IconButtonDefaults.iconButtonColors(
-                  containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                  contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-                shape = RoundedCornerShape(8.dp),
-              ) {
-                Icon(
-                  Icons.Default.Share,
-                  contentDescription = "Share",
-                )
-              }
-            }
-            
-            // Delete button (only for existing scripts)
-            if (!isNewScript) {
-              IconButton(
-                onClick = { showDeleteDialog = true },
-                modifier = Modifier
-                  .padding(horizontal = 4.dp)
-                  .size(40.dp),
-                colors = IconButtonDefaults.iconButtonColors(
-                  containerColor = MaterialTheme.colorScheme.errorContainer,
-                  contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                ),
-                shape = RoundedCornerShape(8.dp),
-              ) {
-                Icon(
-                  Icons.Default.Delete,
-                  contentDescription = "Delete",
-                )
-              }
-            }
-            
-            // Save button
+          }
+        },
+        navigationIcon = {
+          IconButton(onClick = backStack::removeLastOrNull) {
+            Icon(
+              Icons.AutoMirrored.Default.ArrowBack,
+              contentDescription = "Back",
+              tint = MaterialTheme.colorScheme.secondary,
+            )
+          }
+        },
+        actions = {
+          // Share button (only for existing scripts)
+          if (!isNewScript) {
             IconButton(
-              onClick = { saveScript() },
-              enabled = hasUnsavedChanges && fileName.isNotBlank(),
+              onClick = { shareScript() },
               modifier = Modifier
                 .padding(horizontal = 4.dp)
                 .size(40.dp),
               colors = IconButtonDefaults.iconButtonColors(
-                containerColor = if (hasUnsavedChanges && fileName.isNotBlank()) {
-                  MaterialTheme.colorScheme.primaryContainer
-                } else {
-                  MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f)
-                },
-                contentColor = if (hasUnsavedChanges && fileName.isNotBlank()) {
-                  MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                  MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                },
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
-                disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
               ),
               shape = RoundedCornerShape(8.dp),
             ) {
               Icon(
-                Icons.Default.Check,
-                contentDescription = "Save",
+                Icons.Default.Share,
+                contentDescription = "Share",
               )
             }
-          },
-        )
-      }
-    ) { padding ->
+          }
+          
+          // Delete button (only for existing scripts)
+          if (!isNewScript) {
+            IconButton(
+              onClick = { showDeleteDialog = true },
+              modifier = Modifier
+                .padding(horizontal = 4.dp)
+                .size(40.dp),
+              colors = IconButtonDefaults.iconButtonColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+              ),
+              shape = RoundedCornerShape(8.dp),
+            ) {
+              Icon(
+                Icons.Default.Delete,
+                contentDescription = "Delete",
+              )
+            }
+          }
+          
+          // Save button
+          IconButton(
+            onClick = { saveScript() },
+            enabled = hasUnsavedChanges && fileName.isNotBlank(),
+            modifier = Modifier
+              .padding(horizontal = 4.dp)
+              .size(40.dp),
+            colors = IconButtonDefaults.iconButtonColors(
+              containerColor = if (hasUnsavedChanges && fileName.isNotBlank()) {
+                MaterialTheme.colorScheme.primaryContainer
+              } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f)
+              },
+              contentColor = if (hasUnsavedChanges && fileName.isNotBlank()) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+              } else {
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+              },
+              disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
+              disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+            ),
+            shape = RoundedCornerShape(8.dp),
+          ) {
+            Icon(
+              Icons.Default.Check,
+              contentDescription = "Save",
+            )
+          }
+        },
+      )
+      
+      // Editor content with IME padding
       val scrollState = rememberScrollState()
       Box(
         modifier = Modifier
           .fillMaxSize()
-          .padding(padding)
+          .weight(1f)
           .imePadding()
       ) {
         BasicTextField(

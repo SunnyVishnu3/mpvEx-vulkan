@@ -20,7 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -148,61 +148,63 @@ data class ConfigEditorScreen(
       }
     }
 
-    Scaffold(
-      topBar = {
-        TopAppBar(
-          title = {
-            Column {
+    Column(
+      modifier = Modifier.fillMaxSize()
+    ) {
+      // Fixed TopAppBar
+      TopAppBar(
+        title = {
+          Column {
+            Text(
+              text  = screenTitle,
+              style = MaterialTheme.typography.headlineSmall,
+              fontWeight = FontWeight.ExtraBold,
+              color = MaterialTheme.colorScheme.primary,
+            )
+            if (hasUnsavedChanges) {
               Text(
-                text  = screenTitle,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary,
-              )
-              if (hasUnsavedChanges) {
-                Text(
-                  text  = "Unsaved changes",
-                  style = MaterialTheme.typography.bodySmall,
-                  color = MaterialTheme.colorScheme.secondary,
-                )
-              }
-            }
-          },
-          navigationIcon = {
-            IconButton(onClick = backStack::removeLastOrNull) {
-              Icon(
-                Icons.AutoMirrored.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.secondary,
+                text  = "Unsaved changes",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
               )
             }
-          },
-          actions = {
-            IconButton(
-              onClick  = { saveConfig() },
-              enabled  = hasUnsavedChanges,
-              modifier = Modifier.padding(horizontal = 12.dp).size(40.dp),
-              colors   = IconButtonDefaults.iconButtonColors(
-                containerColor        = if (hasUnsavedChanges) MaterialTheme.colorScheme.primaryContainer
-                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
-                contentColor          = if (hasUnsavedChanges) MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
-                disabledContentColor   = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-              ),
-              shape = RoundedCornerShape(8.dp),
-            ) {
-              Icon(Icons.Default.Check, contentDescription = "Save")
-            }
-          },
-        )
-      },
-    ) { padding ->
+          }
+        },
+        navigationIcon = {
+          IconButton(onClick = backStack::removeLastOrNull) {
+            Icon(
+              Icons.AutoMirrored.Default.ArrowBack,
+              contentDescription = "Back",
+              tint = MaterialTheme.colorScheme.secondary,
+            )
+          }
+        },
+        actions = {
+          IconButton(
+            onClick  = { saveConfig() },
+            enabled  = hasUnsavedChanges,
+            modifier = Modifier.padding(horizontal = 12.dp).size(40.dp),
+            colors   = IconButtonDefaults.iconButtonColors(
+              containerColor        = if (hasUnsavedChanges) MaterialTheme.colorScheme.primaryContainer
+                                      else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
+              contentColor          = if (hasUnsavedChanges) MaterialTheme.colorScheme.onPrimaryContainer
+                                      else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+              disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
+              disabledContentColor   = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+            ),
+            shape = RoundedCornerShape(8.dp),
+          ) {
+            Icon(Icons.Default.Check, contentDescription = "Save")
+          }
+        },
+      )
+      
+      // Editor content with IME padding
       val scrollState = rememberScrollState()
       Box(
         modifier = Modifier
           .fillMaxSize()
-          .padding(padding)
+          .weight(1f)
           .imePadding()
       ) {
         BasicTextField(

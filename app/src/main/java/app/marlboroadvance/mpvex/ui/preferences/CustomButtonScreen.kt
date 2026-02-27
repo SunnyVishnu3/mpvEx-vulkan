@@ -302,21 +302,9 @@ fun ButtonSlotCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 4.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+                    .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Intercept touches on the drag handle to close the dropdown immediately
-                dragHandle(
-                    Modifier.pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                awaitFirstDown(requireUnconsumed = false)
-                                expanded = false
-                            }
-                        }
-                    }
-                )
-
                 // Slot badge
                 Box(
                     modifier = Modifier
@@ -376,15 +364,27 @@ fun ButtonSlotCard(
                     Spacer(Modifier.width(4.dp))
                 }
 
-                // Expand chevron — always present
-                Icon(
-                    Icons.Default.ExpandMore,
-                    contentDescription = if (expanded) "Collapse" else "Expand",
-                    modifier = Modifier
-                        .size(24.dp)
-                        .rotate(if (expanded) 180f else 0f),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                // Drag handle button - always show but disable when empty
+                if (isPopulated) {
+                    dragHandle(
+                        Modifier.pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    awaitFirstDown(requireUnconsumed = false)
+                                    expanded = false
+                                }
+                            }
+                        }
+                    )
+                } else {
+                    // Disabled drag handle for empty slots
+                    Icon(
+                        Icons.Default.DragHandle,
+                        contentDescription = "Drag disabled",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                    )
+                }
             }
 
             // ── Expandable body ───────────────────────────────────────────────
@@ -463,6 +463,7 @@ fun ButtonSlotCard(
                 usePlatformDefaultWidth = false,
                 dismissOnBackPress      = true,
                 dismissOnClickOutside   = false,
+                decorFitsSystemWindows  = false,
             ),
         ) {
             Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -492,9 +493,12 @@ fun ButtonSlotCard(
                         },
                     )
                     val dialogScrollState = rememberScrollState()
+                    val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+                    
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
+                            .weight(1f)
                             .imePadding()
                     ) {
                         BasicTextField(
@@ -665,11 +669,10 @@ fun LuaEditorEntryCard(
     onClick: () -> Unit,
 ) {
     val hasCode = code.isNotBlank()
-    val borderColor = when {
-        isRequired && !hasCode -> MaterialTheme.colorScheme.error
-        hasCode -> MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-        else -> MaterialTheme.colorScheme.outlineVariant
-    }
+    val borderColor = if (hasCode) 
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+    else 
+        MaterialTheme.colorScheme.outlineVariant
 
     Card(
         onClick = onClick,
@@ -710,30 +713,12 @@ fun LuaEditorEntryCard(
             Spacer(Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isRequired && !hasCode) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.onSurface,
-                    )
-                    if (hasCode) {
-                        Spacer(Modifier.width(6.dp))
-                        Box(
-                            Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "${code.lines().size} lines",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
-                }
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
                 Spacer(Modifier.height(4.dp))
                 if (hasCode) {
                     Text(
