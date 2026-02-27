@@ -221,7 +221,6 @@ fun PlayerSheets(
         onStartTimer = onStartSleepTimer,
         onDismissRequest = onDismissRequest,
         onEnterFiltersPanel = { onOpenPanel(Panels.VideoFilters) },
-        onEnterLuaScriptsPanel = { onOpenPanel(Panels.LuaScripts) },
       )
     }
 
@@ -252,7 +251,6 @@ fun PlayerSheets(
     Sheets.AspectRatios -> {
       val playerPreferences = koinInject<app.marlboroadvance.mpvex.preferences.PlayerPreferences>()
       val customRatiosSet by playerPreferences.customAspectRatios.collectAsState()
-      val currentRatio by playerPreferences.currentAspectRatio.collectAsState()
       val customRatios =
         customRatiosSet.mapNotNull { str ->
           val parts = str.split("|")
@@ -267,8 +265,11 @@ fun PlayerSheets(
           }
         }
 
+      // Get current aspect ratio from MPV (not persisted)
+      val currentAspectOverride by MPVLib.propDouble["video-aspect-override"].collectAsState()
+
       AspectRatioSheet(
-        currentRatio = currentRatio.toDouble(),
+        currentRatio = currentAspectOverride,
         customRatios = customRatios,
         onSelectRatio = { ratio ->
           viewModel.setCustomAspectRatio(ratio)
@@ -281,7 +282,7 @@ fun PlayerSheets(
           val toRemove = "${ratio.label}|${ratio.ratio}"
           playerPreferences.customAspectRatios.set(customRatiosSet - toRemove)
           // If the deleted ratio is currently active, reset to default
-          if (kotlin.math.abs(currentRatio - ratio.ratio) < 0.01) {
+          if (currentAspectOverride != null && kotlin.math.abs(currentAspectOverride!! - ratio.ratio) < 0.01) {
             viewModel.setCustomAspectRatio(-1.0)
           }
         },

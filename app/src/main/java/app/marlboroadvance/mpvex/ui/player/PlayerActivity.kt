@@ -1571,7 +1571,7 @@ class PlayerActivity :
    */
   private fun handleConfigurationChange() {
     if (!isInPictureInPictureMode) {
-      viewModel.changeVideoAspect(playerPreferences.videoAspect.get(), showUpdate = false)
+      // Configuration changes don't affect aspect ratio
     } else {
       viewModel.hideControls()
     }
@@ -1891,8 +1891,6 @@ class PlayerActivity :
     }
 
     applySubtitlePreferences()
-    viewModel.changeVideoAspect(playerPreferences.videoAspect.get(), showUpdate = false)
-    viewModel.restoreCustomAspectRatio()
 
     // Don't force media-title for m3u/m3u8 streams - let MPV provide it
     if (!isCurrentStreamM3U()) {
