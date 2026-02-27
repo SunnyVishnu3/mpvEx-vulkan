@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -108,6 +109,7 @@ import app.marlboroadvance.mpvex.ui.player.controls.components.ControlsButton
 import app.marlboroadvance.mpvex.ui.player.controls.components.MultipleSpeedPlayerUpdate
 import app.marlboroadvance.mpvex.ui.player.controls.components.SeekPlayerUpdate
 import app.marlboroadvance.mpvex.ui.player.controls.components.SeekbarWithTimers
+import app.marlboroadvance.mpvex.ui.player.controls.components.SlideToUnlock
 import app.marlboroadvance.mpvex.ui.player.controls.components.SpeedControlSlider
 import app.marlboroadvance.mpvex.ui.player.controls.components.TextPlayerUpdate
 import app.marlboroadvance.mpvex.ui.player.controls.components.VolumeSlider
@@ -234,14 +236,20 @@ fun PlayerControls(
     appearancePreferences.parseButtons(portraitBottomControlsPref, mutableSetOf())
   }
 
+  var isUnlockSliderDragging by remember { mutableStateOf(false) }
+
   LaunchedEffect(
     controlsShown,
     paused,
     isSeeking,
     resetControlsTimestamp,
+    areControlsLocked,
+    isUnlockSliderDragging,
   ) {
-    if (controlsShown && paused == false && !isSeeking) {
-      delay(playerTimeToDisappear.toLong())
+    if (controlsShown && paused == false && !isSeeking && !isUnlockSliderDragging) {
+      // Use 2.5 second delay when controls are locked, otherwise use user preference
+      val delayTime = if (areControlsLocked) 2500L else playerTimeToDisappear.toLong()
+      delay(delayTime)
       viewModel.hideControls()
     }
   }
@@ -293,7 +301,7 @@ fun PlayerControls(
         val playerPauseButton = createRef()
         val seekbar = createRef()
         val (playerUpdates) = createRefs()
-        val (customLeftButtonsRef, customRightButtonsRef, customPortraitButtonsRef) = createRefs()
+        val (customLeftButtonsRef, customRightButtonsRef) = createRefs()
 
         val isBrightnessSliderShown by viewModel.isBrightnessSliderShown.collectAsState()
         val isVolumeSliderShown by viewModel.isVolumeSliderShown.collectAsState()
@@ -357,22 +365,14 @@ fun PlayerControls(
               fadeOut(playerControlsExitAnimationSpec())
             },
           modifier =
-            Modifier
-              .then(
-                if (showSystemStatusBar) {
-                  Modifier.windowInsetsPadding(WindowInsets.statusBars)
-                } else {
-                  Modifier
-                }
-              )
-              .constrainAs(brightnessSlider) {
+            Modifier.constrainAs(brightnessSlider) {
               if (swapVolumeAndBrightness) {
-                start.linkTo(parent.start, if (isPortrait) spacing.medium else spacing.extraLarge)
+                start.linkTo(parent.start, if (isPortrait) spacing.large else spacing.extraLarge)
               } else {
-                end.linkTo(parent.end, if (isPortrait) spacing.medium else spacing.extraLarge)
+                end.linkTo(parent.end, if (isPortrait) spacing.large else spacing.extraLarge)
               }
               top.linkTo(parent.top, spacing.larger)
-              bottom.linkTo(parent.bottom, spacing.larger)
+              bottom.linkTo(parent.bottom, spacing.extraLarge)
             },
         ) { BrightnessSlider(brightness, 0f..1f) }
 
@@ -395,22 +395,14 @@ fun PlayerControls(
               fadeOut(playerControlsExitAnimationSpec())
             },
           modifier =
-            Modifier
-              .then(
-                if (showSystemStatusBar) {
-                  Modifier.windowInsetsPadding(WindowInsets.statusBars)
-                } else {
-                  Modifier
-                }
-              )
-              .constrainAs(volumeSlider) {
+            Modifier.constrainAs(volumeSlider) {
               if (swapVolumeAndBrightness) {
-                end.linkTo(parent.end, if (isPortrait) spacing.medium else spacing.extraLarge)
+                end.linkTo(parent.end, if (isPortrait) spacing.large else spacing.extraLarge)
               } else {
-                start.linkTo(parent.start, if (isPortrait) spacing.medium else spacing.extraLarge)
+                start.linkTo(parent.start, if (isPortrait) spacing.large else spacing.extraLarge)
               }
               top.linkTo(parent.top, spacing.larger)
-              bottom.linkTo(parent.bottom, spacing.larger)
+              bottom.linkTo(parent.bottom, spacing.extraLarge)
             },
         ) {
           val boostCap by audioPreferences.volumeBoostCap.collectAsState()
@@ -451,15 +443,7 @@ fun PlayerControls(
           enter = fadeIn(playerControlsEnterAnimationSpec()),
           exit = fadeOut(playerControlsExitAnimationSpec()),
           modifier =
-            Modifier
-              .then(
-                if (showSystemStatusBar) {
-                  Modifier.windowInsetsPadding(WindowInsets.statusBars)
-                } else {
-                  Modifier
-                }
-              )
-              .constrainAs(playerUpdates) {
+            Modifier.constrainAs(playerUpdates) {
               linkTo(parent.start, parent.end)
               top.linkTo(parent.top, if (isPortrait) 104.dp else 64.dp)
             },
@@ -570,19 +554,7 @@ fun PlayerControls(
             visible = areButtonsVisible && !isPortrait,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier
-                .then(
-                  if (showSystemNavigationBar) {
-                    val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
-                    Modifier.padding(
-                      start = navBarPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
-                      end = navBarPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
-                    )
-                  } else {
-                    Modifier
-                  }
-                )
-                .constrainAs(customLeftButtonsRef) {
+            modifier = Modifier.constrainAs(customLeftButtonsRef) {
                 start.linkTo(parent.start, spacing.medium)
                 top.linkTo(parent.top)
                 bottom.linkTo(parent.bottom)
@@ -639,19 +611,7 @@ fun PlayerControls(
             visible = areButtonsVisible && !isPortrait,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier
-                .then(
-                  if (showSystemNavigationBar) {
-                    val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
-                    Modifier.padding(
-                      start = navBarPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
-                      end = navBarPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
-                    )
-                  } else {
-                    Modifier
-                  }
-                )
-                .constrainAs(customRightButtonsRef) {
+            modifier = Modifier.constrainAs(customRightButtonsRef) {
                 end.linkTo(parent.end, spacing.medium)
                 top.linkTo(parent.top)
                 bottom.linkTo(parent.bottom)
@@ -708,19 +668,7 @@ fun PlayerControls(
             visible = areButtonsVisible && isPortrait,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier
-                .then(
-                  if (showSystemNavigationBar) {
-                    val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
-                    Modifier.padding(
-                      start = navBarPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
-                      end = navBarPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
-                    )
-                  } else {
-                    Modifier
-                  }
-                )
-                .constrainAs(customPortraitButtonsRef) {
+            modifier = Modifier.constrainAs(createRef()) {
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
                 top.linkTo(parent.top)
@@ -780,34 +728,15 @@ fun PlayerControls(
           exit = fadeOut(),
           modifier =
             Modifier
-              .then(
-                if (showSystemStatusBar) {
-                  Modifier.windowInsetsPadding(WindowInsets.statusBars)
-                } else {
-                  Modifier
-                }
-              )
-              .then(
-                if (showSystemNavigationBar) {
-                  val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
-                  Modifier.padding(
-                    start = navBarPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
-                    end = navBarPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
-                  )
-                } else {
-                  Modifier
-                }
-              )
               .constrainAs(unlockControlsButton) {
-                // Significantly moves down the lock icon in portrait mode to avoid status bar overlap
-                top.linkTo(parent.top, if (isPortrait) 56.dp else spacing.medium)
-                start.linkTo(parent.start, spacing.medium)
+                bottom.linkTo(parent.bottom, spacing.extraLarge)
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
               },
         ) {
-          ControlsButton(
-            Icons.Filled.Lock,
-            onClick = { viewModel.unlockControls() },
-            color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+          SlideToUnlock(
+            onUnlock = { viewModel.unlockControls() },
+            onDraggingChanged = { isDragging -> isUnlockSliderDragging = isDragging },
           )
         }
 
@@ -1085,10 +1014,10 @@ fun PlayerControls(
                 if (isPortrait) {
                   bottom.linkTo(playerPauseButton.top, spacing.small)
                 } else {
-                  bottom.linkTo(parent.bottom, spacing.extraSmall)
+                  bottom.linkTo(parent.bottom, spacing.small)
                 }
-                start.linkTo(parent.start, spacing.medium)
-                end.linkTo(parent.end, spacing.medium)
+                start.linkTo(parent.start, spacing.large)
+                end.linkTo(parent.end, spacing.large)
               },
         ) {
           val invertDuration by playerPreferences.invertDuration.collectAsState()
@@ -1159,10 +1088,10 @@ fun PlayerControls(
               )
               .constrainAs(topLeftControls) {
                 top.linkTo(parent.top, if (isPortrait) spacing.extraLarge else spacing.small)
-                start.linkTo(parent.start, spacing.medium)
+                start.linkTo(parent.start, spacing.large)
                 if (isPortrait) {
                   width = Dimension.fillToConstraints
-                  end.linkTo(parent.end, spacing.medium)
+                  end.linkTo(parent.end, spacing.large)
                 } else {
                   width = Dimension.fillToConstraints
                   end.linkTo(topRightControls.start, spacing.extraSmall)
@@ -1226,7 +1155,7 @@ fun PlayerControls(
               )
               .constrainAs(topRightControls) {
                 top.linkTo(parent.top, spacing.small)
-                end.linkTo(parent.end, spacing.medium)
+                end.linkTo(parent.end, spacing.large)
               },
         ) {
           TopRightPlayerControlsLandscape(
@@ -1279,13 +1208,13 @@ fun PlayerControls(
               )
               .constrainAs(bottomRightControls) {
                 if (isPortrait) {
-                  bottom.linkTo(parent.bottom, spacing.large)
-                  start.linkTo(parent.start, spacing.medium)
-                  end.linkTo(parent.end, spacing.medium)
+                  bottom.linkTo(parent.bottom, spacing.extraLarge)
+                  start.linkTo(parent.start, spacing.large)
+                  end.linkTo(parent.end, spacing.large)
                   width = Dimension.fillToConstraints
                 } else {
                   bottom.linkTo(seekbar.top, spacing.small)
-                  end.linkTo(parent.end, spacing.medium)
+                  end.linkTo(parent.end, spacing.large)
                 }
               },
         ) {
@@ -1359,7 +1288,7 @@ fun PlayerControls(
               )
               .constrainAs(bottomLeftControls) {
                 bottom.linkTo(seekbar.top, spacing.small)
-                start.linkTo(parent.start, spacing.medium)
+                start.linkTo(parent.start, spacing.large)
                 width = Dimension.fillToConstraints
                 end.linkTo(bottomRightControls.start, spacing.small)
               },

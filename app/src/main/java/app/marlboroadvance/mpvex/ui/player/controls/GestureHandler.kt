@@ -184,7 +184,7 @@ fun GestureHandler(
   Box(
     modifier = modifier
       .fillMaxSize()
-      .padding(horizontal = 16.dp, vertical = 16.dp)
+      .padding(horizontal = 48.dp, vertical = 48.dp)
       .pointerInput(areControlsLocked, doubleTapSeekAreaWidth, gesturePreferences) {
         // Isolated double-tap detection that doesn't interfere with other gestures
         awaitEachGesture {
