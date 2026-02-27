@@ -1828,6 +1828,9 @@ class PlayerActivity :
       mediaIdentifier = getMediaIdentifier(intent, fileName)
     }
 
+    // Reset AB loop values when video changes
+    viewModel.clearABLoop()
+
     setIntentExtras(intent.extras)
 
     lifecycleScope.launch(Dispatchers.IO) {
