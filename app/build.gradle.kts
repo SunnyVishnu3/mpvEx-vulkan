@@ -28,6 +28,13 @@ android {
 
     buildConfigField("String", "GIT_SHA", "\"${getCommitSha()}\"")
     buildConfigField("int", "GIT_COUNT", getCommitCount())
+
+    // === ADRENOTOOLS: Force 64-bit ARM compilation only ===
+    externalNativeBuild {
+      cmake {
+        abiFilters += "arm64-v8a"
+      }
+    }
   }
 
   flavorDimensions += "distribution"
@@ -110,9 +117,7 @@ android {
     includeSourceInformation = true
   }
 
-  // ==========================================
-  // ADRENOTOOLS C++ BRIDGE CONFIGURATION
-  // ==========================================
+  // === ADRENOTOOLS: Link to CMake bridge ===
   externalNativeBuild {
     cmake {
       path = file("src/main/cpp/CMakeLists.txt")
@@ -197,6 +202,7 @@ dependencies {
   implementation(libs.androidx.preferences.ktx)
   implementation(libs.androidx.documentfile)
   implementation(libs.saveable)
+
 
   implementation(platform(libs.koin.bom))
   implementation(libs.bundles.koin)
