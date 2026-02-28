@@ -215,7 +215,8 @@ object AdvancedPreferencesScreen : Screen {
               runCatching {
                 val tree = DocumentFile.fromTreeUri(context, uri)
                 if (tree != null && tree.exists() && tree.canWrite()) {
-                  val subdirs = listOf("fonts", "script-opts", "scripts", "shaders")
+                  // ADDED gpu_drivers to auto-create list
+                  val subdirs = listOf("fonts", "script-opts", "scripts", "shaders", "gpu_drivers")
                   for (name in subdirs) {
                     val existing = tree.listFiles().firstOrNull {
                       it.isDirectory && it.name?.equals(name, ignoreCase = true) == true
@@ -434,6 +435,26 @@ object AdvancedPreferencesScreen : Screen {
               )
             }
           }
+
+          // Hardware Section - ADDED HERE
+          item {
+            PreferenceSectionHeader(title = "Hardware")
+          }
+          
+          item {
+            PreferenceCard {
+              Preference(
+                title = { Text("GPU Driver Manager") },
+                summary = { 
+                  Text(
+                    "Install and manage custom Turnip drivers",
+                    color = MaterialTheme.colorScheme.outline
+                  ) 
+                },
+                onClick = { backStack.add(GpuDriverManagerScreen) }
+              )
+            }
+          }
           
           // Scripts Section
           item {
@@ -485,22 +506,6 @@ object AdvancedPreferencesScreen : Screen {
                   backStack.add(LuaScriptsScreen)
                 },
                 enabled = mpvConfStorageLocation.isNotBlank() && enableLuaScripts,
-              )
-
-              PreferenceDivider()
-
-              Preference(
-                title = { Text("Custom Lua") },
-                summary = {
-                  Text(
-                    "Create and manage custom Lua buttons",
-                    color = MaterialTheme.colorScheme.outline
-                  )
-                },
-                onClick = {
-                  backStack.add(app.marlboroadvance.mpvex.ui.preferences.CustomButtonScreen)
-                },
-                enabled = enableLuaScripts,
               )
             }
           }
