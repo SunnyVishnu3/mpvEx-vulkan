@@ -843,7 +843,7 @@ class PlayerActivity :
    * Initializes the MPV player with the necessary paths and observers.
    * CRITICAL: Must copy config and scripts BEFORE initializing MPV, as MPV loads scripts during init.
    */
-  private fun setupMPV() {
+    private fun setupMPV() {
     // Copy essential files FIRST, before MPV initialization
     // MPV will load scripts during initialize(), so they must exist beforehand
     runCatching {
@@ -853,6 +853,32 @@ class PlayerActivity :
     }.onFailure { e ->
       Log.e(TAG, "Error copying MPV config and scripts", e)
     }
+
+    // ==========================================
+    // ADRENOTOOLS: INJECT CUSTOM TURNIP DRIVER HOOK
+    // ==========================================
+    val prefs = getSharedPreferences("gpu_driver_settings", Context.MODE_PRIVATE)
+    val customDriverDir = prefs.getString("custom_driver_dir", null)
+    
+    if (customDriverDir != null && File(customDriverDir, "libvulkan_freedreno.so").exists()) {
+        val success = app.marlboroadvance.mpvex.system.AdrenoTools.hookCustomDriver(this@PlayerActivity, customDriverDir)
+        if (success) {
+            Log.i(TAG, "Successfully hooked custom Turnip driver from: $customDriverDir")
+        } else {
+            Log.e(TAG, "Failed to hook Turnip driver!")
+        }
+    }
+    // ==========================================
+
+    // NOW initialize MPV - it will find and load the scripts we just copied
+    player.initialize(filesDir.path, cacheDir.path)
+    mpvInitialized = true
+    Log.d(TAG, "MPV initialized")
+
+    // Add observer after initialization
+    MPVLib.addObserver(playerObserver)
+  }
+
 
     // NOW initialize MPV - it will find and load the scripts we just copied
     player.initialize(filesDir.path, cacheDir.path)
@@ -888,6 +914,7 @@ class PlayerActivity :
       syncScriptOpts(tree)
       syncShaders(tree)
       syncFonts(tree)
+      syncGpuDrivers(tree)
       Log.d(TAG, "Full MPV directory sync completed")
     } else {
       // Fallback: use preferences-based config (no user directory set)
@@ -1098,6 +1125,70 @@ class PlayerActivity :
         Log.e(TAG, "Error syncing font: $name", e)
       }
     }
+    
+    // ==================== GPU Drivers Sync ====================
+
+  /**
+   * Syncs custom GPU drivers from the user's MPV directory.
+   * Looks in gpu_drivers/ subfolder (case-insensitive) and maintains the folder structure
+   * needed for the GPU Driver Manager UI.
+   */
+  private fun syncGpuDrivers(tree: DocumentFile) {
+    val internalGpuDriversDir = File(filesDir, "gpu_drivers")
+    internalGpuDriversDir.mkdirs()
+
+    val driversSubdir = findSubdirCaseInsensitive(tree, "gpu_drivers")
+    if (driversSubdir == null) {
+      Log.d(TAG, "No gpu_drivers/ subfolder found, skipping")
+      return
+    }
+
+    var count = 0
+
+    driversSubdir.listFiles().forEach { item ->
+      val name = item.name ?: return@forEach
+      
+      if (item.isDirectory) {
+        // If it's a folder (e.g., "Turnip_v24"), recreate it and copy the .so files inside
+        val targetDir = File(internalGpuDriversDir, name)
+        targetDir.mkdirs()
+        
+        item.listFiles().forEach { subItem ->
+          val subName = subItem.name ?: return@forEach
+          if (subItem.isFile && subName.endsWith(".so")) {
+            val targetFile = File(targetDir, subName)
+            // Skip if the driver file already exists to save time
+            if (!targetFile.exists()) {
+              runCatching {
+                contentResolver.openInputStream(subItem.uri)?.use { input ->
+                  targetFile.outputStream().use { output -> input.copyTo(output) }
+                  count++
+                }
+              }.onFailure { Log.e(TAG, "Error syncing driver file: $subName", it) }
+            }
+          }
+        }
+      } else if (item.isFile && name.endsWith(".so")) {
+        // If the user placed a .so file directly in gpu_drivers without a folder,
+        // create a default folder for it so the Manager UI can read it properly.
+        val targetDir = File(internalGpuDriversDir, "Imported_Driver")
+        targetDir.mkdirs()
+        val targetFile = File(targetDir, name)
+        
+        if (!targetFile.exists()) {
+          runCatching {
+            contentResolver.openInputStream(item.uri)?.use { input ->
+              targetFile.outputStream().use { output -> input.copyTo(output) }
+              count++
+            }
+          }.onFailure { Log.e(TAG, "Error syncing driver file: $name", it) }
+        }
+      }
+    }
+
+    Log.d(TAG, "GPU Drivers sync: $count file(s)")
+  }
+
 
     // Also sync from subtitle preferences font folder if set
     runCatching {
