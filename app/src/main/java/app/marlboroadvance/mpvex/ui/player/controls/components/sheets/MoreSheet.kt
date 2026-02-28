@@ -78,6 +78,7 @@ fun MoreSheet(
   val anime4kMode by decoderPreferences.anime4kMode.collectAsState()
   val anime4kQuality by decoderPreferences.anime4kQuality.collectAsState()
   val gpuNext by decoderPreferences.gpuNext.collectAsState()
+  val useVulkan by decoderPreferences.useVulkan.collectAsState()
   
   val context = LocalContext.current
 val scope = rememberCoroutineScope()
@@ -202,7 +203,7 @@ if (infoDialogData != null) {
       }
       
       // Shaders Controls
-      if (enableAnime4K && !gpuNext) {
+      if (enableAnime4K && (!gpuNext || useVulkan)) {
         // Auto-detect resolution to disable for 4K+
         val width = MPVLib.getPropertyInt("video-params/w") ?: 0
         val height = MPVLib.getPropertyInt("video-params/h") ?: 0
