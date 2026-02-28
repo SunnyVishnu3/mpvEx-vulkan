@@ -1,6 +1,5 @@
 package app.marlboroadvance.mpvex.ui.browser.components
 
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -25,9 +24,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
 /**
@@ -50,22 +47,6 @@ fun BrowserBottomBar(
   showDelete: Boolean = true,
   showAddToPlaylist: Boolean = true,
 ) {
-  val context = LocalContext.current
-  
-  // Check if copy/move should be disabled (Play Store build without MANAGE_EXTERNAL_STORAGE)
-  val isCopyMoveDisabled = remember {
-    try {
-      val packageInfo = context.packageManager.getPackageInfo(
-        context.packageName,
-        android.content.pm.PackageManager.GET_PERMISSIONS
-      )
-      val permissions = packageInfo.requestedPermissions?.toList() ?: emptyList()
-      !permissions.contains(android.Manifest.permission.MANAGE_EXTERNAL_STORAGE)
-    } catch (e: Exception) {
-      false
-    }
-  }
-  
   AnimatedVisibility(
     visible = isSelectionMode,
     modifier = modifier,
@@ -86,30 +67,12 @@ fun BrowserBottomBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
       ) {
         FilledTonalIconButton(
-          onClick = {
-            if (isCopyMoveDisabled) {
-              Toast.makeText(
-                context,
-                "Disabled due to Play Store policies. Download full version from GitHub",
-                Toast.LENGTH_LONG
-              ).show()
-            } else {
-              onCopyClick()
-            }
-          },
+          onClick = onCopyClick,
           enabled = showCopy,
           modifier = Modifier.size(50.dp),
           colors = IconButtonDefaults.filledTonalIconButtonColors(
-            containerColor = if (isCopyMoveDisabled) {
-              MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            } else {
-              MaterialTheme.colorScheme.secondaryContainer
-            },
-            contentColor = if (isCopyMoveDisabled) {
-              MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-            } else {
-              MaterialTheme.colorScheme.onSecondaryContainer
-            }
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
           )
         ) {
           Icon(
@@ -120,30 +83,12 @@ fun BrowserBottomBar(
         }
         
         FilledTonalIconButton(
-          onClick = {
-            if (isCopyMoveDisabled) {
-              Toast.makeText(
-                context,
-                "Disabled due to Play Store policies. Download full version from GitHub",
-                Toast.LENGTH_LONG
-              ).show()
-            } else {
-              onMoveClick()
-            }
-          },
+          onClick = onMoveClick,
           enabled = showMove,
           modifier = Modifier.size(50.dp),
           colors = IconButtonDefaults.filledTonalIconButtonColors(
-            containerColor = if (isCopyMoveDisabled) {
-              MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            } else {
-              MaterialTheme.colorScheme.secondaryContainer
-            },
-            contentColor = if (isCopyMoveDisabled) {
-              MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-            } else {
-              MaterialTheme.colorScheme.onSecondaryContainer
-            }
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
           )
         ) {
           Icon(
@@ -154,30 +99,12 @@ fun BrowserBottomBar(
         }
         
         FilledTonalIconButton(
-          onClick = {
-            if (isCopyMoveDisabled) {
-              Toast.makeText(
-                context,
-                "Disabled due to Play Store policies. Download full version from GitHub",
-                Toast.LENGTH_LONG
-              ).show()
-            } else {
-              onRenameClick()
-            }
-          },
+          onClick = onRenameClick,
           enabled = showRename,
           modifier = Modifier.size(50.dp),
           colors = IconButtonDefaults.filledTonalIconButtonColors(
-            containerColor = if (isCopyMoveDisabled) {
-              MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            } else {
-              MaterialTheme.colorScheme.secondaryContainer
-            },
-            contentColor = if (isCopyMoveDisabled) {
-              MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-            } else {
-              MaterialTheme.colorScheme.onSecondaryContainer
-            }
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
           )
         ) {
           Icon(
@@ -201,30 +128,12 @@ fun BrowserBottomBar(
         }
         
         FilledTonalIconButton(
-          onClick = {
-            if (isCopyMoveDisabled) {
-              Toast.makeText(
-                context,
-                "Disabled due to Play Store policies. Download full version from GitHub",
-                Toast.LENGTH_LONG
-              ).show()
-            } else {
-              onDeleteClick()
-            }
-          },
+          onClick = onDeleteClick,
           enabled = showDelete,
           modifier = Modifier.size(50.dp),
           colors = IconButtonDefaults.filledTonalIconButtonColors(
-            containerColor = if (isCopyMoveDisabled) {
-              MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            } else {
-              MaterialTheme.colorScheme.errorContainer
-            },
-            contentColor = if (isCopyMoveDisabled) {
-              MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-            } else {
-              MaterialTheme.colorScheme.onErrorContainer
-            }
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer
           )
         ) {
           Icon(

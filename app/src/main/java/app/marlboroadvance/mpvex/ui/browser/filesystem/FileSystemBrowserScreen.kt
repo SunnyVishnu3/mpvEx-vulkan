@@ -82,6 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.marlboroadvance.mpvex.BuildConfig
 import app.marlboroadvance.mpvex.domain.browser.FileSystemItem
 import app.marlboroadvance.mpvex.preferences.BrowserPreferences
 import app.marlboroadvance.mpvex.preferences.GesturePreferences
@@ -251,6 +252,14 @@ fun FileSystemBrowserScreen(path: String? = null) {
 
   // Update bottom bar visibility with optimized animation sequencing
   LaunchedEffect(isInSelectionMode, videoSelectionManager.isInSelectionMode, isMixedSelection) {
+    // In Play Store builds, never show floating bar and always keep bottom navigation visible
+    if (!BuildConfig.ENABLE_UPDATE_FEATURE) {
+      showFloatingBottomBar = false
+      showBottomNavigation = true
+      return@LaunchedEffect
+    }
+    
+    // Standard/F-Droid builds: Show floating bar and hide bottom navigation when appropriate
     val shouldShowFloatingBar = isInSelectionMode && videoSelectionManager.isInSelectionMode && !isMixedSelection
     
     if (shouldShowFloatingBar) {
@@ -532,6 +541,9 @@ fun FileSystemBrowserScreen(path: String? = null) {
             },
             onDeleteClick = if (videoSelectionManager.isInSelectionMode && !isMixedSelection) {
               null
+            } else if (!BuildConfig.ENABLE_UPDATE_FEATURE && folderSelectionManager.isInSelectionMode) {
+              // Hide delete button for folders in Play Store build
+              null
             } else {
               { deleteDialogOpen.value = true }
             },
@@ -650,6 +662,9 @@ fun FileSystemBrowserScreen(path: String? = null) {
               folderSelectionManager.clear()
               videoSelectionManager.clear()
             },
+            onAddToPlaylistClick = if (!BuildConfig.ENABLE_UPDATE_FEATURE && videoSelectionManager.isInSelectionMode && !folderSelectionManager.isInSelectionMode) {
+              { addToPlaylistDialogOpen.value = true }
+            } else null,
           )
         }
       },
@@ -836,34 +851,37 @@ fun FileSystemBrowserScreen(path: String? = null) {
     }
 
     // Independent Floating Bottom Bar - positioned at absolute bottom
-    AnimatedVisibility(
-      visible = showFloatingBottomBar,
-      enter = slideInVertically(
-        animationSpec = tween(durationMillis = animationDuration),
-        initialOffsetY = { fullHeight -> fullHeight }
-      ),
-      exit = slideOutVertically(
-        animationSpec = tween(durationMillis = animationDuration),
-        targetOffsetY = { fullHeight -> fullHeight }
-      ),
-      modifier = Modifier.align(Alignment.BottomCenter)
-    ) {
-      BrowserBottomBar(
-        isSelectionMode = true,
-        onCopyClick = {
-          operationType.value = CopyPasteOps.OperationType.Copy
-          folderPickerOpen.value = true
-        },
-        onMoveClick = {
-          operationType.value = CopyPasteOps.OperationType.Move
-          folderPickerOpen.value = true
-        },
-        onRenameClick = { renameDialogOpen.value = true },
-        onDeleteClick = { deleteDialogOpen.value = true },
-        onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
-        showRename = videoSelectionManager.isSingleSelection,
-        modifier = Modifier.padding(bottom = 0.dp) // Zero bottom padding - absolute bottom
-      )
+    // Only show in standard/fdroid builds (not Play Store)
+    if (BuildConfig.ENABLE_UPDATE_FEATURE) {
+      AnimatedVisibility(
+        visible = showFloatingBottomBar,
+        enter = slideInVertically(
+          animationSpec = tween(durationMillis = animationDuration),
+          initialOffsetY = { fullHeight -> fullHeight }
+        ),
+        exit = slideOutVertically(
+          animationSpec = tween(durationMillis = animationDuration),
+          targetOffsetY = { fullHeight -> fullHeight }
+        ),
+        modifier = Modifier.align(Alignment.BottomCenter)
+      ) {
+        BrowserBottomBar(
+          isSelectionMode = true,
+          onCopyClick = {
+            operationType.value = CopyPasteOps.OperationType.Copy
+            folderPickerOpen.value = true
+          },
+          onMoveClick = {
+            operationType.value = CopyPasteOps.OperationType.Move
+            folderPickerOpen.value = true
+          },
+          onRenameClick = { renameDialogOpen.value = true },
+          onDeleteClick = { deleteDialogOpen.value = true },
+          onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
+          showRename = videoSelectionManager.isSingleSelection,
+          modifier = Modifier.padding(bottom = 0.dp) // Zero bottom padding - absolute bottom
+        )
+      }
     }
 
     // Dialogs

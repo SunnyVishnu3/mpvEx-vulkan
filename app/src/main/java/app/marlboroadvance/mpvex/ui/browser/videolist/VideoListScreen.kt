@@ -80,6 +80,7 @@ import app.marlboroadvance.mpvex.preferences.VideoSortType
 import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import app.marlboroadvance.mpvex.presentation.Screen
 import app.marlboroadvance.mpvex.presentation.components.pullrefresh.PullRefreshBox
+import app.marlboroadvance.mpvex.BuildConfig
 import app.marlboroadvance.mpvex.ui.browser.cards.VideoCard
 import app.marlboroadvance.mpvex.ui.browser.components.BrowserBottomBar
 import app.marlboroadvance.mpvex.ui.browser.components.BrowserTopBar
@@ -259,6 +260,9 @@ data class VideoListScreen(
           onSelectAll = { selectionManager.selectAll() },
           onInvertSelection = { selectionManager.invertSelection() },
           onDeselectAll = { selectionManager.clear() },
+          onAddToPlaylistClick = if (!BuildConfig.ENABLE_UPDATE_FEATURE) {
+            { addToPlaylistDialogOpen.value = true }
+          } else null,
         )
       },
       floatingActionButton = {
@@ -329,33 +333,36 @@ data class VideoListScreen(
         )
         
         // Floating Material 3 Button Group overlay with animation
-        AnimatedVisibility(
-          visible = showFloatingBottomBar,
-          enter = slideInVertically(
-            animationSpec = tween(durationMillis = animationDuration),
-            initialOffsetY = { fullHeight -> fullHeight }
-          ),
-          exit = slideOutVertically(
-            animationSpec = tween(durationMillis = animationDuration),
-            targetOffsetY = { fullHeight -> fullHeight }
-          ),
-          modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-          BrowserBottomBar(
-            isSelectionMode = true,
-            onCopyClick = {
-              operationType.value = CopyPasteOps.OperationType.Copy
-              folderPickerOpen.value = true
-            },
-            onMoveClick = {
-              operationType.value = CopyPasteOps.OperationType.Move
-              folderPickerOpen.value = true
-            },
-            onRenameClick = { renameDialogOpen.value = true },
-            onDeleteClick = { deleteDialogOpen.value = true },
-            onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
-            showRename = selectionManager.isSingleSelection
-          )
+        // Only show in standard/fdroid builds (not Play Store)
+        if (BuildConfig.ENABLE_UPDATE_FEATURE) {
+          AnimatedVisibility(
+            visible = showFloatingBottomBar,
+            enter = slideInVertically(
+              animationSpec = tween(durationMillis = animationDuration),
+              initialOffsetY = { fullHeight -> fullHeight }
+            ),
+            exit = slideOutVertically(
+              animationSpec = tween(durationMillis = animationDuration),
+              targetOffsetY = { fullHeight -> fullHeight }
+            ),
+            modifier = Modifier.align(Alignment.BottomCenter)
+          ) {
+            BrowserBottomBar(
+              isSelectionMode = true,
+              onCopyClick = {
+                operationType.value = CopyPasteOps.OperationType.Copy
+                folderPickerOpen.value = true
+              },
+              onMoveClick = {
+                operationType.value = CopyPasteOps.OperationType.Move
+                folderPickerOpen.value = true
+              },
+              onRenameClick = { renameDialogOpen.value = true },
+              onDeleteClick = { deleteDialogOpen.value = true },
+              onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
+              showRename = selectionManager.isSingleSelection
+            )
+          }
         }
       }
 
@@ -687,7 +694,7 @@ private fun VideoListContent(
                 contentPadding = PaddingValues(
                   start = 8.dp,
                   end = 8.dp,
-                  bottom = if (showFloatingBottomBar) 88.dp else 16.dp
+                  bottom = if (showFloatingBottomBar && BuildConfig.ENABLE_UPDATE_FEATURE) 88.dp else 16.dp
                 ),
               horizontalArrangement = Arrangement.spacedBy(8.dp),
               verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -741,7 +748,7 @@ private fun VideoListContent(
                 contentPadding = PaddingValues(
                   start = 8.dp,
                   end = 8.dp,
-                  bottom = if (showFloatingBottomBar) 88.dp else 16.dp
+                  bottom = if (showFloatingBottomBar && BuildConfig.ENABLE_UPDATE_FEATURE) 88.dp else 16.dp
                 ),
             ) {
               items(
