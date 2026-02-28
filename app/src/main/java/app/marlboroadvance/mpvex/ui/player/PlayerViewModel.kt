@@ -1114,16 +1114,28 @@ class PlayerViewModel(
         MPVLib.setPropertyDouble("panscan", 1.0)
       }
       VideoAspect.Stretch -> {
-        // To STRETCH: Calculate screen ratio first
+        // To STRETCH: Calculate screen ratio accounting for video rotation
         @Suppress("DEPRECATION")
         val dm = DisplayMetrics()
         @Suppress("DEPRECATION")
         host.hostWindowManager.defaultDisplay.getRealMetrics(dm)
-        val ratio = dm.widthPixels.toDouble() / dm.heightPixels.toDouble()
+        
+        // Get video rotation from metadata
+        val rotate = MPVLib.getPropertyInt("video-params/rotate") ?: 0
+        val isVideoRotated = (rotate % 180 == 90) // 90° or 270° rotation
+        
+        // Calculate screen ratio, inverting if video is rotated
+        val screenRatio = if (isVideoRotated) {
+          // Video is rotated, so invert the screen ratio
+          dm.heightPixels.toDouble() / dm.widthPixels.toDouble()
+        } else {
+          // Video is not rotated, use normal screen ratio
+          dm.widthPixels.toDouble() / dm.heightPixels.toDouble()
+        }
 
         // Set aspect override first, then reset panscan
         // This prevents the brief flash of Fit mode
-        MPVLib.setPropertyDouble("video-aspect-override", ratio)
+        MPVLib.setPropertyDouble("video-aspect-override", screenRatio)
         MPVLib.setPropertyDouble("panscan", 0.0)
       }
     }
