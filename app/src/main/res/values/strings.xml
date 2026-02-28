@@ -440,7 +440,7 @@
   <string name="invalid_subtitle_format">Invalid subtitle file format</string>
   <string name="subtitle_added">%s added</string>
   <string name="failed_load_subtitle">Failed to load subtitle</string>
-  <string name="remove_from_playlist">Remove %d %s from playlist?</string>
+  <string name="remove_from_playlist">Remove %1$d %2$s from playlist?</string>
   <string name="remove_playlist_items_confirm">The selected %2$s will be removed from this playlist. Original %3$s will not be deleted.</string>
   <string name="search_videos">Search videos…</string>
   <string name="search_folders_and_videos">Search folders and videos…</string>

@@ -137,7 +137,8 @@ class FileSystemBrowserViewModel(
     // Similar to Fossify's media scan completion listener
     viewModelScope.launch(Dispatchers.IO) {
       MediaLibraryEvents.changes.collectLatest {
-        Log.d(TAG, "Media library changed, refreshing current directory")
+        // Clear cache when media library changes
+        MediaFileRepository.clearCache()
         loadCurrentDirectory()
       }
     }
@@ -164,7 +165,9 @@ class FileSystemBrowserViewModel(
    * Equivalent to Fossify's refreshFragment() callback
    */
   override fun refresh() {
-    Log.d(TAG, "Refreshing current directory: ${_currentPath.value}")
+    Log.d(TAG, "Hard refreshing current directory: ${_currentPath.value}")
+    // Clear cache to force fresh data from filesystem
+    MediaFileRepository.clearCache()
     // Don't reset the flag on refresh, only on navigation
     loadCurrentDirectory()
   }
@@ -205,6 +208,8 @@ class FileSystemBrowserViewModel(
     // Set flag if any deletions were successful
     if (successCount > 0) {
       _itemsWereDeletedOrMoved.value = true
+      // Notify that media library has changed
+      MediaLibraryEvents.notifyChanged()
     }
 
     Log.d(TAG, "Folder deletion complete: $successCount success, $failureCount failed")

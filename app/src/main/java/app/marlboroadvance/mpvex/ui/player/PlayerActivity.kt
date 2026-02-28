@@ -49,7 +49,8 @@ import app.marlboroadvance.mpvex.ui.theme.MpvexTheme
 import app.marlboroadvance.mpvex.utils.history.RecentlyPlayedOps
 import app.marlboroadvance.mpvex.utils.media.HttpUtils
 import app.marlboroadvance.mpvex.utils.media.SubtitleOps
-import app.marlboroadvance.mpvex.utils.storage.MediaStorageManager
+import app.marlboroadvance.mpvex.utils.storage.FileTypeUtils
+import app.marlboroadvance.mpvex.utils.storage.FileFilterUtils
 import com.github.k1rakishou.fsaf.FileManager
 import `is`.xyz.mpv.MPVLib
 import `is`.xyz.mpv.MPVNode
@@ -3351,12 +3352,12 @@ class PlayerActivity :
 
         val parentFolder = currentFile.parentFile ?: return@runCatching
 
-        val videoExtensions = MediaStorageManager.VIDEO_EXTENSIONS
+        val videoExtensions = FileTypeUtils.VIDEO_EXTENSIONS
 
         val files = parentFolder.listFiles { file ->
           file.isFile &&
-            MediaStorageManager.isVideoFile(file) &&
-            !MediaStorageManager.shouldSkipFile(file)
+            FileTypeUtils.isVideoFile(file) &&
+            !FileFilterUtils.shouldSkipFile(file)
         } ?: return@runCatching
 
         val launchSource = intent.getStringExtra("launch_source") ?: ""

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import app.marlboroadvance.mpvex.database.repository.VideoMetadataCacheRepository
 import app.marlboroadvance.mpvex.domain.media.model.VideoFolder
 import app.marlboroadvance.mpvex.domain.playbackstate.repository.PlaybackStateRepository
+import app.marlboroadvance.mpvex.repository.MediaFileRepository
 import app.marlboroadvance.mpvex.preferences.AppearancePreferences
 import app.marlboroadvance.mpvex.preferences.FoldersPreferences
 import app.marlboroadvance.mpvex.ui.browser.base.BaseBrowserViewModel
@@ -101,7 +102,7 @@ class FolderListViewModel(
     viewModelScope.launch(Dispatchers.IO) {
       MediaLibraryEvents.changes.collectLatest {
         // Clear cache when media library changes
-        app.marlboroadvance.mpvex.repository.MediaFileRepository.clearCache()
+        MediaFileRepository.clearCache()
         loadVideoFolders()
       }
     }
@@ -252,8 +253,10 @@ class FolderListViewModel(
   }
 
   override fun refresh() {
-    // Clear cache to force fresh data
-    app.marlboroadvance.mpvex.repository.MediaFileRepository.clearCache()
+    Log.d(TAG, "Hard refreshing folder list")
+    // Clear cache to force fresh data from filesystem
+    MediaFileRepository.clearCache()
+    // Force reload of folders
     loadVideoFolders()
   }
 

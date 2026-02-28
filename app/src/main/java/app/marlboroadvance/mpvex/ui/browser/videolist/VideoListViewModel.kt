@@ -93,15 +93,16 @@ class VideoListViewModel(
     viewModelScope.launch(Dispatchers.IO) {
       MediaLibraryEvents.changes.collectLatest {
         // Clear cache when media library changes
-        MediaFileRepository.clearCacheForFolder(bucketId)
+        MediaFileRepository.clearCache()
         loadVideos()
       }
     }
   }
 
   override fun refresh() {
-    // Clear cache for this folder to force fresh data
-    MediaFileRepository.clearCacheForFolder(bucketId)
+    Log.d(tag, "Hard refreshing video list for bucket: $bucketId")
+    // Clear cache to force fresh data from filesystem
+    MediaFileRepository.clearCache()
     loadVideos()
   }
 
