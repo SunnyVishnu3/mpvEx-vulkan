@@ -1,0 +1,3 @@
+[submodule "app/src/main/cpp/libadrenotools"]
+	path = app/src/main/cpp/libadrenotools
+	url = https://github.com/bylaws/libadrenotools.git
