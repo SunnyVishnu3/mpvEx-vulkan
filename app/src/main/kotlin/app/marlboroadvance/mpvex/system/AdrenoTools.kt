@@ -1,5 +1,6 @@
 package app.marlboroadvance.mpvex.system
 
+import android.content.Context
 import android.util.Log
 
 object AdrenoTools {
@@ -18,11 +19,15 @@ object AdrenoTools {
     }
 
     @JvmStatic
-    private external fun nativeHookDriver(driverDir: String): Boolean
+    private external fun nativeHookDriver(tmpLibDir: String, hookLibDir: String, customDriverDir: String): Boolean
 
-    fun hookCustomDriver(driverDir: String): Boolean {
+    fun hookCustomDriver(context: Context, driverDir: String): Boolean {
         if (!isBridgeLoaded) return false
-        return nativeHookDriver(driverDir)
+        
+        // Adrenotools requires these exact system paths to hook the linker
+        val tmpLibDir = context.cacheDir.absolutePath
+        val hookLibDir = context.applicationInfo.nativeLibraryDir
+        
+        return nativeHookDriver(tmpLibDir, hookLibDir, driverDir)
     }
 }
-
