@@ -31,6 +31,9 @@ jobs:
       - name: Build standard release with Gradle
         run: ./gradlew assembleStandardRelease --stacktrace
 
+      - name: Build Play Store release with Gradle
+        run: ./gradlew assemblePlaystoreRelease --stacktrace
+
       - name: Build F-Droid release with Gradle
         run: ./gradlew assembleFdroidRelease --stacktrace
 
@@ -41,10 +44,17 @@ jobs:
       - name: Verify build output
         run: |
           STANDARD_RELEASE_DIR="app/build/outputs/apk/standard/release"
+          PLAYSTORE_RELEASE_DIR="app/build/outputs/apk/playstore/release"
           FDROID_RELEASE_DIR="app/build/outputs/apk/fdroid/release"
           
           if [ ! -d "$STANDARD_RELEASE_DIR" ]; then
             echo "Standard release directory does not exist!"
+            find app/build/outputs -name "*.apk" -type f
+            exit 1
+          fi
+          
+          if [ ! -d "$PLAYSTORE_RELEASE_DIR" ]; then
+            echo "Play Store release directory does not exist!"
             find app/build/outputs -name "*.apk" -type f
             exit 1
           fi
@@ -57,6 +67,8 @@ jobs:
           
           echo "Standard release APKs:"
           ls -lah "$STANDARD_RELEASE_DIR"
+          echo "Play Store release APKs:"
+          ls -lah "$PLAYSTORE_RELEASE_DIR"
           echo "F-Droid release APKs:"
           ls -lah "$FDROID_RELEASE_DIR"
 
@@ -64,6 +76,7 @@ jobs:
         run: |
           set -e
           STANDARD_RELEASE_DIR="app/build/outputs/apk/standard/release"
+          PLAYSTORE_RELEASE_DIR="app/build/outputs/apk/playstore/release"
           FDROID_RELEASE_DIR="app/build/outputs/apk/fdroid/release"
           
           echo "${{ secrets.SIGNING_KEYSTORE }}" | base64 -d > release.keystore
@@ -92,6 +105,27 @@ jobs:
             rm "$apk"
           done
           
+          # Sign Play Store APK (universal only)
+          PLAYSTORE_APK="$PLAYSTORE_RELEASE_DIR/app-playstore-universal-release-unsigned.apk"
+          if [ ! -f "$PLAYSTORE_APK" ]; then
+            echo "No unsigned Play Store universal APK found"
+            ls -lah "$PLAYSTORE_RELEASE_DIR"
+            rm release.keystore
+            exit 1
+          fi
+          
+          SIGNED_PLAYSTORE_APK="${PLAYSTORE_APK/-unsigned/}"
+          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+            --ks release.keystore \
+            --ks-key-alias "${{ secrets.SIGNING_KEY_ALIAS }}" \
+            --ks-pass "pass:${{ secrets.SIGNING_STORE_PASSWORD }}" \
+            --key-pass "pass:${{ secrets.KEY_PASSWORD }}" \
+            --out "$SIGNED_PLAYSTORE_APK" \
+            "$PLAYSTORE_APK"
+          
+          $ANDROID_HOME/build-tools/34.0.0/apksigner verify "$SIGNED_PLAYSTORE_APK"
+          rm "$PLAYSTORE_APK"
+          
           # Sign F-Droid APKs
           APK_COUNT=$(find "$FDROID_RELEASE_DIR" -name "app-fdroid-*-release-unsigned.apk" -type f | wc -l)
           if [ "$APK_COUNT" -eq 0 ]; then
@@ -119,6 +153,8 @@ jobs:
           rm release.keystore
           echo "Standard APKs:"
           ls -lh "$STANDARD_RELEASE_DIR"/app-standard-*-release.apk
+          echo "Play Store APK:"
+          ls -lh "$PLAYSTORE_RELEASE_DIR"/app-playstore-universal-release.apk
           echo "F-Droid APKs:"
           ls -lh "$FDROID_RELEASE_DIR"/app-fdroid-*-release.apk
 
@@ -140,6 +176,17 @@ jobs:
             varname="apk_${abi//-/_}_sha256"
             echo "$varname=$checksum" >> "$GITHUB_ENV"
           done
+          
+          # Play Store flavor APK (universal only)
+          playstore_src="app/build/outputs/apk/playstore/release/app-playstore-universal-release.apk"
+          playstore_dst="mpvEx-playstore-${VERSION_TAG}.apk"
+          if [ ! -f "$playstore_src" ]; then
+            echo "::error file=$playstore_src::Signed Play Store APK was not found"
+            exit 1
+          fi
+          cp "$playstore_src" "$playstore_dst"
+          playstore_checksum=$(sha256sum "$playstore_dst" | awk '{ print $1 }')
+          echo "apk_playstore_sha256=$playstore_checksum" >> "$GITHUB_ENV"
           
           # F-Droid flavor APK (only arm64-v8a, same package name)
           fdroid_src="app/build/outputs/apk/fdroid/release/app-fdroid-arm64-v8a-release.apk"
@@ -170,7 +217,16 @@ jobs:
             | Universal | ${{ env.apk_universal_sha256 }} |
             | x86 | ${{ env.apk_x86_sha256 }} |
             | x86_64 | ${{ env.apk_x86_64_sha256 }} |
+            | Play Store | ${{ env.apk_playstore_sha256 }} |
             | F-Droid | ${{ env.apk_fdroid_sha256 }} |
+            
+            ---
+            ### Play Store Version
+            
+            The Play Store variant (`mpvEx-playstore-${{ env.VERSION_TAG }}.apk`) is specifically built for Google Play Store:
+            - Universal APK supporting all architectures (arm64-v8a, armeabi-v7a, x86, x86_64)
+            - Removed automatic update feature (handled by Play Store)
+            - Minimal permissions for maximum compatibility
             
             ---
             ### F-Droid Version
@@ -185,6 +241,7 @@ jobs:
             mpvEx-armeabi-v7a-${{ env.VERSION_TAG }}.apk
             mpvEx-x86-${{ env.VERSION_TAG }}.apk
             mpvEx-x86_64-${{ env.VERSION_TAG }}.apk
+            mpvEx-playstore-${{ env.VERSION_TAG }}.apk
             mpvEx-fdroid-${{ env.VERSION_TAG }}.apk
           draft: true
           prerelease: false
