@@ -995,7 +995,7 @@ suspend fun searchRecursively(
     Log.d("FileSystemBrowserScreen", "Scanning directory: $directoryPath for query: $query")
     // Scan the current directory
     val items = app.marlboroadvance.mpvex.repository.MediaFileRepository
-      .scanDirectory(context, directoryPath, showAllFileTypes = false, showHiddenFiles = false)
+      .scanDirectory(context, directoryPath, showAllFileTypes = false)
       .getOrNull() ?: emptyList()
 
     Log.d("FileSystemBrowserScreen", "Found ${items.size} items in $directoryPath")
@@ -1045,7 +1045,7 @@ private suspend fun collectVideosRecursively(
   try {
     // Scan the current directory using MediaFileRepository
     val items = app.marlboroadvance.mpvex.repository.MediaFileRepository
-      .scanDirectory(context, folderPath, showAllFileTypes = false, showHiddenFiles = false)
+      .scanDirectory(context, folderPath, showAllFileTypes = false)
       .getOrNull() ?: emptyList()
 
     // Add videos from current folder

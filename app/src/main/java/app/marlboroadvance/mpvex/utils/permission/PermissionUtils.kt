@@ -109,17 +109,37 @@ object PermissionUtils {
   }
 
   // --------------------------------------------------------------------------
-  // Direct file operations (works with MANAGE_EXTERNAL_STORAGE)
+  // Storage operations (automatically uses scoped storage or direct file access)
   // --------------------------------------------------------------------------
 
   object StorageOps {
     private const val TAG = "StorageOps"
 
     /**
-     * Delete videos using direct file operations.
-     * Requires MANAGE_EXTERNAL_STORAGE on Android 11+.
+     * Check if MANAGE_EXTERNAL_STORAGE permission is available and granted
      */
-    suspend fun deleteVideos(videos: List<Video>): Pair<Int, Int> =
+    private fun hasManageStoragePermission(): Boolean =
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        android.os.Environment.isExternalStorageManager()
+      } else {
+        true // Pre-Android 11 devices don't need this permission
+      }
+
+    /**
+     * Delete videos using direct file operations (requires MANAGE_EXTERNAL_STORAGE on Android 11+)
+     */
+    suspend fun deleteVideos(
+      context: Context,
+      videos: List<Video>,
+    ): Pair<Int, Int> =
+      withContext(Dispatchers.IO) {
+        deleteVideosDirectly(videos)
+      }
+
+    /**
+     * Delete videos using direct file operations (requires MANAGE_EXTERNAL_STORAGE on Android 11+)
+     */
+    private suspend fun deleteVideosDirectly(videos: List<Video>): Pair<Int, Int> =
       withContext(Dispatchers.IO) {
         var deleted = 0
         var failed = 0
@@ -151,10 +171,21 @@ object PermissionUtils {
       }
 
     /**
-     * Rename video using direct file operations.
-     * Requires MANAGE_EXTERNAL_STORAGE on Android 11+.
+     * Rename video using direct file operations (requires MANAGE_EXTERNAL_STORAGE on Android 11+)
      */
     suspend fun renameVideo(
+      context: Context,
+      video: Video,
+      newDisplayName: String,
+    ): Result<Unit> =
+      withContext(Dispatchers.IO) {
+        renameVideoDirectly(context, video, newDisplayName)
+      }
+
+    /**
+     * Rename video using direct file operations (requires MANAGE_EXTERNAL_STORAGE on Android 11+)
+     */
+    private suspend fun renameVideoDirectly(
       context: Context,
       video: Video,
       newDisplayName: String,

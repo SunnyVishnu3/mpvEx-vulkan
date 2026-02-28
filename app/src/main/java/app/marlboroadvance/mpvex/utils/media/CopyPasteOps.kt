@@ -73,6 +73,12 @@ object CopyPasteOps {
       true // Pre-Android 11 devices don't need this permission
     }
 
+  /**
+   * Check if we can use direct file operations
+   * Returns false in Play Store flavor on Android 11+ (requires SAF instead)
+   */
+  fun canUseDirectFileOperations(): Boolean = hasManageStoragePermission()
+
   // ============================================================================
   // Operation Control
   // ============================================================================

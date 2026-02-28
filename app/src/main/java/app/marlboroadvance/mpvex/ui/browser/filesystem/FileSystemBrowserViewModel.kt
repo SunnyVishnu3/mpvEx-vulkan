@@ -267,12 +267,10 @@ class FileSystemBrowserViewModel(
           Log.d(TAG, "Breadcrumbs updated: ${_breadcrumbs.value.size} components")
 
           // Get hidden files preference
-          val showHiddenFiles = appearancePreferences.showHiddenFiles.get()
-
           // Scan directory - equivalent to Fossify's getRegularItemsOf()
           // Always show only videos (showAllFileTypes = false)
           MediaFileRepository
-            .scanDirectory(getApplication(), path, showAllFileTypes = false, showHiddenFiles)
+            .scanDirectory(getApplication(), path, showAllFileTypes = false)
             .onSuccess { items ->
               // Get previous count for this path
               val previousCount = itemCountByPath[path] ?: 0

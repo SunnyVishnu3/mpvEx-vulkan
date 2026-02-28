@@ -271,8 +271,6 @@ class FolderListViewModel(
    * Scans the filesystem recursively to find all folders containing videos.
    * Uses optimized parallel scanning with complete metadata (including duration)
    * to provide fast, non-flickering results.
-   * 
-   * Note: Always shows all folders including hidden ones (showHiddenFiles setting not applied here)
    */
   private fun loadVideoFolders() {
     // Cancel any previous scan to prevent concurrent execution

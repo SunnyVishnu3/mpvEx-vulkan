@@ -39,6 +39,15 @@ android {
       buildConfigField("boolean", "ENABLE_UPDATE_FEATURE", "true")
     }
     
+    create("playstore") {
+      dimension = "distribution"
+      // Play Store flavor: minimal permissions for 100% acceptance rate
+      versionNameSuffix = "-playstore"
+      // Play Store excludes update feature (handled by Play Store itself)
+      buildConfigField("boolean", "ENABLE_UPDATE_FEATURE", "false")
+      // Play Store supports all ABIs for maximum device compatibility
+    }
+    
     create("fdroid") {
       dimension = "distribution"
       // F-Droid flavor: same package name, different version suffix

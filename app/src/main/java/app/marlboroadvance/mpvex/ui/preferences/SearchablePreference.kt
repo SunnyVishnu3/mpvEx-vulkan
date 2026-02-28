@@ -47,13 +47,6 @@ object SearchablePreferences {
                 screen = AppearancePreferencesScreen,
             ))
             add(SearchablePreference(
-                titleRes = R.string.pref_appearance_show_hidden_files_title,
-                summaryRes = R.string.pref_appearance_show_hidden_files_summary,
-                keywords = listOf("hidden", "files", "dot", "nomedia", "show"),
-                category = "Appearance",
-                screen = AppearancePreferencesScreen,
-            ))
-            add(SearchablePreference(
                 titleRes = R.string.pref_appearance_show_unplayed_old_video_label_title,
                 summaryRes = R.string.pref_appearance_show_unplayed_old_video_label_summary,
                 keywords = listOf("unplayed", "old", "label", "video", "new", "indicator"),

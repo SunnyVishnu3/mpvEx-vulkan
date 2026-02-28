@@ -3,15 +3,14 @@ package app.marlboroadvance.mpvex.repository
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import app.marlboroadvance.mpvex.database.repository.VideoMetadataCacheRepository
 import app.marlboroadvance.mpvex.domain.browser.FileSystemItem
 import app.marlboroadvance.mpvex.domain.browser.PathComponent
 import app.marlboroadvance.mpvex.domain.media.model.Video
 import app.marlboroadvance.mpvex.domain.media.model.VideoFolder
-import app.marlboroadvance.mpvex.utils.storage.FolderScanUtils
-import app.marlboroadvance.mpvex.utils.storage.MediaStoreScanner
-import app.marlboroadvance.mpvex.utils.storage.StorageScanUtils
+import app.marlboroadvance.mpvex.utils.storage.MediaStorageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.core.component.KoinComponent
@@ -49,6 +48,7 @@ object MediaFileRepository : KoinComponent {
   fun clearCache() {
     videoFoldersCache.clear()
     videosCache.clear()
+    MediaStorageManager.clearCache()
     Log.d(TAG, "Cleared all in-memory caches")
   }
 
@@ -65,9 +65,8 @@ object MediaFileRepository : KoinComponent {
   // =============================================================================
 
   /**
-   * Scans all storage volumes to find all folders containing videos using MediaStore
-   * Much faster and simpler than recursive file scanning
-   * Shows all folders including hidden ones.
+   * Scans all storage volumes to find all folders containing videos
+   * Uses UnifiedMediaScanner for fast, consistent results
    */
   suspend fun getAllVideoFolders(
     context: Context
@@ -84,7 +83,7 @@ object MediaFileRepository : KoinComponent {
       }
 
       try {
-        val result = MediaStoreScanner.getAllVideoFolders(context)
+        val result = MediaStorageManager.getAllVideoFolders(context)
 
         // Update cache
         videoFoldersCache[cacheKey] = Pair(result, System.currentTimeMillis())
@@ -121,9 +120,9 @@ object MediaFileRepository : KoinComponent {
   // =============================================================================
 
   /**
-   * Gets all videos in a specific folder using MediaStore
+   * Gets all videos in a specific folder
+   * Uses UnifiedMediaScanner for consistent results
    * @param bucketId Folder path
-   * Shows all videos including hidden ones.
    */
   suspend fun getVideosInFolder(
     context: Context,
@@ -140,7 +139,7 @@ object MediaFileRepository : KoinComponent {
       }
 
       try {
-        val result = MediaStoreScanner.getVideosInFolder(context, bucketId)
+        val result = MediaStorageManager.getVideosInFolder(context, bucketId)
 
         // Update cache
         videosCache[cacheKey] = Pair(result, System.currentTimeMillis())
@@ -202,7 +201,7 @@ object MediaFileRepository : KoinComponent {
     val dateModified = file.lastModified() / 1000
 
     val extension = file.extension.lowercase()
-    val mimeType = StorageScanUtils.getMimeTypeFromExtension(extension)
+    val mimeType = MediaStorageManager.getMimeTypeFromExtension(extension)
     val uri = Uri.fromFile(file)
 
     // Extract metadata using cache (with MediaInfo fallback)
@@ -264,7 +263,7 @@ object MediaFileRepository : KoinComponent {
     val dateModified = file.lastModified() / 1000
 
     val extension = file.extension.lowercase()
-    val mimeType = StorageScanUtils.getMimeTypeFromExtension(extension)
+    val mimeType = MediaStorageManager.getMimeTypeFromExtension(extension)
     val uri = Uri.fromFile(file)
 
     // Use pre-fetched metadata
@@ -340,15 +339,14 @@ object MediaFileRepository : KoinComponent {
 
   /**
    * Scans a directory and returns its contents (folders and video files)
+   * OPTIMIZED: Uses UnifiedMediaScanner for fast, consistent results
    * @param showAllFileTypes If true, shows all files. If false, shows only videos.
-   * @param showHiddenFiles If true, shows hidden files and folders. If false, hides them.
    * @param useFastCount If true, uses fast shallow counting (immediate children only). If false, uses deep recursive counting.
    */
   suspend fun scanDirectory(
     context: Context,
     path: String,
     showAllFileTypes: Boolean = false,
-    showHiddenFiles: Boolean = false,
     useFastCount: Boolean = false,
   ): Result<List<FileSystemItem>> =
     withContext(Dispatchers.IO) {
@@ -369,47 +367,25 @@ object MediaFileRepository : KoinComponent {
         }
 
         val items = mutableListOf<FileSystemItem>()
-        val files = directory.listFiles()
 
-        if (files == null) {
-          return@withContext Result.failure(Exception("Failed to list directory contents: $path"))
+        // Get folders using MediaStorageManager (instant from cache)
+        val folders = MediaStorageManager.getFoldersInDirectory(context, path)
+        folders.forEach { folderData ->
+          items.add(
+            FileSystemItem.Folder(
+              name = folderData.name,
+              path = folderData.path,
+              lastModified = File(folderData.path).lastModified(),
+              videoCount = folderData.videoCount,
+              totalSize = folderData.totalSize,
+              totalDuration = folderData.totalDuration,
+              hasSubfolders = folderData.hasSubfolders,
+            ),
+          )
         }
 
-        // Process subdirectories
-        files
-          .filter { it.isDirectory && it.canRead() && !StorageScanUtils.shouldSkipFolder(it, showHiddenFiles) }
-          .forEach { subdir ->
-            val folderInfo = if (useFastCount) {
-              FolderScanUtils.getDirectChildrenCountFast(subdir, showHiddenFiles, showAllFileTypes)
-            } else {
-              FolderScanUtils.getDirectChildrenCount(subdir, showHiddenFiles, showAllFileTypes)
-            }
-
-            // Only add folder if it contains files (recursively counted)
-            if (folderInfo.videoCount > 0) {
-              items.add(
-                FileSystemItem.Folder(
-                  name = subdir.name,
-                  path = subdir.absolutePath,
-                  lastModified = subdir.lastModified(),
-                  videoCount = folderInfo.videoCount,
-                  totalSize = folderInfo.totalSize,
-                  totalDuration = 0L,
-                  hasSubfolders = folderInfo.hasSubfolders,
-                ),
-              )
-            }
-          }
-
-        // Process files in current directory
-        val targetFiles = if (showAllFileTypes) {
-          files.filter { it.isFile && !StorageScanUtils.shouldSkipFile(it, showHiddenFiles) }
-        } else {
-          files.filter { it.isFile && StorageScanUtils.isVideoFile(it) && !StorageScanUtils.shouldSkipFile(it, showHiddenFiles) }
-        }
-
-        val videos = getVideosFromFiles(targetFiles)
-
+        // Get videos in current directory
+        val videos = MediaStorageManager.getVideosInFolder(context, path)
         videos.forEach { video ->
           items.add(
             FileSystemItem.VideoFile(
@@ -423,7 +399,7 @@ object MediaFileRepository : KoinComponent {
 
         Log.d(
           TAG,
-          "Scanned directory: $path, found ${items.size} items (${items.filterIsInstance<FileSystemItem.Folder>().size} folders, ${items.filterIsInstance<FileSystemItem.VideoFile>().size} videos) [fastCount=$useFastCount]",
+          "Scanned directory: $path, found ${items.size} items (${folders.size} folders, ${videos.size} videos)",
         )
         Result.success(items)
       } catch (e: SecurityException) {
@@ -460,9 +436,9 @@ object MediaFileRepository : KoinComponent {
         }
 
         // External volumes (SD cards, USB OTG)
-        val externalVolumes = StorageScanUtils.getExternalStorageVolumes(context)
+        val externalVolumes = MediaStorageManager.getExternalStorageVolumes(context)
         for (volume in externalVolumes) {
-          val volumePath = StorageScanUtils.getVolumePath(volume)
+          val volumePath = MediaStorageManager.getVolumePath(volume)
           if (volumePath != null) {
             val volumeDir = File(volumePath)
             if (volumeDir.exists() && volumeDir.canRead()) {

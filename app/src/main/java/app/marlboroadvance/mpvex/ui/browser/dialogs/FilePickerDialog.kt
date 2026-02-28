@@ -49,7 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import app.marlboroadvance.mpvex.utils.storage.StorageScanUtils
+import app.marlboroadvance.mpvex.utils.storage.MediaStorageManager
 import java.io.File
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -96,7 +96,7 @@ fun FilePickerDialog(
   
   // Get all available storage volumes
   val storageVolumes = remember(isOpen) {
-    StorageScanUtils.getAllStorageVolumes(context)
+    MediaStorageManager.getAllStorageVolumes(context)
   }
   
   // If there's only one storage volume, start there directly
@@ -106,7 +106,7 @@ fun FilePickerDialog(
     val initialPath = if (currentPath.isNotEmpty() && File(currentPath).exists()) {
       currentPath
     } else if (storageVolumes.size == 1) {
-      StorageScanUtils.getVolumePath(storageVolumes.first())
+      MediaStorageManager.getVolumePath(storageVolumes.first())
     } else {
       null // Show storage root with all volumes
     }
@@ -264,7 +264,7 @@ fun FilePickerDialog(
                   if (showStorageRoot) {
                     // Show storage volumes
                     items(storageVolumes) { volume ->
-                      val volumePath = StorageScanUtils.getVolumePath(volume)
+                      val volumePath = MediaStorageManager.getVolumePath(volume)
                       if (volumePath != null) {
                         StorageVolumeItem(
                           context = context,
