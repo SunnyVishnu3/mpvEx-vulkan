@@ -13,7 +13,13 @@ object AdrenoTools {
             System.loadLibrary("adrenotools_bridge")
             isBridgeLoaded = true
             Log.i(TAG, "Native bridge loaded successfully")
+        } catch (e: UnsatisfiedLinkError) {
+            // CRITICAL FIX: This prevents crashes on 32-bit (armeabi-v7a) or x86 devices
+            // where the 64-bit libadrenotools library isn't compiled.
+            isBridgeLoaded = false
+            Log.w(TAG, "Adrenotools not supported on this architecture", e)
         } catch (e: Exception) {
+            isBridgeLoaded = false
             Log.e(TAG, "Failed to load adrenotools bridge", e)
         }
     }
@@ -24,7 +30,6 @@ object AdrenoTools {
     fun hookCustomDriver(context: Context, driverDir: String): Boolean {
         if (!isBridgeLoaded) return false
         
-        // Adrenotools requires these exact system paths to hook the linker
         val tmpLibDir = context.cacheDir.absolutePath
         val hookLibDir = context.applicationInfo.nativeLibraryDir
         
