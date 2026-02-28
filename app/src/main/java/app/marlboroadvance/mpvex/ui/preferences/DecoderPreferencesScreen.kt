@@ -175,11 +175,20 @@ object DecoderPreferencesScreen : Screen {
               // val useVulkan by preferences.useVulkan.collectAsState() // Moved up for gpuNext logic
               SwitchPreference(
                 value = useVulkan,
-                onValueChange = {
-                  preferences.useVulkan.set(it)
+                onValueChange = { enabled ->
+                  preferences.useVulkan.set(enabled)
+                  // When Vulkan is disabled, ensure Anime4K and GPU Next are not both enabled
+                  if (!enabled) {
+                    val anime4kEnabled = preferences.enableAnime4K.get()
+                    val gpuNextEnabled = preferences.gpuNext.get()
+                    if (anime4kEnabled && gpuNextEnabled) {
+                      // Disable GPU Next to keep Anime4K
+                      preferences.gpuNext.set(false)
+                    }
+                  }
                 },
                 enabled = isVulkanSupported,
-                title = { Text(stringResource(R.string.pref_decoder_vulkan_title)) },
+                title = { Text(stringResource(R.string.pref_decoder_vulkan_title) + " (Experimental)") },
                 summary = {
                   Text(
                     stringResource(
