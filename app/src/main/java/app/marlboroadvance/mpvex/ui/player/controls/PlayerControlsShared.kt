@@ -726,7 +726,7 @@ fun RenderPlayerButton(
                   Text(
                     text = if (loopA != null) viewModel.formatTimestamp(loopA!!) else "A",
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (loopA != null) MaterialTheme.colorScheme.onTertiaryContainer else controlColor,
+                    color = if (loopA != null) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = if (loopA != null) 8.dp else 0.dp),
                   )
                 }
@@ -769,7 +769,7 @@ fun RenderPlayerButton(
                   Text(
                     text = if (loopB != null) viewModel.formatTimestamp(loopB!!) else "B",
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (loopB != null) MaterialTheme.colorScheme.onTertiaryContainer else controlColor,
+                    color = if (loopB != null) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = if (loopB != null) 8.dp else 0.dp),
                   )
                 }
@@ -792,11 +792,7 @@ fun RenderPlayerButton(
                 text = "AB",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                color = if (hideBackground) {
-                  if (loopA != null && loopB != null) MaterialTheme.colorScheme.primary else controlColor
-                } else {
-                  if (loopA != null && loopB != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                },
+                color = if (loopA != null && loopB != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
               )
             }
           }

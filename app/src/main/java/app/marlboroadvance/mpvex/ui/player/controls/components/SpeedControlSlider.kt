@@ -69,6 +69,7 @@ fun SpeedControlSlider(
   }.coerceIn(0, speedPresets.size - 1)
   
   val primaryColor = MaterialTheme.colorScheme.primary
+  val onSurfaceColor = MaterialTheme.colorScheme.onSurface
   // Use a Surface with less rounded corners instead of CircleShape
   Surface(
     shape = RoundedCornerShape(12.dp),
@@ -108,7 +109,7 @@ fun SpeedControlSlider(
                   color = if (isCurrentSpeed) {
                     primaryColor
                   } else {
-                    Color.White.copy(alpha = 0.5f)
+                    onSurfaceColor.copy(alpha = 0.7f)
                   },
                 )
               }
@@ -127,7 +128,7 @@ fun SpeedControlSlider(
               
               // Background track
               drawLine(
-                color = Color.White.copy(alpha = 0.25f),
+                color = onSurfaceColor.copy(alpha = 0.35f),
                 start = Offset(0f, centerY),
                 end = Offset(trackWidth, centerY),
                 strokeWidth = trackHeight,
@@ -151,7 +152,7 @@ fun SpeedControlSlider(
                   color = if (index <= currentIndex) {
                     primaryColor
                   } else {
-                    Color.White.copy(alpha = 0.6f)
+                    onSurfaceColor.copy(alpha = 0.7f)
                   },
                   radius = 2.5.dp.toPx(),
                   center = Offset(tickX, centerY),
