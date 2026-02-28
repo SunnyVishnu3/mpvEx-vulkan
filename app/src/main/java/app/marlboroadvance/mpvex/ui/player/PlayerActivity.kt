@@ -845,7 +845,6 @@ class PlayerActivity :
    */
   private fun setupMPV() {
     // Copy essential files FIRST, before MPV initialization
-    // MPV will load scripts during initialize(), so they must exist beforehand
     runCatching {
       Utils.copyAssets(this@PlayerActivity)
       syncFromUserMpvDirectory()
@@ -854,12 +853,27 @@ class PlayerActivity :
       Log.e(TAG, "Error copying MPV config and scripts", e)
     }
 
-    // NOW initialize MPV - it will find and load the scripts we just copied
+    // ==========================================
+    // ADRENOTOOLS: INJECT CUSTOM TURNIP DRIVER HOOK
+    // ==========================================
+    val prefs = getSharedPreferences("gpu_driver_settings", Context.MODE_PRIVATE)
+    val customDriverDir = prefs.getString("custom_driver_dir", null)
+    
+    if (customDriverDir != null && java.io.File(customDriverDir, "libvulkan_freedreno.so").exists()) {
+        val success = app.marlboroadvance.mpvex.system.AdrenoTools.hookCustomDriver(this@PlayerActivity, customDriverDir)
+        if (success) {
+            Log.i(TAG, "Successfully hooked custom Turnip driver from: $customDriverDir")
+        } else {
+            Log.e(TAG, "Failed to hook Turnip driver!")
+        }
+    }
+    // ==========================================
+
+    // NOW initialize MPV
     player.initialize(filesDir.path, cacheDir.path)
     mpvInitialized = true
     Log.d(TAG, "MPV initialized")
 
-    // Add observer after initialization
     MPVLib.addObserver(playerObserver)
   }
 
@@ -874,7 +888,6 @@ class PlayerActivity :
   private fun syncFromUserMpvDirectory() {
     val mpvConfStorageUri = advancedPreferences.mpvConfStorageUri.get()
 
-    // Try to open the user's MPV directory
     val tree = if (mpvConfStorageUri.isNotBlank()) {
       runCatching {
         DocumentFile.fromTreeUri(this, mpvConfStorageUri.toUri())
@@ -888,9 +901,9 @@ class PlayerActivity :
       syncScriptOpts(tree)
       syncShaders(tree)
       syncFonts(tree)
+      syncGpuDrivers(tree) // <--- ADDED THIS LINE
       Log.d(TAG, "Full MPV directory sync completed")
     } else {
-      // Fallback: use preferences-based config (no user directory set)
       Log.d(TAG, "No MPV directory configured, using preferences fallback")
       copyMPVConfigFromPreferences()
     }
@@ -3404,7 +3417,51 @@ class PlayerActivity :
    */
   fun isCurrentPlaylistM3U(): Boolean = isM3uPlaylist
 
+    // ==================== GPU Drivers Sync ====================
+  private fun syncGpuDrivers(tree: DocumentFile) {
+    val internalGpuDriversDir = File(filesDir, "gpu_drivers")
+    internalGpuDriversDir.mkdirs()
 
+    val driversSubdir = findSubdirCaseInsensitive(tree, "gpu_drivers")
+    if (driversSubdir == null) return
+
+    var count = 0
+    driversSubdir.listFiles().forEach { item ->
+      val name = item.name ?: return@forEach
+      if (item.isDirectory) {
+        val targetDir = File(internalGpuDriversDir, name)
+        targetDir.mkdirs()
+        item.listFiles().forEach { subItem ->
+          val subName = subItem.name ?: return@forEach
+          if (subItem.isFile && subName.endsWith(".so")) {
+            val targetFile = File(targetDir, subName)
+            if (!targetFile.exists()) {
+              runCatching {
+                contentResolver.openInputStream(subItem.uri)?.use { input ->
+                  targetFile.outputStream().use { output -> input.copyTo(output) }
+                  count++
+                }
+              }
+            }
+          }
+        }
+      } else if (item.isFile && name.endsWith(".so")) {
+        val targetDir = File(internalGpuDriversDir, "Imported_Driver")
+        targetDir.mkdirs()
+        val targetFile = File(targetDir, name)
+        if (!targetFile.exists()) {
+          runCatching {
+            contentResolver.openInputStream(item.uri)?.use { input ->
+              targetFile.outputStream().use { output -> input.copyTo(output) }
+              count++
+            }
+          }
+        }
+      }
+    }
+    Log.d(TAG, "GPU Drivers sync: $count file(s)")
+  }
+  
   companion object {
     /**
      * Intent action used to return playback result data to the calling activity.
