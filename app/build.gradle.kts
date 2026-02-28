@@ -1,4 +1,3 @@
-
 import com.android.build.api.variant.FilterConfiguration
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -110,6 +109,16 @@ android {
   composeCompiler {
     includeSourceInformation = true
   }
+
+  // ==========================================
+  // ADRENOTOOLS C++ BRIDGE CONFIGURATION
+  // ==========================================
+  externalNativeBuild {
+    cmake {
+      path = file("src/main/cpp/CMakeLists.txt")
+    }
+  }
+
   packaging {
     resources {
       excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -188,7 +197,6 @@ dependencies {
   implementation(libs.androidx.preferences.ktx)
   implementation(libs.androidx.documentfile)
   implementation(libs.saveable)
-
 
   implementation(platform(libs.koin.bom))
   implementation(libs.bundles.koin)
