@@ -427,6 +427,7 @@ fun PlayerControls(
         val holdForMultipleSpeed by playerPreferences.holdForMultipleSpeed.collectAsState()
         val currentPlayerUpdate by viewModel.playerUpdate.collectAsState()
         val aspectRatio by viewModel.videoAspect.collectAsState()
+        val currentAspectRatio by viewModel.currentAspectRatio.collectAsState()
         val videoZoom by viewModel.videoZoom.collectAsState()
 
         LaunchedEffect(currentPlayerUpdate, aspectRatio, videoZoom) {
@@ -490,7 +491,41 @@ fun PlayerControls(
                 CompactSpeedIndicator(currentSpeed = currentSpeed)
               }
             }
-            is PlayerUpdates.AspectRatio -> TextPlayerUpdate(stringResource(aspectRatio.titleRes))
+            is PlayerUpdates.AspectRatio -> {
+              val customRatiosSet by playerPreferences.customAspectRatios.collectAsState()
+              val displayText = if (currentAspectRatio > 0) {
+                // Custom aspect ratio - try to find its label first
+                val customLabel = customRatiosSet.firstNotNullOfOrNull { str ->
+                  val parts = str.split("|")
+                  if (parts.size == 2) {
+                    val savedRatio = parts[1].toDoubleOrNull()
+                    if (savedRatio != null && kotlin.math.abs(savedRatio - currentAspectRatio) < 0.01) {
+                      parts[0] // Return the label
+                    } else null
+                  } else null
+                }
+                
+                customLabel ?: run {
+                  // No custom label found, use preset names or format as ratio
+                  val ratio = currentAspectRatio
+                  when {
+                    kotlin.math.abs(ratio - 16.0/9.0) < 0.01 -> "16:9"
+                    kotlin.math.abs(ratio - 4.0/3.0) < 0.01 -> "4:3"
+                    kotlin.math.abs(ratio - 16.0/10.0) < 0.01 -> "16:10"
+                    kotlin.math.abs(ratio - 21.0/9.0) < 0.01 -> "21:9"
+                    kotlin.math.abs(ratio - 32.0/9.0) < 0.01 -> "32:9"
+                    kotlin.math.abs(ratio - 1.0) < 0.01 -> "1:1"
+                    kotlin.math.abs(ratio - 2.35) < 0.01 -> "2.35:1"
+                    kotlin.math.abs(ratio - 2.39) < 0.01 -> "2.39:1"
+                    else -> String.format("%.2f:1", ratio)
+                  }
+                }
+              } else {
+                // Standard mode (Fit/Crop/Stretch)
+                stringResource(aspectRatio.titleRes)
+              }
+              TextPlayerUpdate(displayText)
+            }
             is PlayerUpdates.ShowText ->
               TextPlayerUpdate(
                 (currentPlayerUpdate as PlayerUpdates.ShowText).value,

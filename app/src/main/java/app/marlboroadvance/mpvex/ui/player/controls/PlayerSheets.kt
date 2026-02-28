@@ -258,6 +258,7 @@ fun PlayerSheets(
     Sheets.AspectRatios -> {
       val playerPreferences = koinInject<app.marlboroadvance.mpvex.preferences.PlayerPreferences>()
       val customRatiosSet by playerPreferences.customAspectRatios.collectAsState()
+      val currentRatio by viewModel.currentAspectRatio.composeCollectAsState()
       val customRatios =
         customRatiosSet.mapNotNull { str ->
           val parts = str.split("|")
@@ -272,14 +273,17 @@ fun PlayerSheets(
           }
         }
 
-      // Get current aspect ratio from MPV (not persisted)
-      val currentAspectOverride by MPVLib.propDouble["video-aspect-override"].collectAsState()
-
       AspectRatioSheet(
-        currentRatio = currentAspectOverride,
+        currentRatio = currentRatio,
         customRatios = customRatios,
         onSelectRatio = { ratio ->
-          viewModel.setCustomAspectRatio(ratio)
+          if (ratio < 0) {
+            // Default selected - apply Fit mode
+            viewModel.changeVideoAspect(app.marlboroadvance.mpvex.ui.player.VideoAspect.Fit)
+          } else {
+            // Custom ratio selected
+            viewModel.setCustomAspectRatio(ratio)
+          }
         },
         onAddCustomRatio = { label, ratio ->
           playerPreferences.customAspectRatios.set(customRatiosSet + "$label|$ratio")
@@ -288,9 +292,9 @@ fun PlayerSheets(
         onDeleteCustomRatio = { ratio ->
           val toRemove = "${ratio.label}|${ratio.ratio}"
           playerPreferences.customAspectRatios.set(customRatiosSet - toRemove)
-          // If the deleted ratio is currently active, reset to default
-          if (currentAspectOverride != null && kotlin.math.abs(currentAspectOverride!! - ratio.ratio) < 0.01) {
-            viewModel.setCustomAspectRatio(-1.0)
+          // If the deleted ratio is currently active, reset to default (Fit)
+          if (kotlin.math.abs(currentRatio - ratio.ratio) < 0.01) {
+            viewModel.changeVideoAspect(app.marlboroadvance.mpvex.ui.player.VideoAspect.Fit)
           }
         },
         onDismissRequest = onDismissRequest,

@@ -267,6 +267,10 @@ class PlayerViewModel(
   private val _videoAspect = MutableStateFlow(VideoAspect.Fit)
   val videoAspect: StateFlow<VideoAspect> = _videoAspect.asStateFlow()
 
+  // Current aspect ratio value (for custom ratios and tracking)
+  private val _currentAspectRatio = MutableStateFlow(-1.0)
+  val currentAspectRatio: StateFlow<Double> = _currentAspectRatio.asStateFlow()
+
   // Timer
   private var timerJob: Job? = null
   private val _remainingTime = MutableStateFlow(0)
@@ -1105,23 +1109,28 @@ class PlayerViewModel(
         MPVLib.setPropertyDouble("video-aspect-override", -1.0)
       }
       VideoAspect.Crop -> {
-        // To CROP: Set panscan. MPV will auto-reset video-aspect-override.
+        // To CROP: Reset aspect override first, then set panscan
+        MPVLib.setPropertyDouble("video-aspect-override", -1.0)
         MPVLib.setPropertyDouble("panscan", 1.0)
       }
       VideoAspect.Stretch -> {
-        // To STRETCH: Calculate ratio and set it. MPV will auto-reset panscan.
+        // To STRETCH: Calculate screen ratio first
         @Suppress("DEPRECATION")
         val dm = DisplayMetrics()
         @Suppress("DEPRECATION")
         host.hostWindowManager.defaultDisplay.getRealMetrics(dm)
-        val ratio = dm.widthPixels / dm.heightPixels.toDouble()
+        val ratio = dm.widthPixels.toDouble() / dm.heightPixels.toDouble()
 
+        // Set aspect override first, then reset panscan
+        // This prevents the brief flash of Fit mode
         MPVLib.setPropertyDouble("video-aspect-override", ratio)
+        MPVLib.setPropertyDouble("panscan", 0.0)
       }
     }
 
     // Update the state
     _videoAspect.value = aspect
+    _currentAspectRatio.value = -1.0 // Reset custom ratio when using standard modes
 
     // Notify the UI
     if (showUpdate) {
@@ -1132,12 +1141,8 @@ class PlayerViewModel(
   fun setCustomAspectRatio(ratio: Double) {
     MPVLib.setPropertyDouble("panscan", 0.0)
     MPVLib.setPropertyDouble("video-aspect-override", ratio)
-    // Don't save custom aspect ratios - they should not persist between videos
+    _currentAspectRatio.value = ratio
     playerUpdate.value = PlayerUpdates.AspectRatio
-  }
-
-  fun restoreCustomAspectRatio() {
-    // No longer used - custom aspect ratios are not persisted
   }
 
   // ==================== Screen Rotation ====================

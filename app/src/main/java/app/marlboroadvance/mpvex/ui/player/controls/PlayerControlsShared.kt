@@ -521,9 +521,9 @@ fun RenderPlayerButton(
           },
         onClick = {
           when (aspect) {
-            VideoAspect.Fit -> viewModel.changeVideoAspect(VideoAspect.Crop)
-            VideoAspect.Crop -> viewModel.changeVideoAspect(VideoAspect.Stretch)
-            VideoAspect.Stretch -> viewModel.changeVideoAspect(VideoAspect.Fit)
+            VideoAspect.Fit -> viewModel.changeVideoAspect(VideoAspect.Stretch)
+            VideoAspect.Stretch -> viewModel.changeVideoAspect(VideoAspect.Crop)
+            VideoAspect.Crop -> viewModel.changeVideoAspect(VideoAspect.Fit)
           }
         },
         onLongClick = { onOpenSheet(Sheets.AspectRatios) },
