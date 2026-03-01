@@ -216,7 +216,8 @@ object AdvancedPreferencesScreen : Screen {
               runCatching {
                 val tree = DocumentFile.fromTreeUri(context, uri)
                 if (tree != null && tree.exists() && tree.canWrite()) {
-                  val subdirs = listOf("fonts", "script-opts", "scripts", "shaders")
+                  // ADDED gpu_drivers to auto-create list
+                  val subdirs = listOf("fonts", "script-opts", "scripts", "shaders", "gpu_drivers")
                   for (name in subdirs) {
                     val existing = tree.listFiles().firstOrNull {
                       it.isDirectory && it.name?.equals(name, ignoreCase = true) == true
@@ -432,6 +433,26 @@ object AdvancedPreferencesScreen : Screen {
                 onClick = {
                   backStack.add(ConfigEditorScreen(ConfigEditorScreen.ConfigType.INPUT_CONF))
                 },
+              )
+            }
+          }
+
+          // Hardware Section - ADDED HERE
+          item {
+            PreferenceSectionHeader(title = "Hardware")
+          }
+          
+          item {
+            PreferenceCard {
+              Preference(
+                title = { Text("GPU Driver Manager") },
+                summary = { 
+                  Text(
+                    "Install and manage custom Turnip drivers",
+                    color = MaterialTheme.colorScheme.outline
+                  ) 
+                },
+                onClick = { backStack.add(GpuDriverManagerScreen) }
               )
             }
           }
