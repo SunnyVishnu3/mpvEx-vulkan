@@ -2,6 +2,7 @@ package app.marlboroadvance.mpvex.system
 
 import android.content.Context
 import android.util.Log
+import java.io.File
 
 object AdrenoTools {
     private const val TAG = "AdrenoTools"
@@ -14,8 +15,6 @@ object AdrenoTools {
             isBridgeLoaded = true
             Log.i(TAG, "Native bridge loaded successfully")
         } catch (e: UnsatisfiedLinkError) {
-            // CRITICAL FIX: This prevents crashes on 32-bit (armeabi-v7a) or x86 devices
-            // where the 64-bit libadrenotools library isn't compiled.
             isBridgeLoaded = false
             Log.w(TAG, "Adrenotools not supported on this architecture", e)
         } catch (e: Exception) {
@@ -25,14 +24,35 @@ object AdrenoTools {
     }
 
     @JvmStatic
-    private external fun nativeHookDriver(tmpLibDir: String, hookLibDir: String, customDriverDir: String): Boolean
+    private external fun nativeHookDriver(
+        tmpLibDir: String, 
+        hookLibDir: String, 
+        customDriverDir: String,
+        driverName: String // <-- ADDED dynamic driver name parameter
+    ): Boolean
 
     fun hookCustomDriver(context: Context, driverDir: String): Boolean {
         if (!isBridgeLoaded) return false
         
+        val dir = File(driverDir)
+        if (!dir.exists() || !dir.isDirectory) return false
+        
+        // Dynamically find the vulkan driver file (supports K1mchi's vulkan.ad07xx.so, etc.)
+        val driverFile = dir.listFiles { file -> 
+            file.extension == "so" && file.name.contains("vulkan", ignoreCase = true)
+        }?.firstOrNull() ?: dir.listFiles { file -> file.extension == "so" }?.firstOrNull()
+
+        if (driverFile == null) {
+            Log.e(TAG, "No valid .so driver file found in $driverDir")
+            return false
+        }
+
+        val driverName = driverFile.name
+        Log.i(TAG, "Found dynamic driver library: $driverName")
+        
         val tmpLibDir = context.cacheDir.absolutePath
         val hookLibDir = context.applicationInfo.nativeLibraryDir
         
-        return nativeHookDriver(tmpLibDir, hookLibDir, driverDir)
+        return nativeHookDriver(tmpLibDir, hookLibDir, driverDir, driverName)
     }
 }
