@@ -8,6 +8,7 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import app.marlboroadvance.mpvex.utils.media.OpenDocumentTreeContract
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -202,7 +203,7 @@ object AdvancedPreferencesScreen : Screen {
       ProvidePreferenceLocals {
         val locationPicker =
           rememberLauncherForActivityResult(
-            ActivityResultContracts.OpenDocumentTree(),
+            OpenDocumentTreeContract(),
           ) { uri ->
             if (uri == null) return@rememberLauncherForActivityResult
 

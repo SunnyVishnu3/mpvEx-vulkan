@@ -13,6 +13,7 @@ import app.marlboroadvance.mpvex.preferences.BrowserPreferences
 import app.marlboroadvance.mpvex.repository.MediaFileRepository
 import app.marlboroadvance.mpvex.ui.browser.base.BaseBrowserViewModel
 import app.marlboroadvance.mpvex.utils.media.MediaLibraryEvents
+import app.marlboroadvance.mpvex.utils.media.MetadataRetrieval
 import app.marlboroadvance.mpvex.utils.sort.SortUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -298,9 +299,42 @@ class FileSystemBrowserViewModel(
               val videoCount = items.filterIsInstance<FileSystemItem.VideoFile>().size
               Log.d(TAG, "Loaded directory: $path with $folderCount folders, $videoCount videos")
 
+              // Enrich videos with metadata if chips are enabled
+              val enrichedItems = if (MetadataRetrieval.isVideoMetadataNeeded(browserPreferences)) {
+                Log.d(TAG, "Metadata chips enabled, enriching $videoCount videos")
+                val videoFiles = items.filterIsInstance<FileSystemItem.VideoFile>()
+                val videos = videoFiles.map { it.video }
+                val enrichedVideos = MetadataRetrieval.enrichVideosIfNeeded(
+                  context = getApplication(),
+                  videos = videos,
+                  browserPreferences = browserPreferences,
+                  metadataCache = metadataCache
+                )
+                
+                // Replace videos in items with enriched versions
+                val enrichedVideoMap = enrichedVideos.associateBy { it.id }
+                items.map { item ->
+                  when (item) {
+                    is FileSystemItem.VideoFile -> {
+                      val enrichedVideo = enrichedVideoMap[item.video.id]
+                      if (enrichedVideo != null) {
+                        item.copy(video = enrichedVideo)
+                      } else {
+                        item
+                      }
+                    }
+                    else -> item
+                  }
+                }
+              } else {
+                items
+              }
+
+              _unsortedItems.value = enrichedItems
+
               // Load playback info for videos
               // Similar to Fossify's playback state tracking
-              loadPlaybackInfo(items)
+              loadPlaybackInfo(enrichedItems)
             }.onFailure { error ->
               _error.value = error.message
               _unsortedItems.value = emptyList()

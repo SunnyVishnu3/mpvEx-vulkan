@@ -2,14 +2,16 @@ package app.marlboroadvance.mpvex.utils.media
 
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.os.StatFs
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.util.Log
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.documentfile.provider.DocumentFile
-import app.marlboroadvance.mpvex.BuildConfig
 import app.marlboroadvance.mpvex.domain.media.model.Video
 import app.marlboroadvance.mpvex.utils.history.RecentlyPlayedOps
 import app.marlboroadvance.mpvex.utils.permission.PermissionUtils
@@ -84,11 +86,7 @@ object CopyPasteOps {
    * Play Store flavor uses scoped/SAF path; other flavors keep classic direct file behavior.
    */
   fun canUseDirectFileOperations(): Boolean =
-    if (BuildConfig.SCOPED_STORAGE_ONLY) {
-      hasManageStoragePermission()
-    } else {
-      true
-    }
+    hasManageStoragePermission()
 
   // ============================================================================
   // Operation Control
@@ -314,14 +312,15 @@ object CopyPasteOps {
         resetOperation()
         val copiedUris = performTreeCopyOperation(context, videos, destinationTreeUri)
 
+        // Delete all source files in a single batch to show one permission dialog
+        checkCancellation()
+        val (deleted, failed) = PermissionUtils.StorageOps.deleteVideos(context, videos)
+        if (deleted != videos.size || failed > 0) {
+          throw IOException("Failed to delete source files after move: deleted=$deleted, failed=$failed")
+        }
+
         val historyUpdates = mutableListOf<Pair<String, String>>()
         videos.forEachIndexed { index, video ->
-          checkCancellation()
-          val (deleted, failed) = PermissionUtils.StorageOps.deleteVideos(context, listOf(video))
-          if (deleted <= 0 || failed > 0) {
-            throw IOException("Failed to delete source after move: ${video.displayName}")
-          }
-
           val newPath = copiedUris.getOrNull(index)?.toString() ?: video.path
           historyUpdates.add(video.path to newPath)
         }
@@ -1069,5 +1068,43 @@ object CopyPasteOps {
     if (mb < 1024) return "%.2f MB".format(mb)
     val gb = mb / 1024.0
     return "%.2f GB".format(gb)
+  }
+}
+
+/**
+ * Custom ActivityResultContract for opening document tree picker.
+ *
+ * Behavior:
+ * - Always starts at the primary external storage root location by explicitly
+ *   setting EXTRA_INITIAL_URI to the root URI. This ensures the picker doesn't
+ *   remember the last position, providing a consistent user experience.
+ *
+ * Usage:
+ * ```
+ * val launcher = rememberLauncherForActivityResult(OpenDocumentTreeContract()) { uri ->
+ *   // Handle selected URI
+ * }
+ * launcher.launch(null) // Always pass null
+ * ```
+ */
+class OpenDocumentTreeContract : ActivityResultContract<Uri?, Uri?>() {
+
+  override fun createIntent(context: Context, input: Uri?): Intent {
+    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+
+    // Always start at root by setting EXTRA_INITIAL_URI to the primary external storage root
+    // This prevents the picker from remembering the last location
+    // Use the primary external storage root URI to force starting at root
+    val rootUri = DocumentsContract.buildRootUri(
+      "com.android.externalstorage.documents",
+      "primary"
+    )
+    intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, rootUri)
+
+    return intent
+  }
+
+  override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
+    return intent?.data
   }
 }

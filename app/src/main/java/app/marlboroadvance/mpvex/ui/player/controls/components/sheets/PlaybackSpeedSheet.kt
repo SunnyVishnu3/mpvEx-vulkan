@@ -193,6 +193,7 @@ fun PlaybackSpeedSheet(
                 selected = kotlin.math.abs(presetSpeed - speed) < 0.01f,
                 onClick = { onSpeedChange(presetSpeed) },
                 label = { Text("${presetSpeed.toFixed(2)}") },
+                leadingIcon = null,
                 colors = if (!isDefault) {
                     androidx.compose.material3.FilterChipDefaults.filterChipColors(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,

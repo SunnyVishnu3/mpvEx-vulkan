@@ -227,6 +227,7 @@ class PlayerActivity :
 
   private var isReady = false // Single flag: true when video loaded and ready
   private var isUserFinishing = false
+  private var isManualBackgroundPlayback = false // Track manual background playback trigger
   private var noisyReceiverRegistered = false
   private var mpvInitialized = false // Track MPV initialization state
   private var savePlaybackStateJob: kotlinx.coroutines.Job? = null // Track ongoing save job
@@ -337,6 +338,7 @@ class PlayerActivity :
     setContentView(binding.root)
 
     setupMPV()
+    viewModel.onMpvCoreInitialized()
     MediaPlaybackService.createNotificationChannel(this)
     setupAudio()
     setupBackPressHandler()
@@ -513,7 +515,11 @@ class PlayerActivity :
 
   private fun setupAudio() {
     audioPreferences.audioChannels.get().let {
-      MPVLib.setPropertyString(it.property, it.value)
+      runCatching {
+        MPVLib.setPropertyString(it.property, it.value)
+      }.onFailure { e ->
+        Log.e(TAG, "Error setting audio channels: ${it.property}=${it.value}", e)
+      }
     }
 
     if (!serviceBound) {
@@ -571,7 +577,8 @@ class PlayerActivity :
     Log.d(TAG, "PlayerActivity onDestroy")
 
     runCatching {
-      if (isUserFinishing || isFinishing) {
+      // Only stop the service if we're not doing manual background playback
+      if ((isUserFinishing || isFinishing) && !isManualBackgroundPlayback) {
         if (serviceBound) {
           runCatching { unbindService(serviceConnection) }
           serviceBound = false
@@ -611,7 +618,11 @@ class PlayerActivity :
 
     player.isExiting = true
 
-    if (!isFinishing) return
+    // Stop media notification service when activity is destroyed
+    endBackgroundPlayback()
+
+    // Don't cleanup MPV if we're doing manual background playback
+    if (!isFinishing || isManualBackgroundPlayback) return
 
     runCatching {
       MPVLib.removeObserver(playerObserver)
@@ -663,7 +674,8 @@ class PlayerActivity :
   override fun onPause() {
     runCatching {
       val isInPip = isInPictureInPictureMode
-      val shouldPause = !audioPreferences.automaticBackgroundPlayback.get() || isUserFinishing
+      val shouldPause = (!audioPreferences.automaticBackgroundPlayback.get() && !isManualBackgroundPlayback) || 
+                        (isUserFinishing && !isManualBackgroundPlayback)
 
       if (!isInPip && shouldPause) {
         wasPlayingBeforePause = !(viewModel.paused ?: true)
@@ -671,7 +683,7 @@ class PlayerActivity :
       }
 
       // Restore UI immediately when user is finishing for instant feedback
-      if (isUserFinishing && !isInPip) {
+      if (isUserFinishing && !isInPip && !isManualBackgroundPlayback) {
         restoreSystemUI()
       }
 
@@ -689,6 +701,12 @@ class PlayerActivity :
       // Don't restore UI during normal finish to prevent flickering
       // System will handle UI restoration automatically
       isReady = false
+      
+      // Clean up service when finishing
+      if (serviceBound || mediaPlaybackService != null) {
+        endBackgroundPlayback()
+      }
+      
       setReturnIntent()
     }.onFailure { e ->
       Log.e(TAG, "Error during finish", e)
@@ -704,6 +722,12 @@ class PlayerActivity :
       // System will handle UI restoration automatically
       isReady = false
       isUserFinishing = true
+      
+      // Clean up service when finishing
+      if (serviceBound || mediaPlaybackService != null) {
+        endBackgroundPlayback()
+      }
+      
       setReturnIntent()
     }.onFailure { e ->
       Log.e(TAG, "Error during finishAndRemoveTask", e)
@@ -722,19 +746,13 @@ class PlayerActivity :
         noisyReceiverRegistered = false
       }
 
-      // Don't start background playback if activity is finishing or user is leaving
-      if (!serviceBound && audioPreferences.automaticBackgroundPlayback.get() && !isUserFinishing && !isFinishing) {
-        startBackgroundPlayback()
-      } else {
-        if (!audioPreferences.automaticBackgroundPlayback.get() || isUserFinishing || isFinishing) {
-          viewModel.pause()
-        }
-        if (serviceBound) {
-          runCatching {
-            unbindService(serviceConnection)
-            serviceBound = false
-          }
-        }
+      // Handle background playback based on preferences
+      val shouldAllowBackgroundPlayback = isManualBackgroundPlayback || 
+                                          audioPreferences.automaticBackgroundPlayback.get()
+      
+      // Pause playback if background playback is not enabled and user is finishing
+      if (!shouldAllowBackgroundPlayback && (isUserFinishing || isFinishing)) {
+        viewModel.pause()
       }
     }.onFailure { e ->
       Log.e(TAG, "Error during onStop", e)
@@ -763,10 +781,9 @@ class PlayerActivity :
           viewModel.changeBrightnessTo(brightness)
         }
       }
-
-      if (serviceBound) {
-        endBackgroundPlayback()
-      }
+      
+      // Reset manual background playback flag when returning to foreground
+      isManualBackgroundPlayback = false
     }.onFailure { e ->
       Log.e(TAG, "Error during onStart", e)
     }
@@ -1848,6 +1865,9 @@ class PlayerActivity :
       mediaIdentifier = getMediaIdentifier(intent, fileName)
     }
 
+    // Start media notification service (like YouTube - always show notification)
+    startBackgroundPlayback()
+
     // Reset AB loop values when video changes
     viewModel.clearABLoop()
 
@@ -2859,14 +2879,7 @@ class PlayerActivity :
         val binder = service as? MediaPlaybackService.MediaPlaybackBinder ?: return
         mediaPlaybackService = binder.getService()
         serviceBound = true
-
-        Log.d(TAG, "Service connected, setting media info for: $fileName")
-
-        if (fileName.isNotBlank()) {
-          val artist = runCatching { MPVLib.getPropertyString("metadata/artist") }.getOrNull() ?: ""
-          val thumbnail = runCatching { MPVLib.grabThumbnail(1080) }.getOrNull()
-          mediaPlaybackService?.setMediaInfo(title = fileName, artist = artist, thumbnail = thumbnail)
-        }
+        Log.d(TAG, "Service connected")
       }
 
       override fun onServiceDisconnected(name: ComponentName?) {
@@ -2884,31 +2897,98 @@ class PlayerActivity :
    * handles background playback.
    */
   private fun startBackgroundPlayback() {
-    if (fileName.isBlank() || !isReady) return
+    if (fileName.isBlank() || !isReady) {
+      Log.w(TAG, "Cannot start background playback: video not ready")
+      return
+    }
 
-    Log.d(TAG, "Starting background playback")
-    val intent = Intent(this, MediaPlaybackService::class.java)
-    startForegroundService(intent)
-    bindService(intent, serviceConnection, BIND_AUTO_CREATE)
+    // Prevent starting service multiple times
+    if (serviceBound) {
+      Log.d(TAG, "Service already bound, skipping start")
+      return
+    }
+
+    Log.d(TAG, "Starting background playback for: $fileName")
+    
+    // Ensure notification channel exists
+    MediaPlaybackService.createNotificationChannel(this)
+    
+    // Get media info before starting service
+    val artist = runCatching { MPVLib.getPropertyString("metadata/artist") }.getOrNull() ?: ""
+    val thumbnail = runCatching { MPVLib.grabThumbnail(1080) }.getOrNull()
+    
+    // Pass media info via intent extras
+    val intent = Intent(this, MediaPlaybackService::class.java).apply {
+      putExtra("media_title", fileName)
+      putExtra("media_artist", artist)
+    }
+    
+    // Store thumbnail in companion object for service to access
+    MediaPlaybackService.thumbnail = thumbnail
+    
+    try {
+      startForegroundService(intent)
+      bindService(intent, serviceConnection, BIND_AUTO_CREATE)
+      Log.d(TAG, "Service start and bind initiated")
+    } catch (e: Exception) {
+      Log.e(TAG, "Error starting/binding service", e)
+    }
   }
 
   /**
    * Stops the background playback service and unbinds from it.
    *
-   * Ensures that the background service is properly stopped when no longer needed,
-   * such as when playback ends or the user leaves the activity.
+   * Called when the activity is destroyed to remove the notification.
    */
   private fun endBackgroundPlayback() {
+    Log.d(TAG, "Ending background playback service")
+    
     if (serviceBound) {
       try {
         unbindService(serviceConnection)
+        Log.d(TAG, "Service unbound successfully")
       } catch (e: Exception) {
         Log.e(TAG, "Error unbinding service", e)
       }
       serviceBound = false
     }
-    stopService(Intent(this, MediaPlaybackService::class.java))
+    
+    // Stop the service which will trigger its onDestroy and cleanup
+    try {
+      stopService(Intent(this, MediaPlaybackService::class.java))
+      Log.d(TAG, "Stop service command sent")
+    } catch (e: Exception) {
+      Log.e(TAG, "Error stopping service", e)
+    }
+    
     mediaPlaybackService = null
+  }
+
+  /**
+   * Manually triggers background playback when the user clicks the background playback button.
+   * This works independently of the automaticBackgroundPlayback preference.
+   */
+  @RequiresApi(Build.VERSION_CODES.P)
+  fun triggerBackgroundPlayback() {
+    if (fileName.isBlank() || !isReady) {
+      Log.w(TAG, "Cannot trigger background playback: video not ready")
+      return
+    }
+
+    Log.d(TAG, "User triggered background playback")
+    
+    // Set flag to enable background playback (same logic as automatic)
+    isManualBackgroundPlayback = true
+    
+    // Restore system UI before going to background
+    restoreSystemUI()
+    
+    // Move to background by going to home screen (same behavior as automatic)
+    val intent = Intent(Intent.ACTION_MAIN).apply {
+      addCategory(Intent.CATEGORY_HOME)
+      flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    }
+    startActivity(intent)
   }
 
   // ==================== PlayerHost ====================

@@ -142,6 +142,7 @@ fun AudioTracksSheet(
                 MPVLib.setPropertyString(it.property, it.value)
               },
               label = { Text(text = stringResource(id = it.title)) },
+              leadingIcon = null,
             )
           }
         }

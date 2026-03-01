@@ -454,18 +454,7 @@ private fun VisibilityTogglesSection(
                 style = MaterialTheme.typography.labelLarge,
               )
             },
-            leadingIcon =
-              if (toggle.checked) {
-                {
-                  Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = "Selected",
-                    modifier = Modifier.size(FilterChipDefaults.IconSize),
-                  )
-                }
-              } else {
-                null
-              },
+            leadingIcon = null,
           )
         }
       }

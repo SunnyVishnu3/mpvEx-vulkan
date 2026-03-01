@@ -1,28 +1,22 @@
 package app.marlboroadvance.mpvex.ui.preferences
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material.icons.outlined.Restore
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,31 +33,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.marlboroadvance.mpvex.preferences.AppearancePreferences
 import app.marlboroadvance.mpvex.preferences.PlayerButton
 import app.marlboroadvance.mpvex.preferences.allPlayerButtons
-import app.marlboroadvance.mpvex.preferences.getPlayerButtonLabel
 import app.marlboroadvance.mpvex.preferences.preference.Preference
 import app.marlboroadvance.mpvex.presentation.Screen
 import app.marlboroadvance.mpvex.presentation.components.ConfirmDialog
+import app.marlboroadvance.mpvex.ui.preferences.components.PlayerButtonChip
 import app.marlboroadvance.mpvex.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.PreferenceCategory
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import org.koin.compose.koinInject
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import app.marlboroadvance.mpvex.ui.preferences.components.PlayerButtonChip
-import app.marlboroadvance.mpvex.ui.preferences.components.PlayerLayoutPreview
-import app.marlboroadvance.mpvex.ui.preferences.components.ControlRegionReference
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyGridState
 
@@ -234,59 +215,6 @@ data class ControlLayoutEditorScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // --- 0. Mock Device Preview ---
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                // Helper to parse comma-separated string to List<PlayerButton>
-                fun parse(p: Preference<String>): List<PlayerButton> {
-                    return p.get().split(',')
-                        .filter { it.isNotBlank() }
-                        .mapNotNull { try { PlayerButton.valueOf(it) } catch(e: Exception) { null } }
-                }
-                
-                val isLandscape = region != ControlRegion.PORTRAIT_BOTTOM
-                
-                // Memoize the parsed button lists to prevent unnecessary recompositions
-                val tr = remember(region, selectedButtons) {
-                    if (region == ControlRegion.TOP_RIGHT) selectedButtons else parse(preferences.topRightControls)
-                }
-                val br = remember(region, selectedButtons) {
-                    if (region == ControlRegion.BOTTOM_RIGHT) selectedButtons else parse(preferences.bottomRightControls)
-                }
-                val bl = remember(region, selectedButtons) {
-                    if (region == ControlRegion.BOTTOM_LEFT) selectedButtons else parse(preferences.bottomLeftControls)
-                }
-                val pb = remember(region, selectedButtons) {
-                    if (region == ControlRegion.PORTRAIT_BOTTOM) selectedButtons else parse(preferences.portraitBottomControls)
-                }
-                
-                val highlight = remember(region) {
-                    when(region) {
-                        ControlRegion.TOP_RIGHT -> ControlRegionReference.TOP_RIGHT
-                        ControlRegion.BOTTOM_RIGHT -> ControlRegionReference.BOTTOM_RIGHT
-                        ControlRegion.BOTTOM_LEFT -> ControlRegionReference.BOTTOM_LEFT
-                        ControlRegion.PORTRAIT_BOTTOM -> ControlRegionReference.PORTRAIT_BOTTOM
-                    }
-                }
-                
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp)
-                        .clearAndSetSemantics { }, // Reduce accessibility events from preview
-                    contentAlignment = Alignment.Center
-                ) {
-                   PlayerLayoutPreview(
-                       topRightButtons = tr,
-                       bottomRightButtons = br,
-                       bottomLeftButtons = bl,
-                       portraitBottomButtons = pb,
-                       isLandscape = isLandscape,
-                       highlightRegion = highlight,
-                       modifier = Modifier.fillMaxWidth(if(isLandscape) 0.95f else 0.7f)
-                   )
-                }
-            }
-
             // --- 1. Header ---
             item(span = { GridItemSpan(maxLineSpan) }) {
                 PreferenceCategory(title = { Text("Selected (Long press to reorder)") })

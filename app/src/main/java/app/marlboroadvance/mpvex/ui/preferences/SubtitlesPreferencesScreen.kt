@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.documentfile.provider.DocumentFile
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import app.marlboroadvance.mpvex.utils.media.OpenDocumentTreeContract
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -115,7 +116,7 @@ object SubtitlesPreferencesScreen : Screen {
 
         val locationPicker =
           rememberLauncherForActivityResult(
-            ActivityResultContracts.OpenDocumentTree(),
+            OpenDocumentTreeContract(),
           ) { uri ->
             if (uri == null) return@rememberLauncherForActivityResult
 
@@ -160,7 +161,7 @@ object SubtitlesPreferencesScreen : Screen {
 
         val saveLocationPicker =
           rememberLauncherForActivityResult(
-            ActivityResultContracts.OpenDocumentTree(),
+            OpenDocumentTreeContract(),
           ) { uri ->
             if (uri == null) return@rememberLauncherForActivityResult
 
