@@ -325,12 +325,16 @@ class PlayerViewModel(
     viewModelScope.launch {
       audioPreferences.volumeBoostCap.changes().collect { cap ->
         val maxVol = 100 + cap
-        MPVLib.setPropertyString("volume-max", maxVol.toString())
-        
-        // Clamp current volume if it exceeds the new limit
-        val currentMpvVol = MPVLib.getPropertyInt("volume") ?: 100
-        if (currentMpvVol > maxVol) {
-          MPVLib.setPropertyInt("volume", maxVol)
+        runCatching {
+          MPVLib.setPropertyString("volume-max", maxVol.toString())
+          
+          // Clamp current volume if it exceeds the new limit
+          val currentMpvVol = MPVLib.getPropertyInt("volume") ?: 100
+          if (currentMpvVol > maxVol) {
+            MPVLib.setPropertyInt("volume", maxVol)
+          }
+        }.onFailure { e ->
+          Log.e(TAG, "Error setting volume-max: $maxVol", e)
         }
       }
     }
