@@ -2,6 +2,10 @@ package app.marlboroadvance.mpvex.utils.storage
 
 import android.content.Context
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.os.storage.StorageManager
+import android.os.storage.StorageVolume
 import android.provider.MediaStore
 import android.util.Log
 import app.marlboroadvance.mpvex.domain.media.model.Video
@@ -290,6 +294,174 @@ object VideoScanUtils {
             width >= 640 || height >= 360 -> "360p"
             width >= 426 || height >= 240 -> "240p"
             else -> "${height}p"
+        }
+    }
+}
+
+/**
+ * File Type Utilities
+ * Handles file type detection
+ */
+object FileTypeUtils {
+
+  // Video file extensions
+    val VIDEO_EXTENSIONS = setOf(
+        "mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "m4v", "3gp", "3g2",
+        "mpg", "mpeg", "m2v", "ogv", "ts", "mts", "m2ts", "vob", "divx", "xvid",
+        "f4v", "rm", "rmvb", "asf"
+    )
+
+  /**
+     * Checks if a file is a video based on extension
+     */
+    fun isVideoFile(file: File): Boolean {
+        val extension = file.extension.lowercase(Locale.getDefault())
+        return VIDEO_EXTENSIONS.contains(extension)
+    }
+
+  /**
+     * Gets MIME type from file extension
+     */
+    fun getMimeTypeFromExtension(extension: String): String =
+        when (extension.lowercase()) {
+            "mp4" -> "video/mp4"
+            "mkv" -> "video/x-matroska"
+            "avi" -> "video/x-msvideo"
+            "mov" -> "video/quicktime"
+            "webm" -> "video/webm"
+            "flv" -> "video/x-flv"
+            "wmv" -> "video/x-ms-wmv"
+            "m4v" -> "video/x-m4v"
+            "3gp" -> "video/3gpp"
+            "mpg", "mpeg" -> "video/mpeg"
+            else -> "video/*"
+        }
+}
+
+/**
+ * File Filter Utilities
+ * Handles file and folder filtering logic
+ */
+object FileFilterUtils {
+    private const val TAG = "FileFilterUtils"
+
+    // Folders to skip during scanning (system/cache folders)
+    private val SKIP_FOLDERS = setOf(
+        // System & OS Junk
+        "android", "data", "obb", "system", "lost.dir", ".android_secure", "android_secure",
+
+        // Hidden & Temp Files
+        ".thumbnails", "thumbnails", "thumbs", ".thumbs",
+        ".cache", "cache", "temp", "tmp", ".temp", ".tmp",
+
+        // Trash & Recycle Bins
+        ".trash", "trash", ".trashbin", ".trashed", "recycle", "recycler",
+
+        // App Clutters
+        "log", "logs", "backup", "backups",
+        "stickers", "whatsapp stickers", "telegram stickers"
+    )
+
+    /**
+     * Checks if a folder contains a .nomedia file
+     */
+    fun hasNoMediaFile(folder: File): Boolean {
+        if (!folder.isDirectory || !folder.canRead()) {
+            return false
+        }
+
+        return try {
+            val noMediaFile = File(folder, ".nomedia")
+            noMediaFile.exists()
+        } catch (e: Exception) {
+            Log.w(TAG, "Error checking for .nomedia file in: ${folder.absolutePath}", e)
+            false
+        }
+    }
+
+    /**
+     * Checks if a folder should be skipped during scanning
+     */
+    fun shouldSkipFolder(folder: File): Boolean {
+        if (hasNoMediaFile(folder)) {
+            return true
+        }
+
+        val name = folder.name.lowercase()
+        val isHidden = name.startsWith(".")
+        return isHidden || SKIP_FOLDERS.contains(name)
+    }
+
+    /**
+     * Checks if a file should be skipped during file listing
+     */
+    fun shouldSkipFile(file: File): Boolean {
+        return file.name.startsWith(".")
+    }
+}
+
+/**
+ * Storage Volume Utilities
+ * Handles storage volume detection and management
+ */
+object StorageVolumeUtils {
+    private const val TAG = "StorageVolumeUtils"
+
+    /**
+     * Gets all mounted storage volumes
+     */
+    fun getAllStorageVolumes(context: Context): List<StorageVolume> =
+        try {
+            val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
+            storageManager.storageVolumes.filter { volume ->
+                volume.state == Environment.MEDIA_MOUNTED ||
+                    (getVolumePath(volume)?.let { path -> File(path).exists() } == true)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting storage volumes", e)
+            emptyList()
+        }
+
+    /**
+     * Gets non-primary (external) storage volumes (SD cards, USB OTG)
+     */
+    fun getExternalStorageVolumes(context: Context): List<StorageVolume> =
+        getAllStorageVolumes(context).filter { !it.isPrimary }
+
+  /**
+     * Gets the physical path of a storage volume
+     */
+    fun getVolumePath(volume: StorageVolume): String? {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val directory = volume.directory
+                if (directory != null) {
+                    return directory.absolutePath
+                }
+            }
+
+            val method = volume.javaClass.getMethod("getPath")
+            val path = method.invoke(volume) as? String
+            if (path != null) {
+                return path
+            }
+
+            volume.uuid?.let { uuid ->
+                val possiblePaths = listOf(
+                    "/storage/$uuid",
+                    "/mnt/media_rw/$uuid",
+                )
+                for (possiblePath in possiblePaths) {
+                    if (File(possiblePath).exists()) {
+                        return possiblePath
+                    }
+                }
+            }
+
+            return null
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not get volume path", e)
+            return null
         }
     }
 }

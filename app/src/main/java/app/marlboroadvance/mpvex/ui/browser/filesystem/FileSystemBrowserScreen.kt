@@ -10,6 +10,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import app.marlboroadvance.mpvex.utils.media.OpenDocumentTreeContract
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -333,7 +334,7 @@ fun FileSystemBrowserScreen(path: String? = null) {
 
   // Tree picker for Play Store-safe copy/move destinations
   val treePickerLauncher = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.OpenDocumentTree(),
+    contract = OpenDocumentTreeContract(),
   ) { uri ->
     if (uri == null) return@rememberLauncherForActivityResult
     val selectedVideos = videoSelectionManager.getSelectedItems()

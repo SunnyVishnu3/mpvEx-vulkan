@@ -89,8 +89,12 @@ class SelectionManager<T, ID>(
 
     scope.launch {
       runCatching {
-        onDeleteItems(selected, deleteFiles)
-        Toast.makeText(context, "Deleted successfully", Toast.LENGTH_SHORT).show()
+        val (deleted, failed) = onDeleteItems(selected, deleteFiles)
+        if (deleted > 0) {
+          Toast.makeText(context, "Deleted successfully", Toast.LENGTH_SHORT).show()
+        } else if (failed > 0) {
+          Toast.makeText(context, "Failed to delete", Toast.LENGTH_SHORT).show()
+        }
       }.onFailure {
         Toast.makeText(context, "Failed to delete: ${it.message}", Toast.LENGTH_SHORT).show()
       }

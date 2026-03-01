@@ -3,6 +3,7 @@ package app.marlboroadvance.mpvex.ui.preferences
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -40,6 +40,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -55,18 +56,14 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.snapshotFlow
-import android.widget.Toast
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.marlboroadvance.mpvex.BuildConfig
 import app.marlboroadvance.mpvex.R
 import app.marlboroadvance.mpvex.presentation.Screen
 import app.marlboroadvance.mpvex.presentation.crash.CrashActivity.Companion.collectDeviceInfo
-import app.marlboroadvance.mpvex.ui.UpdateViewModel
 import app.marlboroadvance.mpvex.ui.utils.LocalBackStack
-import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
+import app.marlboroadvance.mpvex.utils.update.UpdateViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 
@@ -511,12 +508,6 @@ object LibrariesScreen : Screen {
         )
       },
     ) { paddingValues ->
-      LibrariesContainer(
-        modifier =
-          Modifier
-            .fillMaxSize()
-            .padding(paddingValues),
-      )
     }
   }
 }

@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import app.marlboroadvance.mpvex.utils.media.OpenDocumentTreeContract
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
@@ -181,7 +182,7 @@ data class VideoListScreen(
     val progressDialogOpen = rememberSaveable { mutableStateOf(false) }
     val operationProgress by CopyPasteOps.operationProgress.collectAsState()
     val treePickerLauncher =
-      rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+      rememberLauncherForActivityResult(OpenDocumentTreeContract()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         val selectedVideos = selectionManager.getSelectedItems()
         if (selectedVideos.isEmpty() || operationType.value == null) return@rememberLauncherForActivityResult
