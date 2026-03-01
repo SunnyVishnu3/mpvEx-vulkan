@@ -15,3 +15,9 @@ target_link_libraries(adrenotools_bridge
     adrenotools
     log
 )
+
+# 5. THE MAGIC "BAIT" LIBRARY
+# dynamically create an empty C++ file and compile it as libvulkan_freedreno.so
+# This gets packaged into the APK so Android's security system trusts it.
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/dummy_bait.cpp "void dummy_bait() {}")
+add_library(vulkan_freedreno SHARED ${CMAKE_CURRENT_BINARY_DIR}/dummy_bait.cpp)
