@@ -228,7 +228,6 @@ object AdvancedPreferencesScreen : Screen {
               runCatching {
                 val tree = DocumentFile.fromTreeUri(context, uri)
                 if (tree != null && tree.exists() && tree.canWrite()) {
-                  // ADDED gpu_drivers to auto-create list
                   val subdirs = listOf("fonts", "script-opts", "scripts", "shaders", "gpu_drivers")
                   for (name in subdirs) {
                     val existing = tree.listFiles().firstOrNull {
@@ -238,7 +237,6 @@ object AdvancedPreferencesScreen : Screen {
                       tree.createDirectory(name)
                     }
                   }
-                  // Create default mpv.conf if missing
                   val hasConf = tree.listFiles().any {
                     it.isFile && it.name?.equals("mpv.conf", ignoreCase = true) == true
                   }
@@ -260,7 +258,6 @@ object AdvancedPreferencesScreen : Screen {
             .fillMaxSize()
             .padding(padding),
         ) {
-          // Backup & Restore Section
           item {
             PreferenceSectionHeader(title = "Backup & Restore")
           }
@@ -311,7 +308,6 @@ object AdvancedPreferencesScreen : Screen {
             }
           }
           
-          // MPV Configuration Section
           item {
             PreferenceSectionHeader(title = "MPV Configuration")
           }
@@ -321,23 +317,15 @@ object AdvancedPreferencesScreen : Screen {
               var mpvConf by remember { mutableStateOf(preferences.mpvConf.get()) }
               var inputConf by remember { mutableStateOf(preferences.inputConf.get()) }
               
-              // Load config files when storage location changes
               LaunchedEffect(mpvConfStorageLocation) {
                 if (mpvConfStorageLocation.isBlank()) return@LaunchedEffect
                 withContext(Dispatchers.IO) {
                   val tempFile = kotlin.io.path.createTempFile()
                   runCatching {
-                    val tree =
-                      DocumentFile.fromTreeUri(
-                        context,
-                        mpvConfStorageLocation.toUri(),
-                      )
+                    val tree = DocumentFile.fromTreeUri(context, mpvConfStorageLocation.toUri())
                     val mpvConfFile = tree?.findFile("mpv.conf")
                     if (mpvConfFile != null && mpvConfFile.exists()) {
-                      context.contentResolver
-                        .openInputStream(
-                          mpvConfFile.uri,
-                        )?.copyTo(tempFile.outputStream())
+                      context.contentResolver.openInputStream(mpvConfFile.uri)?.copyTo(tempFile.outputStream())
                       val content = tempFile.readLines().fastJoinToString("\n")
                       preferences.mpvConf.set(content)
                       File(context.filesDir, "mpv.conf").writeText(content)
@@ -350,23 +338,15 @@ object AdvancedPreferencesScreen : Screen {
                 }
               }
               
-              // Load input.conf when storage location changes
               LaunchedEffect(mpvConfStorageLocation) {
                 if (mpvConfStorageLocation.isBlank()) return@LaunchedEffect
                 withContext(Dispatchers.IO) {
                   val tempFile = kotlin.io.path.createTempFile()
                   runCatching {
-                    val tree =
-                      DocumentFile.fromTreeUri(
-                        context,
-                        mpvConfStorageLocation.toUri(),
-                      )
+                    val tree = DocumentFile.fromTreeUri(context, mpvConfStorageLocation.toUri())
                     val inputConfFile = tree?.findFile("input.conf")
                     if (inputConfFile != null && inputConfFile.exists()) {
-                      context.contentResolver
-                        .openInputStream(
-                          inputConfFile.uri,
-                        )?.copyTo(tempFile.outputStream())
+                      context.contentResolver.openInputStream(inputConfFile.uri)?.copyTo(tempFile.outputStream())
                       val content = tempFile.readLines().fastJoinToString("\n")
                       preferences.inputConf.set(content)
                       File(context.filesDir, "input.conf").writeText(content)
@@ -804,9 +784,22 @@ fun SystemInfoDialog(onDismiss: () -> Unit) {
         val totalRamMb = memInfo.totalMem / (1024 * 1024)
         val availRamMb = memInfo.availMem / (1024 * 1024)
 
-        // 2. GPU / System GL API
+        // 2. GPU / System GL APIs
         val configInfo = activityManager.deviceConfigurationInfo
         val glesVersion = configInfo.glEsVersion
+
+        // Extract precise Vulkan API level via Android PackageManager hardware features
+        var vulkanVersion = "Not Supported"
+        context.packageManager.systemAvailableFeatures?.forEach { feature ->
+            if (feature.name == android.content.pm.PackageManager.FEATURE_VULKAN_HARDWARE_VERSION) {
+                // The version is an integer bit-shifted: (major << 22) | (minor << 12) | patch
+                val v = feature.version
+                val major = v shr 22
+                val minor = (v shr 12) and 0x3FF
+                val patch = v and 0xFFF
+                vulkanVersion = "$major.$minor.$patch"
+            }
+        }
 
         // 3. Deep Linux Kernel CPU Parsing
         var cpuFeatures = "Unknown"
@@ -861,7 +854,7 @@ fun SystemInfoDialog(onDismiss: () -> Unit) {
         
         === GPU Information ===
         System GL API: OpenGL ES $glesVersion
-        System Vulkan API: Supported
+        System Vulkan API: $vulkanVersion
         Note: MPV manages Turnip rendering contexts independently.
         
         === Memory Info ===
