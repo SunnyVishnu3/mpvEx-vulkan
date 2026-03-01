@@ -1,9 +1,8 @@
-package app.marlboroadvance.mpvex.ui
+package app.marlboroadvance.mpvex.utils.update
 import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -23,13 +21,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
@@ -53,6 +49,9 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 // --- Data Models ---
 
@@ -517,11 +516,11 @@ private fun formatFileSize(size: Long): String {
 private fun formatDate(dateString: String): String {
     return try {
         // GitHub API returns ISO 8601 format: "2024-01-15T10:30:00Z"
-        val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US)
-        inputFormat.timeZone = java.util.TimeZone.getTimeZone("UTC")
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+        inputFormat.timeZone = TimeZone.getTimeZone("UTC")
         val date = inputFormat.parse(dateString) ?: return dateString
 
-        val outputFormat = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.US)
+        val outputFormat = SimpleDateFormat("MMM dd, yyyy", Locale.US)
         outputFormat.format(date)
     } catch (e: Exception) {
         dateString
