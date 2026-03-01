@@ -71,6 +71,8 @@ class MediaPlaybackService :
   private var mediaTitle = ""
   private var mediaArtist = ""
   private var paused = false
+  private var lastNotificationUpdateTime = 0L
+  private val notificationUpdateIntervalMs = 1000L // Update notification every 1 second
 
   inner class MediaPlaybackBinder : Binder() {
     fun getService() = this@MediaPlaybackService
@@ -94,6 +96,7 @@ class MediaPlaybackService :
       MPVLib.observeProperty("pause", MPVLib.MpvFormat.MPV_FORMAT_FLAG)
       MPVLib.observeProperty("media-title", MPVLib.MpvFormat.MPV_FORMAT_STRING)
       MPVLib.observeProperty("metadata/artist", MPVLib.MpvFormat.MPV_FORMAT_STRING)
+      MPVLib.observeProperty("time-pos", MPVLib.MpvFormat.MPV_FORMAT_DOUBLE)
       Log.d(TAG, "MPV observer registered")
     } catch (e: Exception) {
       Log.e(TAG, "Error registering MPV observer", e)
@@ -401,7 +404,16 @@ class MediaPlaybackService :
   override fun eventProperty(
     property: String,
     value: Double,
-  ) {}
+  ) {
+    if (property == "time-pos") {
+      // Throttle notification updates to avoid excessive updates
+      val currentTime = System.currentTimeMillis()
+      if (currentTime - lastNotificationUpdateTime >= notificationUpdateIntervalMs) {
+        lastNotificationUpdateTime = currentTime
+        updateMediaSession()
+      }
+    }
+  }
 
   override fun eventProperty(
     property: String,
@@ -468,8 +480,16 @@ class MediaPlaybackService :
   }
 
   override fun onTaskRemoved(rootIntent: Intent?) {
-    Log.d(TAG, "Task removed - cleaning up service")
+    Log.d(TAG, "Task removed - killing playback and cleaning up service")
     try {
+      // Kill MPV playback immediately when task is removed
+      try {
+        MPVLib.command("quit")
+        Log.d(TAG, "MPV quit command sent")
+      } catch (e: Exception) {
+        Log.e(TAG, "Error sending quit command to MPV", e)
+      }
+      
       // Stop foreground and remove notification when task is removed
       try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -493,10 +513,15 @@ class MediaPlaybackService :
       // Clear thumbnail
       thumbnail = null
       
-      // Stop the service
+      // Stop the service which will trigger cleanup
       stopSelf()
+      
+      // Force kill the process to ensure everything stops
+      android.os.Process.killProcess(android.os.Process.myPid())
     } catch (e: Exception) {
       Log.e(TAG, "Error in onTaskRemoved", e)
+      // Force kill even if there's an error
+      android.os.Process.killProcess(android.os.Process.myPid())
     }
     super.onTaskRemoved(rootIntent)
   }
