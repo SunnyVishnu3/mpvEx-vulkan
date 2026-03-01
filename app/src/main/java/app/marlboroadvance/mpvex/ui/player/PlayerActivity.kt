@@ -859,7 +859,8 @@ class PlayerActivity :
     val prefs = getSharedPreferences("gpu_driver_settings", Context.MODE_PRIVATE)
     val customDriverDir = prefs.getString("custom_driver_dir", null)
     
-    if (customDriverDir != null && java.io.File(customDriverDir, "libvulkan_freedreno.so").exists()) {
+    if (customDriverDir != null) {
+        // We let AdrenoTools dynamically check for the actual file inside the directory
         val success = app.marlboroadvance.mpvex.system.AdrenoTools.hookCustomDriver(this@PlayerActivity, customDriverDir)
         if (success) {
             Log.i(TAG, "Successfully hooked custom Turnip driver from: $customDriverDir")
