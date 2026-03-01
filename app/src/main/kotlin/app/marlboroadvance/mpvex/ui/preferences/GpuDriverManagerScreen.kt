@@ -26,12 +26,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import org.json.JSONObject
+import org.json.JSONArray
 import java.io.File
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.zip.ZipInputStream
+
+// Data class to hold the specific driver variants from GitHub
+data class GitHubAsset(val name: String, val downloadUrl: String)
 
 @Serializable
 object GpuDriverManagerScreen : Screen {
@@ -45,7 +48,13 @@ object GpuDriverManagerScreen : Screen {
         val prefs = remember { context.getSharedPreferences("gpu_driver_settings", Context.MODE_PRIVATE) }
         var activeDriverDir by remember { mutableStateOf(prefs.getString("custom_driver_dir", null)) }
         var installedDrivers by remember { mutableStateOf<List<File>>(emptyList()) }
-        var isDownloading by remember { mutableStateOf(false) }
+        
+        // States for the Fetcher UI
+        var isFetchingList by remember { mutableStateOf(false) }
+        var isDownloadingAsset by remember { mutableStateOf(false) }
+        var showAssetDialog by remember { mutableStateOf(false) }
+        var availableAssets by remember { mutableStateOf<List<GitHubAsset>>(emptyList()) }
+        var releaseTitle by remember { mutableStateOf("") }
         
         val driversDir = remember { File(context.filesDir, "gpu_drivers").apply { mkdirs() } }
 
@@ -58,7 +67,7 @@ object GpuDriverManagerScreen : Screen {
         LaunchedEffect(Unit) { loadDrivers() }
 
         fun extractDriverZip(inputStream: InputStream, zipName: String) {
-            val targetDir = File(driversDir, zipName)
+            val targetDir = File(driversDir, zipName.removeSuffix(".zip"))
             targetDir.mkdirs()
             var foundDriver = false
             
@@ -96,43 +105,86 @@ object GpuDriverManagerScreen : Screen {
             }
         }
 
-        fun fetchLatestK1mchiTurnip() {
-            if (isDownloading) return
-            isDownloading = true
+        // 1. Fetch the list of available drivers (Autotuner, GMEM, SYMEM, etc.)
+        fun fetchAvailableDrivers() {
+            if (isFetchingList) return
+            isFetchingList = true
             scope.launch(Dispatchers.IO) {
                 try {
-                    // Strictly querying K1mchi's official repository
                     val apiUrl = URL("https://api.github.com/repos/K11MCH1/AdrenoToolsDrivers/releases/latest")
                     val connection = apiUrl.openConnection() as HttpURLConnection
                     connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
                     
                     val response = connection.inputStream.bufferedReader().readText()
-                    val json = JSONObject(response)
-                    val releaseName = json.getString("name").replace(" ", "_")
+                    val json = org.json.JSONObject(response)
                     
-                    val assets = json.getJSONArray("assets")
-                    var downloadUrl = ""
-                    // Grabs the first ZIP it finds in the latest release
-                    for (i in 0 until assets.length()) {
-                        val asset = assets.getJSONObject(i)
-                        if (asset.getString("name").endsWith(".zip")) {
-                            downloadUrl = asset.getString("browser_download_url")
-                            break
+                    releaseTitle = json.getString("name")
+                    val assetsArray = json.getJSONArray("assets")
+                    val fetchedAssets = mutableListOf<GitHubAsset>()
+                    
+                    for (i in 0 until assetsArray.length()) {
+                        val asset = assetsArray.getJSONObject(i)
+                        val name = asset.getString("name")
+                        if (name.endsWith(".zip")) {
+                            fetchedAssets.add(GitHubAsset(name, asset.getString("browser_download_url")))
                         }
                     }
 
-                    if (downloadUrl.isNotEmpty()) {
-                        withContext(Dispatchers.Main) { Toast.makeText(context, "Downloading $releaseName...", Toast.LENGTH_SHORT).show() }
-                        URL(downloadUrl).openStream().use { extractDriverZip(it, releaseName) }
-                        withContext(Dispatchers.Main) { Toast.makeText(context, "Install Complete!", Toast.LENGTH_SHORT).show() }
+                    withContext(Dispatchers.Main) {
+                        availableAssets = fetchedAssets
+                        showAssetDialog = true
                     }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) { Toast.makeText(context, "Fetch failed: ${e.message}", Toast.LENGTH_SHORT).show() }
                     e.printStackTrace()
                 } finally {
-                    isDownloading = false
+                    isFetchingList = false
                 }
             }
+        }
+
+        // 2. Download the specific driver variant the user tapped
+        fun downloadSpecificDriver(asset: GitHubAsset) {
+            showAssetDialog = false
+            isDownloadingAsset = true
+            scope.launch(Dispatchers.IO) {
+                try {
+                    withContext(Dispatchers.Main) { Toast.makeText(context, "Downloading ${asset.name}...", Toast.LENGTH_SHORT).show() }
+                    URL(asset.downloadUrl).openStream().use { extractDriverZip(it, asset.name) }
+                    withContext(Dispatchers.Main) { Toast.makeText(context, "Install Complete!", Toast.LENGTH_SHORT).show() }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) { Toast.makeText(context, "Download failed.", Toast.LENGTH_SHORT).show() }
+                    e.printStackTrace()
+                } finally {
+                    isDownloadingAsset = false
+                }
+            }
+        }
+
+        // 3. The Dialog UI showing the fetched drivers
+        if (showAssetDialog) {
+            AlertDialog(
+                onDismissRequest = { showAssetDialog = false },
+                title = { Text(text = "Available Drivers ($releaseTitle)", fontWeight = FontWeight.Bold) },
+                text = {
+                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                        items(availableAssets) { asset ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { downloadSpecificDriver(asset) },
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                            ) {
+                                Text(
+                                    text = asset.name, 
+                                    modifier = Modifier.padding(16.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = { TextButton(onClick = { showAssetDialog = false }) { Text("Cancel") } }
+            )
         }
 
         Scaffold(
@@ -145,11 +197,11 @@ object GpuDriverManagerScreen : Screen {
                         }
                     },
                     actions = {
-                        IconButton(onClick = { fetchLatestK1mchiTurnip() }) {
-                            if (isDownloading) {
+                        IconButton(onClick = { fetchAvailableDrivers() }) {
+                            if (isFetchingList || isDownloadingAsset) {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                             } else {
-                                Icon(Icons.Default.CloudDownload, contentDescription = "Fetch K1mchi Turnip")
+                                Icon(Icons.Default.CloudDownload, contentDescription = "Fetch Drivers")
                             }
                         }
                     }
@@ -218,45 +270,6 @@ fun DriverCard(title: String, subtitle: String, isSelected: Boolean, onClick: ()
             }
             if (onDelete != null) {
                 IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error) }
-            }
-        }
-    }
-}
-                            if (activeDriverDir == driverFolder.absolutePath) {
-                                activeDriverDir = null
-                                prefs.edit().remove("custom_driver_dir").apply()
-                            }
-                            driverFolder.deleteRecursively()
-                            loadDrivers()
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DriverCard(title: String, subtitle: String, isSelected: Boolean, onClick: () -> Unit, onDelete: (() -> Unit)? = null) {
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).clickable(onClick = onClick),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            RadioButton(selected = isSelected, onClick = onClick)
-            Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
-                Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(text = subtitle, style = MaterialTheme.typography.bodyMedium)
-            }
-            if (onDelete != null) {
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
-                }
             }
         }
     }
