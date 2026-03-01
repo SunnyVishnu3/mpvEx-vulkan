@@ -28,7 +28,7 @@ object AdrenoTools {
         tmpLibDir: String, 
         hookLibDir: String, 
         customDriverDir: String,
-        driverName: String // <-- ADDED dynamic driver name parameter
+        driverName: String
     ): Boolean
 
     fun hookCustomDriver(context: Context, driverDir: String): Boolean {
@@ -37,7 +37,6 @@ object AdrenoTools {
         val dir = File(driverDir)
         if (!dir.exists() || !dir.isDirectory) return false
         
-        // Dynamically find the vulkan driver file (supports K1mchi's vulkan.ad07xx.so, etc.)
         val driverFile = dir.listFiles { file -> 
             file.extension == "so" && file.name.contains("vulkan", ignoreCase = true)
         }?.firstOrNull() ?: dir.listFiles { file -> file.extension == "so" }?.firstOrNull()
@@ -50,7 +49,17 @@ object AdrenoTools {
         val driverName = driverFile.name
         Log.i(TAG, "Found dynamic driver library: $driverName")
         
-        val tmpLibDir = context.cacheDir.absolutePath
+        // Grant Android/Linux executable permissions so the linker doesn't reject it
+        runCatching {
+            dir.setExecutable(true, false)
+            dir.setReadable(true, false)
+            driverFile.setExecutable(true, false)
+            driverFile.setReadable(true, false)
+        }
+
+        // cacheDir is blocked from executing code on Android 10+. Use an executable app Dir instead.
+        val tmpDir = context.getDir("vulkan_tmp", Context.MODE_PRIVATE)
+        val tmpLibDir = tmpDir.absolutePath
         val hookLibDir = context.applicationInfo.nativeLibraryDir
         
         return nativeHookDriver(tmpLibDir, hookLibDir, driverDir, driverName)
