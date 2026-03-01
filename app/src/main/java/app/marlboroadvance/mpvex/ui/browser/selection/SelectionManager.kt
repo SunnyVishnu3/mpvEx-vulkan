@@ -113,8 +113,12 @@ class SelectionManager<T, ID>(
 
     scope.launch {
       runCatching {
-        onRenameItem(item, newName)
-        Toast.makeText(context, "Renamed successfully", Toast.LENGTH_SHORT).show()
+        val result = onRenameItem(item, newName)
+        result.onSuccess {
+          Toast.makeText(context, "Renamed successfully", Toast.LENGTH_SHORT).show()
+        }.onFailure { error ->
+          Toast.makeText(context, "Failed to rename: ${error.message}", Toast.LENGTH_SHORT).show()
+        }
       }.onFailure {
         Toast.makeText(context, "Failed to rename: ${it.message}", Toast.LENGTH_SHORT).show()
       }
