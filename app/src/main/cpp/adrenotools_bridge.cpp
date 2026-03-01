@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <string>
 #include <dlfcn.h>
+#include <unistd.h>
 #include <android/log.h>
 #include "adrenotools/driver.h" 
 
@@ -20,12 +21,19 @@ Java_app_marlboroadvance_mpvex_system_AdrenoTools_nativeHookDriver(
     const char *d_name = env->GetStringUTFChars(driver_name, nullptr); 
     
     LOGI("Starting AdrenoTools injection...");
-    LOGI("Temp Dir: %s", tmp_dir);
-    LOGI("Hook Dir: %s", hook_dir);
-    LOGI("Driver Dir: %s", driver_dir);
-    LOGI("Driver Name: %s", d_name);
 
-    // Added RTLD_GLOBAL so the driver's symbols become visible to mpv's Vulkan request
+    // 1. Verify the Bait Library actually exists on the phone
+    std::string bait_path = std::string(hook_dir) + "/libvulkan_freedreno.so";
+    if (access(bait_path.c_str(), F_OK) != 0) {
+        LOGE("CRITICAL: The bait file is MISSING from the app's lib folder: %s", bait_path.c_str());
+    } else {
+        LOGI("SUCCESS: Bait file found at %s", bait_path.c_str());
+    }
+
+    // 2. Clear any stale "Ghost" errors left behind by Android
+    dlerror(); 
+
+    // 3. Trigger the hack
     void* handle = adrenotools_open_libvulkan(
         RTLD_NOW | RTLD_GLOBAL, 
         ADRENOTOOLS_DRIVER_CUSTOM, 
@@ -38,10 +46,9 @@ Java_app_marlboroadvance_mpvex_system_AdrenoTools_nativeHookDriver(
     ); 
     
     if (handle == nullptr) {
-        // Intercept Android's internal dynamic linker error to see exactly why it failed
         const char* err = dlerror();
         LOGE("CRITICAL: adrenotools_open_libvulkan failed!");
-        LOGE("dlerror: %s", err != nullptr ? err : "Unknown linking error");
+        LOGE("Real dlerror: %s", err != nullptr ? err : "No dlerror generated (Likely LinkerNSBypass failed)");
     } else {
         LOGI("SUCCESS: Custom Turnip driver loaded into memory! Handle: %p", handle);
     }
