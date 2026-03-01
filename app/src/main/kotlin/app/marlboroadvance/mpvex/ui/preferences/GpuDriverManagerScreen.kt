@@ -26,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.InputStream
@@ -34,7 +35,7 @@ import java.net.URL
 import java.util.zip.ZipInputStream
 
 // Data classes for GitHub integration and Local UI states
-data class GitHubAsset(val name: String, val downloadUrl: String)
+data class GitHubAsset(val displayName: String, val fileName: String, val downloadUrl: String)
 data class DriverItem(val folder: File, val displayName: String, val displaySubtitle: String)
 
 @Serializable
@@ -55,7 +56,6 @@ object GpuDriverManagerScreen : Screen {
         var isDownloadingAsset by remember { mutableStateOf(false) }
         var showAssetDialog by remember { mutableStateOf(false) }
         var availableAssets by remember { mutableStateOf<List<GitHubAsset>>(emptyList()) }
-        var releaseTitle by remember { mutableStateOf("") }
         
         val driversDir = remember { File(context.filesDir, "gpu_drivers").apply { mkdirs() } }
 
@@ -133,28 +133,41 @@ object GpuDriverManagerScreen : Screen {
             }
         }
 
-        // Fetch the list of available drivers
+        // Fetch the full list of available drivers across recent releases
         fun fetchAvailableDrivers() {
             if (isFetchingList) return
             isFetchingList = true
             scope.launch(Dispatchers.IO) {
                 try {
-                    val apiUrl = URL("https://api.github.com/repos/K11MCH1/AdrenoToolsDrivers/releases/latest")
+                    // Changed to general /releases endpoint to fetch the entire history
+                    val apiUrl = URL("https://api.github.com/repos/K11MCH1/AdrenoToolsDrivers/releases")
                     val connection = apiUrl.openConnection() as HttpURLConnection
                     connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
                     
                     val response = connection.inputStream.bufferedReader().readText()
-                    val json = JSONObject(response)
-                    
-                    releaseTitle = json.getString("name")
-                    val assetsArray = json.getJSONArray("assets")
+                    val jsonArray = JSONArray(response)
                     val fetchedAssets = mutableListOf<GitHubAsset>()
                     
-                    for (i in 0 until assetsArray.length()) {
-                        val asset = assetsArray.getJSONObject(i)
-                        val name = asset.getString("name")
-                        if (name.endsWith(".zip")) {
-                            fetchedAssets.add(GitHubAsset(name, asset.getString("browser_download_url")))
+                    // Loop through the recent releases (limit to 10 to avoid massive dialogs)
+                    val limit = if (jsonArray.length() > 10) 10 else jsonArray.length()
+                    for (i in 0 until limit) {
+                        val release = jsonArray.getJSONObject(i)
+                        val releaseName = release.optString("name", "Release")
+                        val assetsArray = release.getJSONArray("assets")
+                        
+                        // Loop through all zips attached to this specific release
+                        for (j in 0 until assetsArray.length()) {
+                            val asset = assetsArray.getJSONObject(j)
+                            val fileName = asset.getString("name")
+                            if (fileName.endsWith(".zip")) {
+                                fetchedAssets.add(
+                                    GitHubAsset(
+                                        displayName = "$releaseName\n$fileName",
+                                        fileName = fileName,
+                                        downloadUrl = asset.getString("browser_download_url")
+                                    )
+                                )
+                            }
                         }
                     }
 
@@ -177,8 +190,8 @@ object GpuDriverManagerScreen : Screen {
             isDownloadingAsset = true
             scope.launch(Dispatchers.IO) {
                 try {
-                    withContext(Dispatchers.Main) { Toast.makeText(context, "Downloading ${asset.name}...", Toast.LENGTH_SHORT).show() }
-                    URL(asset.downloadUrl).openStream().use { extractDriverZip(it, asset.name) }
+                    withContext(Dispatchers.Main) { Toast.makeText(context, "Downloading ${asset.fileName}...", Toast.LENGTH_SHORT).show() }
+                    URL(asset.downloadUrl).openStream().use { extractDriverZip(it, asset.fileName) }
                     withContext(Dispatchers.Main) { Toast.makeText(context, "Install Complete!", Toast.LENGTH_SHORT).show() }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) { Toast.makeText(context, "Download failed.", Toast.LENGTH_SHORT).show() }
@@ -193,7 +206,7 @@ object GpuDriverManagerScreen : Screen {
         if (showAssetDialog) {
             AlertDialog(
                 onDismissRequest = { showAssetDialog = false },
-                title = { Text(text = "Available Drivers ($releaseTitle)", fontWeight = FontWeight.Bold) },
+                title = { Text(text = "Available GitHub Drivers", fontWeight = FontWeight.Bold) },
                 text = {
                     LazyColumn(modifier = Modifier.fillMaxWidth()) {
                         items(availableAssets) { asset ->
@@ -202,7 +215,7 @@ object GpuDriverManagerScreen : Screen {
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
                             ) {
                                 Text(
-                                    text = asset.name, 
+                                    text = asset.displayName, 
                                     modifier = Modifier.padding(16.dp),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium
