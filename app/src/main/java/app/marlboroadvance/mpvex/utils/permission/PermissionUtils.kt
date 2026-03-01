@@ -41,23 +41,27 @@ import java.io.File
  */
 object PermissionUtils {
   private const val FILE_ACCESS_TAG = "FileAccessRequest"
+  
   private var mediaRequestLauncher: ActivityResultLauncher<IntentSenderRequest>? = null
   private var resultOkCallback: () -> Unit = {}
   private var resultCancelledCallback: () -> Unit = {}
 
   /**
-   * Initializes launcher used for scoped-storage write/delete requests on Android 11+.
-   * Must be called from an activity (typically MainActivity) before file operations.
+   * Set the media access launcher from MainActivity.
    */
-  fun initializeMediaAccess(activity: ComponentActivity) {
-    if (mediaRequestLauncher != null) return
-    mediaRequestLauncher =
-      activity.registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
-        when (result.resultCode) {
-          Activity.RESULT_OK -> resultOkCallback()
-          else -> resultCancelledCallback()
-        }
-      }
+  fun setMediaAccessLauncher(launcher: ActivityResultLauncher<IntentSenderRequest>) {
+    mediaRequestLauncher = launcher
+  }
+
+  /**
+   * Handle result from MainActivity's launcher callback.
+   */
+  fun handleMediaAccessResult(resultCode: Int) {
+    if (resultCode == Activity.RESULT_OK) {
+      resultOkCallback()
+    } else {
+      resultCancelledCallback()
+    }
   }
 
   suspend fun requestScopedWriteAccess(
@@ -77,15 +81,14 @@ object PermissionUtils {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || uris.isEmpty()) return true
     return withContext(Dispatchers.Main) {
       suspendCancellableCoroutine { continuation ->
-        val launcher = mediaRequestLauncher
-        if (launcher == null) {
-          Log.e(FILE_ACCESS_TAG, "Media request launcher is not initialized")
+        val launcher = mediaRequestLauncher ?: run {
           continuation.resumeWith(Result.success(false))
           return@suspendCancellableCoroutine
         }
 
         resultOkCallback = { continuation.resumeWith(Result.success(true)) }
         resultCancelledCallback = { continuation.resumeWith(Result.success(false)) }
+        
         val pendingIntent = MediaStore.createWriteRequest(context.contentResolver, uris)
         launcher.launch(IntentSenderRequest.Builder(pendingIntent).build())
       }
@@ -99,15 +102,14 @@ object PermissionUtils {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || uris.isEmpty()) return true
     return withContext(Dispatchers.Main) {
       suspendCancellableCoroutine { continuation ->
-        val launcher = mediaRequestLauncher
-        if (launcher == null) {
-          Log.e(FILE_ACCESS_TAG, "Media request launcher is not initialized")
+        val launcher = mediaRequestLauncher ?: run {
           continuation.resumeWith(Result.success(false))
           return@suspendCancellableCoroutine
         }
 
         resultOkCallback = { continuation.resumeWith(Result.success(true)) }
         resultCancelledCallback = { continuation.resumeWith(Result.success(false)) }
+        
         val pendingIntent = MediaStore.createDeleteRequest(context.contentResolver, uris)
         launcher.launch(IntentSenderRequest.Builder(pendingIntent).build())
       }

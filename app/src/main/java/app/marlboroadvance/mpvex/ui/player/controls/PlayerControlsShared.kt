@@ -48,6 +48,8 @@ import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOutMap
 import androidx.compose.material.icons.filled.Flip
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Headset
 import androidx.compose.ui.draw.rotate
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -798,6 +800,15 @@ fun RenderPlayerButton(
           }
         }
       }
+    }
+
+    PlayerButton.BACKGROUND_PLAYBACK -> {
+      ControlsButton(
+        icon = Icons.Default.Headset,
+        onClick = { activity.triggerBackgroundPlayback() },
+        color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.size(buttonSize),
+      )
     }
 
     PlayerButton.NONE -> { /* Do nothing */

@@ -198,6 +198,7 @@ if (infoDialogData != null) {
               advancedPreferences.enabledStatisticsPage.set(page)
             },
             selected = statisticsPage == page,
+            leadingIcon = null,
           )
         }
       }
@@ -233,6 +234,7 @@ if (infoDialogData != null) {
               label = { Text(stringResource(mode.titleRes)) },
               selected = anime4kMode == mode.name,
               enabled = !isHighRes,
+              leadingIcon = null,
               onClick = {
                 decoderPreferences.anime4kMode.set(mode.name)
                 
@@ -275,6 +277,7 @@ if (infoDialogData != null) {
               label = { Text(stringResource(quality.titleRes)) },
               selected = anime4kQuality == quality.name,
               enabled = anime4kMode != "OFF" && !isHighRes,
+              leadingIcon = null,
               onClick = {
                 decoderPreferences.anime4kQuality.set(quality.name)
 
@@ -386,7 +389,8 @@ fun TimePickerDialog(
                             onTimeSelect(minutes * 60)
                             onDismissRequest()
                         },
-                        label = { Text("${minutes}m") }
+                        label = { Text("${minutes}m") },
+                        leadingIcon = null,
                     )
                 }
             }
