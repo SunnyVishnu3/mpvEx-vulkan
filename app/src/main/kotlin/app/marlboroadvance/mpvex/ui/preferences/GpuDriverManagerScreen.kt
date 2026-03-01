@@ -44,7 +44,12 @@ object GpuDriverManagerScreen : Screen {
         val driversDir = remember { File(context.filesDir, "gpu_drivers").apply { mkdirs() } }
 
         fun loadDrivers() {
-            installedDrivers = driversDir.listFiles()?.filter { it.isDirectory } ?: emptyList()
+            // UPDATE: Dynamically check if the directory contains any valid .so file
+            installedDrivers = driversDir.listFiles()?.filter { dir ->
+                dir.isDirectory && dir.listFiles { file -> 
+                    file.extension == "so" 
+                }?.isNotEmpty() == true
+            } ?: emptyList()
         }
 
         LaunchedEffect(Unit) { loadDrivers() }
@@ -66,8 +71,10 @@ object GpuDriverManagerScreen : Screen {
                         ZipInputStream(inputStream).use { zis ->
                             var entry = zis.nextEntry
                             while (entry != null) {
-                                if (entry.name.endsWith("libvulkan_freedreno.so")) {
-                                    val outFile = File(targetDir, "libvulkan_freedreno.so")
+                                // UPDATE: Dynamically extract any valid .so driver file instead of hardcoded name
+                                val fileName = File(entry.name).name
+                                if ((fileName.endsWith(".so") && fileName.contains("vulkan", ignoreCase = true)) || fileName.endsWith(".so")) {
+                                    val outFile = File(targetDir, fileName)
                                     outFile.outputStream().use { fos -> zis.copyTo(fos) }
                                     foundDriver = true
                                 }
@@ -83,7 +90,8 @@ object GpuDriverManagerScreen : Screen {
                             loadDrivers()
                         } else {
                             targetDir.deleteRecursively()
-                            Toast.makeText(context, "No libvulkan_freedreno.so found in ZIP", Toast.LENGTH_LONG).show()
+                            // UPDATE: Updated Toast message
+                            Toast.makeText(context, "No valid .so driver found in ZIP", Toast.LENGTH_LONG).show()
                         }
                     }
                 }
@@ -175,4 +183,3 @@ fun DriverCard(title: String, subtitle: String, isSelected: Boolean, onClick: ()
         }
     }
 }
-
