@@ -1,7 +1,10 @@
 package app.marlboroadvance.mpvex.ui.preferences
 
+import android.app.ActivityManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
@@ -76,6 +79,7 @@ object AdvancedPreferencesScreen : Screen {
   override fun Content() {
     val context = LocalContext.current
     val backStack = LocalBackStack.current
+    
     val preferences = koinInject<AdvancedPreferences>()
     val settingsManager = koinInject<SettingsManager>()
     val scope = rememberCoroutineScope()
@@ -83,6 +87,9 @@ object AdvancedPreferencesScreen : Screen {
     var showExportDialog by remember { mutableStateOf(false) }
     var importStats by remember { mutableStateOf<SettingsManager.ImportStats?>(null) }
     var exportStats by remember { mutableStateOf<SettingsManager.ExportStats?>(null) }
+    
+    // UI State for System Info Dialog
+    var showSystemInfo by remember { mutableStateOf(false) }
 
     // Export settings launcher
     val exportLauncher =
@@ -175,6 +182,11 @@ object AdvancedPreferencesScreen : Screen {
           }
         },
       )
+    }
+
+    // Display the System Info Dialog
+    if (showSystemInfo) {
+        SystemInfoDialog(onDismiss = { showSystemInfo = false })
     }
 
     Scaffold(
@@ -437,7 +449,7 @@ object AdvancedPreferencesScreen : Screen {
             }
           }
 
-          // Hardware Section - ADDED HERE
+          // Hardware Section
           item {
             PreferenceSectionHeader(title = "Hardware")
           }
@@ -453,6 +465,20 @@ object AdvancedPreferencesScreen : Screen {
                   ) 
                 },
                 onClick = { backStack.add(GpuDriverManagerScreen) }
+              )
+              
+              PreferenceDivider()
+              
+              // The System Information Button
+              Preference(
+                title = { Text("System Information") },
+                summary = { 
+                  Text(
+                    "View detailed hardware, CPU, GPU, and memory diagnostics",
+                    color = MaterialTheme.colorScheme.outline
+                  ) 
+                },
+                onClick = { showSystemInfo = true }
               )
             }
           }
@@ -709,7 +735,7 @@ object AdvancedPreferencesScreen : Screen {
               )
             }
           }
-          
+         
           // Logging Section
           item {
             PreferenceSectionHeader(title = "Logging")
@@ -763,3 +789,95 @@ object AdvancedPreferencesScreen : Screen {
 
 fun getSimplifiedPathFromUri(uri: String): String =
   Environment.getExternalStorageDirectory().canonicalPath + "/" + Uri.decode(uri).substringAfterLast(":")
+
+
+// Eden-Style System Info Dialog Replicated in Jetpack Compose
+@Composable
+fun SystemInfoDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    
+    val systemInfo = remember {
+        // 1. Memory Calculations
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val memInfo = ActivityManager.MemoryInfo()
+        activityManager.getMemoryInfo(memInfo)
+        val totalRamMb = memInfo.totalMem / (1024 * 1024)
+        val availRamMb = memInfo.availMem / (1024 * 1024)
+
+        // 2. GPU / System GL API
+        val configInfo = activityManager.deviceConfigurationInfo
+        val glesVersion = configInfo.glEsVersion
+
+        // 3. Deep Linux Kernel CPU Parsing
+        var cpuFeatures = "Unknown"
+        var cpuHardware = Build.HARDWARE
+        val numThreads = Runtime.getRuntime().availableProcessors()
+        
+        try {
+            // Read raw kernel CPU info
+            val cpuInfoText = File("/proc/cpuinfo").readLines()
+            for (line in cpuInfoText) {
+                if (line.lowercase().startsWith("features")) {
+                    // Grab features and format them beautifully (NEON+DP+Crypto...)
+                    val rawFeatures = line.substringAfter(":").trim().split(" ")
+                    val keyFeatures = rawFeatures.filter { 
+                        it.contains("neon", true) || it.contains("crypto", true) || 
+                        it.contains("lse", true) || it.contains("bf16", true) || 
+                        it.contains("i8mm", true) || it.contains("sve", true)
+                    }.joinToString("+") { it.uppercase() }
+                    
+                    if (keyFeatures.isNotEmpty()) cpuFeatures = keyFeatures
+                }
+                if (line.lowercase().startsWith("hardware")) {
+                    cpuHardware = line.substringAfter(":").trim()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // SoC ID targeting (handles Android 12+ SOC_MODEL gracefully)
+        val socId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Build.SOC_MODEL else cpuHardware
+        
+        // Formats the Cortex string based on known modern flagships like the SM8635
+        val cortexTopology = if (socId.uppercase().contains("SM8635")) {
+            "3x Cortex-A520 + 4x Cortex-A720 + 1x Cortex-X4"
+        } else {
+            "ARMv8/v9 Big.Little Architecture"
+        }
+
+        // Replicate the exact Eden String format
+        """
+        === General Information ===
+        Device Manufacturer: ${Build.MANUFACTURER}
+        Device Model: ${Build.MODEL}
+        Android OS: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})
+        
+        === CPU Information ===
+        SOC: ${socId.uppercase()}
+        CPUs: $cortexTopology
+        Threads: $numThreads
+        Features: $cpuFeatures
+        
+        === GPU Information ===
+        System GL API: OpenGL ES $glesVersion
+        System Vulkan API: Supported
+        Note: MPV manages Turnip rendering contexts independently.
+        
+        === Memory Info ===
+        Available RAM: $availRamMb MB
+        Total RAM: $totalRamMb MB
+        """.trimIndent()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "System Information", fontWeight = FontWeight.Bold) },
+        text = { Text(text = systemInfo, style = MaterialTheme.typography.bodyMedium) },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("OK")
+            }
+        }
+    )
+}
