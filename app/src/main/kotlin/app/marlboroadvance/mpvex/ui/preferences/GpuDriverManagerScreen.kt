@@ -26,15 +26,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.zip.ZipInputStream
 
-// Data class to hold the specific driver variants from GitHub
+// Data classes for GitHub integration and Local UI states
 data class GitHubAsset(val name: String, val downloadUrl: String)
+data class DriverItem(val folder: File, val displayName: String, val displaySubtitle: String)
 
 @Serializable
 object GpuDriverManagerScreen : Screen {
@@ -47,7 +48,7 @@ object GpuDriverManagerScreen : Screen {
         
         val prefs = remember { context.getSharedPreferences("gpu_driver_settings", Context.MODE_PRIVATE) }
         var activeDriverDir by remember { mutableStateOf(prefs.getString("custom_driver_dir", null)) }
-        var installedDrivers by remember { mutableStateOf<List<File>>(emptyList()) }
+        var installedDrivers by remember { mutableStateOf<List<DriverItem>>(emptyList()) }
         
         // States for the Fetcher UI
         var isFetchingList by remember { mutableStateOf(false) }
@@ -59,9 +60,35 @@ object GpuDriverManagerScreen : Screen {
         val driversDir = remember { File(context.filesDir, "gpu_drivers").apply { mkdirs() } }
 
         fun loadDrivers() {
-            installedDrivers = driversDir.listFiles()?.filter { dir ->
-                dir.isDirectory && dir.listFiles { file -> file.extension == "so" }?.isNotEmpty() == true
-            }?.sortedBy { it.name } ?: emptyList()
+            val currentDrivers = mutableListOf<DriverItem>()
+            val folders = driversDir.listFiles()?.filter { it.isDirectory } ?: emptyList()
+            
+            for (folder in folders) {
+                val hasSoFile = folder.listFiles { file -> file.extension == "so" }?.isNotEmpty() == true
+                if (hasSoFile) {
+                    val metaFile = File(folder, "meta.json")
+                    var dName = folder.name
+                    var dSubtitle = "Custom Turnip Driver"
+                    
+                    // JSON Metadata Extractor
+                    if (metaFile.exists()) {
+                        try {
+                            val jsonText = metaFile.readText()
+                            val json = JSONObject(jsonText)
+                            dName = json.optString("name", folder.name)
+                            
+                            val version = json.optString("driverVersion", "")
+                            val vendor = json.optString("vendor", "Custom")
+                            val api = json.optString("api", "Vulkan")
+                            dSubtitle = "$vendor | $api | v$version"
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                    currentDrivers.add(DriverItem(folder, dName, dSubtitle))
+                }
+            }
+            installedDrivers = currentDrivers.sortedBy { it.displayName }
         }
 
         LaunchedEffect(Unit) { loadDrivers() }
@@ -75,10 +102,11 @@ object GpuDriverManagerScreen : Screen {
                 var entry = zis.nextEntry
                 while (entry != null) {
                     val fileName = File(entry.name).name
-                    if (fileName.endsWith(".so")) {
+                    // Keep both .so files and meta.json!
+                    if (fileName.endsWith(".so") || fileName.equals("meta.json", ignoreCase = true)) {
                         val outFile = File(targetDir, fileName)
                         outFile.outputStream().use { fos -> zis.copyTo(fos) }
-                        foundDriver = true
+                        if (fileName.endsWith(".so")) foundDriver = true
                     }
                     zis.closeEntry()
                     entry = zis.nextEntry
@@ -105,7 +133,7 @@ object GpuDriverManagerScreen : Screen {
             }
         }
 
-        // 1. Fetch the list of available drivers (Autotuner, GMEM, SYMEM, etc.)
+        // Fetch the list of available drivers
         fun fetchAvailableDrivers() {
             if (isFetchingList) return
             isFetchingList = true
@@ -116,7 +144,7 @@ object GpuDriverManagerScreen : Screen {
                     connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
                     
                     val response = connection.inputStream.bufferedReader().readText()
-                    val json = org.json.JSONObject(response)
+                    val json = JSONObject(response)
                     
                     releaseTitle = json.getString("name")
                     val assetsArray = json.getJSONArray("assets")
@@ -143,7 +171,7 @@ object GpuDriverManagerScreen : Screen {
             }
         }
 
-        // 2. Download the specific driver variant the user tapped
+        // Download specific tapped variant
         fun downloadSpecificDriver(asset: GitHubAsset) {
             showAssetDialog = false
             isDownloadingAsset = true
@@ -161,7 +189,7 @@ object GpuDriverManagerScreen : Screen {
             }
         }
 
-        // 3. The Dialog UI showing the fetched drivers
+        // The Dialog UI showing fetched drivers
         if (showAssetDialog) {
             AlertDialog(
                 onDismissRequest = { showAssetDialog = false },
@@ -230,21 +258,21 @@ object GpuDriverManagerScreen : Screen {
                     )
                 }
 
-                items(installedDrivers) { driverFolder ->
+                items(installedDrivers) { driverItem ->
                     DriverCard(
-                        title = driverFolder.name,
-                        subtitle = "Custom Turnip Driver",
-                        isSelected = activeDriverDir == driverFolder.absolutePath,
+                        title = driverItem.displayName,
+                        subtitle = driverItem.displaySubtitle,
+                        isSelected = activeDriverDir == driverItem.folder.absolutePath,
                         onClick = {
-                            activeDriverDir = driverFolder.absolutePath
-                            prefs.edit().putString("custom_driver_dir", driverFolder.absolutePath).apply()
+                            activeDriverDir = driverItem.folder.absolutePath
+                            prefs.edit().putString("custom_driver_dir", driverItem.folder.absolutePath).apply()
                         },
                         onDelete = {
-                            if (activeDriverDir == driverFolder.absolutePath) {
+                            if (activeDriverDir == driverItem.folder.absolutePath) {
                                 activeDriverDir = null
                                 prefs.edit().remove("custom_driver_dir").apply()
                             }
-                            driverFolder.deleteRecursively()
+                            driverItem.folder.deleteRecursively()
                             loadDrivers()
                         }
                     )
