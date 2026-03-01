@@ -1711,6 +1711,13 @@ class PlayerViewModel(
       return "" to ""
     }
 
+    // Try MediaStore first (much faster - uses cached values)
+    val mediaStoreMetadata = getVideoMetadataFromMediaStore(uri)
+    if (mediaStoreMetadata != null) {
+      return mediaStoreMetadata
+    }
+
+    // Fallback to MediaMetadataRetriever only if MediaStore fails
     val retriever = android.media.MediaMetadataRetriever()
     return try {
       // For file:// URIs, use the path directly (faster)
@@ -1724,10 +1731,7 @@ class PlayerViewModel(
       // Get duration
       val durationMs = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)
       val durationStr = if (durationMs != null) {
-        val seconds = durationMs.toLong() / 1000
-        val minutes = seconds / 60
-        val remainingSeconds = seconds % 60
-        "${minutes}:${remainingSeconds.toString().padStart(2, '0')}"
+        formatDuration(durationMs.toLong())
       } else ""
 
       // Get resolution
@@ -1747,6 +1751,143 @@ class PlayerViewModel(
       } catch (e: Exception) {
         // Ignore release errors
       }
+    }
+  }
+
+  /**
+   * Get video metadata from MediaStore (fast - uses cached system values).
+   * Returns null if the video is not found in MediaStore.
+   */
+  private fun getVideoMetadataFromMediaStore(uri: Uri): Pair<String, String>? {
+    return try {
+      val projection = arrayOf(
+        android.provider.MediaStore.Video.Media.DURATION,
+        android.provider.MediaStore.Video.Media.WIDTH,
+        android.provider.MediaStore.Video.Media.HEIGHT,
+        android.provider.MediaStore.Video.Media.DATA
+      )
+
+      // Determine the query URI based on the input URI scheme
+      val queryUri = when (uri.scheme) {
+        "content" -> {
+          // If it's already a content URI, use it directly
+          if (uri.toString().startsWith(android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI.toString())) {
+            uri
+          } else {
+            // Try to find by path if available
+            null
+          }
+        }
+        "file" -> {
+          // For file:// URIs, query by path
+          null
+        }
+        else -> null
+      }
+
+      // Query by URI if we have a content URI
+      if (queryUri != null) {
+        host.context.contentResolver.query(
+          queryUri,
+          projection,
+          null,
+          null,
+          null
+        )?.use { cursor ->
+          if (cursor.moveToFirst()) {
+            val durationColumn = cursor.getColumnIndex(android.provider.MediaStore.Video.Media.DURATION)
+            val widthColumn = cursor.getColumnIndex(android.provider.MediaStore.Video.Media.WIDTH)
+            val heightColumn = cursor.getColumnIndex(android.provider.MediaStore.Video.Media.HEIGHT)
+
+            val durationMs = if (durationColumn >= 0) cursor.getLong(durationColumn) else 0L
+            val width = if (widthColumn >= 0) cursor.getInt(widthColumn) else 0
+            val height = if (heightColumn >= 0) cursor.getInt(heightColumn) else 0
+
+            val durationStr = formatDuration(durationMs)
+
+            val resolutionStr = if (width > 0 && height > 0) {
+              "${width}x${height}"
+            } else ""
+
+            return durationStr to resolutionStr
+          }
+        }
+      }
+
+      // Query by file path if we have a file:// URI or content URI without direct match
+      val filePath = when (uri.scheme) {
+        "file" -> uri.path
+        "content" -> {
+          // Try to get the file path from content URI
+          host.context.contentResolver.query(
+            uri,
+            arrayOf(android.provider.MediaStore.Video.Media.DATA),
+            null,
+            null,
+            null
+          )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+              val dataColumn = cursor.getColumnIndex(android.provider.MediaStore.Video.Media.DATA)
+              if (dataColumn >= 0) cursor.getString(dataColumn) else null
+            } else null
+          }
+        }
+        else -> null
+      }
+
+      if (filePath != null) {
+        val selection = "${android.provider.MediaStore.Video.Media.DATA} = ?"
+        val selectionArgs = arrayOf(filePath)
+
+        host.context.contentResolver.query(
+          android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+          projection,
+          selection,
+          selectionArgs,
+          null
+        )?.use { cursor ->
+          if (cursor.moveToFirst()) {
+            val durationColumn = cursor.getColumnIndex(android.provider.MediaStore.Video.Media.DURATION)
+            val widthColumn = cursor.getColumnIndex(android.provider.MediaStore.Video.Media.WIDTH)
+            val heightColumn = cursor.getColumnIndex(android.provider.MediaStore.Video.Media.HEIGHT)
+
+            val durationMs = if (durationColumn >= 0) cursor.getLong(durationColumn) else 0L
+            val width = if (widthColumn >= 0) cursor.getInt(widthColumn) else 0
+            val height = if (heightColumn >= 0) cursor.getInt(heightColumn) else 0
+
+            val durationStr = formatDuration(durationMs)
+
+            val resolutionStr = if (width > 0 && height > 0) {
+              "${width}x${height}"
+            } else ""
+
+            return durationStr to resolutionStr
+          }
+        }
+      }
+
+      null
+    } catch (e: Exception) {
+      android.util.Log.w("PlayerViewModel", "Failed to get metadata from MediaStore for $uri, will try MediaMetadataRetriever", e)
+      null
+    }
+  }
+
+  /**
+   * Format duration in milliseconds to hh:mm:ss or mm:ss format
+   */
+  private fun formatDuration(durationMs: Long): String {
+    if (durationMs <= 0) return ""
+    
+    val totalSeconds = durationMs / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    
+    return if (hours > 0) {
+      String.format("%d:%02d:%02d", hours, minutes, seconds)
+    } else {
+      String.format("%d:%02d", minutes, seconds)
     }
   }
   
