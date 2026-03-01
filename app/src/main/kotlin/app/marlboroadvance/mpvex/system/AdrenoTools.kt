@@ -12,6 +12,8 @@ object AdrenoTools {
     init {
         try {
             System.loadLibrary("adrenotools_bridge")
+            // Force Android to unpack the bait file into the trusted lib directory!
+            runCatching { System.loadLibrary("vulkan_freedreno") }
             isBridgeLoaded = true
             Log.i(TAG, "Native bridge loaded successfully")
         } catch (e: UnsatisfiedLinkError) {
@@ -49,7 +51,6 @@ object AdrenoTools {
         val driverName = driverFile.name
         Log.i(TAG, "Found dynamic driver library: $driverName")
         
-        // Grant Android/Linux executable permissions so the linker doesn't reject it
         runCatching {
             dir.setExecutable(true, false)
             dir.setReadable(true, false)
@@ -57,11 +58,13 @@ object AdrenoTools {
             driverFile.setReadable(true, false)
         }
 
-        // cacheDir is blocked from executing code on Android 10+. Use an executable app Dir instead.
         val tmpDir = context.getDir("vulkan_tmp", Context.MODE_PRIVATE)
         val tmpLibDir = tmpDir.absolutePath
         val hookLibDir = context.applicationInfo.nativeLibraryDir
         
+        val baitFile = File(hookLibDir, "libvulkan_freedreno.so")
+        Log.i(TAG, "Checking Kotlin for bait library at: ${baitFile.absolutePath} - Exists: ${baitFile.exists()}")
+
         return nativeHookDriver(tmpLibDir, hookLibDir, driverDir, driverName)
     }
 }
