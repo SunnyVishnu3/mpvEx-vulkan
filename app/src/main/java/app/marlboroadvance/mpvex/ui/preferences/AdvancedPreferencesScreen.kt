@@ -346,7 +346,7 @@ object AdvancedPreferencesScreen : Screen {
                     val tree = DocumentFile.fromTreeUri(context, mpvConfStorageLocation.toUri())
                     val inputConfFile = tree?.findFile("input.conf")
                     if (inputConfFile != null && inputConfFile.exists()) {
-                      context.contentResolver.openInputStream(inputConfFile.uri)?.copyTo(tempFile.outputStream())
+                       context.contentResolver.openInputStream(inputConfFile.uri)?.copyTo(tempFile.outputStream())
                       val content = tempFile.readLines().fastJoinToString("\n")
                       preferences.inputConf.set(content)
                       File(context.filesDir, "input.conf").writeText(content)
@@ -371,7 +371,7 @@ object AdvancedPreferencesScreen : Screen {
                 },
                 onClick = { locationPicker.launch(null) },
                 iconButtonIcon = { 
-                  Icon(
+                   Icon(
                     Icons.Default.Clear, 
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.error,
@@ -449,6 +449,23 @@ object AdvancedPreferencesScreen : Screen {
               
               PreferenceDivider()
               
+              // ==========================================
+              // THE NEW TURNIP ENVIRONMENT MENU BUTTON
+              // ==========================================
+              Preference(
+                title = { Text("Turnip Environment Variables") },
+                summary = { 
+                  Text(
+                    "Configure custom Turnip Mesa parameters",
+                    color = MaterialTheme.colorScheme.outline
+                  ) 
+                },
+                onClick = { backStack.add(TurnipSettingsScreen) }
+              )
+              // ==========================================
+
+              PreferenceDivider()
+              
               // The System Information Button
               Preference(
                 title = { Text("System Information") },
@@ -462,7 +479,7 @@ object AdvancedPreferencesScreen : Screen {
               )
             }
           }
-          
+           
           // Scripts Section
           item {
             PreferenceSectionHeader(title = "Scripts")
