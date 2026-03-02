@@ -42,7 +42,6 @@ import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import app.marlboroadvance.mpvex.presentation.Screen
 import app.marlboroadvance.mpvex.ui.player.Debanding
 import app.marlboroadvance.mpvex.ui.utils.LocalBackStack
-import app.marlboroadvance.mpvex.ui.preferences.VulkanUtils
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
@@ -59,6 +58,7 @@ object DecoderPreferencesScreen : Screen {
     val context = LocalContext.current
     val isVulkanSupported = remember { VulkanUtils.isVulkanSupported(context) }
     var showGpuNextWarning by remember { mutableStateOf(false) }
+
     Scaffold(
       topBar = {
         TopAppBar(
@@ -84,10 +84,7 @@ object DecoderPreferencesScreen : Screen {
     ) { padding ->
       ProvidePreferenceLocals {
         LazyColumn(
-          modifier =
-            Modifier
-              .fillMaxSize()
-              .padding(padding),
+          modifier = Modifier.fillMaxSize().padding(padding),
         ) {
           item {
             PreferenceSectionHeader(title = stringResource(R.string.pref_decoder))
@@ -98,24 +95,22 @@ object DecoderPreferencesScreen : Screen {
               val tryHWDecoding by preferences.tryHWDecoding.collectAsState()
               SwitchPreference(
                 value = tryHWDecoding,
-                onValueChange = {
-                  preferences.tryHWDecoding.set(it)
-                },
+                onValueChange = { preferences.tryHWDecoding.set(it) },
                 title = { Text(stringResource(R.string.pref_decoder_try_hw_dec_title)) },
               )
 
               PreferenceDivider()
 
               val gpuNext by preferences.gpuNext.collectAsState()
-              val useVulkan by preferences.useVulkan.collectAsState() // Added to check Vulkan state
+              val useVulkan by preferences.useVulkan.collectAsState() 
               SwitchPreference(
                 value = gpuNext,
                 onValueChange = { enabled ->
-                    if (enabled && !gpuNext && !useVulkan) { // Only show warning if Vulkan is disabled
+                    if (enabled && !gpuNext && !useVulkan) { 
                         showGpuNextWarning = true
                     } else {
                         preferences.gpuNext.set(enabled)
-                        if (enabled && !useVulkan) { // Only disable Anime4K if Vulkan is disabled
+                        if (enabled && !useVulkan) { 
                             preferences.enableAnime4K.set(false)
                         }
                     }
@@ -154,21 +149,21 @@ object DecoderPreferencesScreen : Screen {
                                           color = MaterialTheme.colorScheme.onErrorContainer
                                       )
                                   }
-                              }
+                               }
                           }
                       },
                       confirmButton = {
                           Button(onClick = {
                               preferences.gpuNext.set(true)
-                              preferences.enableAnime4K.set(false) // Ensure Anime4K is disabled on confirmation
+                              preferences.enableAnime4K.set(false) 
                               showGpuNextWarning = false
                           }) {
                               Text(stringResource(R.string.pref_decoder_gpu_next_enable_anyway))
                           }
-                      },
+                       },
                       dismissButton = {
                           TextButton(onClick = { showGpuNextWarning = false }) {
-                              Text(stringResource(R.string.generic_cancel))
+                               Text(stringResource(R.string.generic_cancel))
                           }
                       }
                   )
@@ -176,26 +171,23 @@ object DecoderPreferencesScreen : Screen {
 
               PreferenceDivider()
 
-              // val useVulkan by preferences.useVulkan.collectAsState() // Moved up for gpuNext logic
               SwitchPreference(
                 value = useVulkan,
                 onValueChange = { enabled ->
                   preferences.useVulkan.set(enabled)
-                  // When Vulkan is disabled, ensure Anime4K and GPU Next are not both enabled
                   if (!enabled) {
                     val anime4kEnabled = preferences.enableAnime4K.get()
                     val gpuNextEnabled = preferences.gpuNext.get()
                     if (anime4kEnabled && gpuNextEnabled) {
-                      // Disable GPU Next to keep Anime4K
                       preferences.gpuNext.set(false)
                     }
-                  }
+                   }
                 },
                 enabled = isVulkanSupported,
                 title = { Text(stringResource(R.string.pref_decoder_vulkan_title) + " (Experimental)") },
                 summary = {
                   Text(
-                    stringResource(
+                     stringResource(
                       if (isVulkanSupported) R.string.pref_decoder_vulkan_summary
                       else R.string.pref_decoder_vulkan_not_supported
                     ),
@@ -205,8 +197,48 @@ object DecoderPreferencesScreen : Screen {
                 },
               )
 
+              // ==========================================
+              // NEW DISK SHADER CACHE & ASYNC GPU SWITCHES
+              // ==========================================
               PreferenceDivider()
+              val customPrefs = context.getSharedPreferences("mpvex_custom_prefs", Context.MODE_PRIVATE)
+              
+              var diskShaderCache by remember { mutableStateOf(customPrefs.getBoolean("disk_shader_cache", true)) }
+              SwitchPreference(
+                value = diskShaderCache,
+                onValueChange = {
+                  diskShaderCache = it
+                  customPrefs.edit().putBoolean("disk_shader_cache", it).apply()
+                },
+                title = { Text("Disk Shader Cache") },
+                summary = {
+                  Text(
+                    "Caches compiled GPU shaders to storage to prevent playback stuttering",
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
 
+              PreferenceDivider()
+              var asyncCompute by remember { mutableStateOf(customPrefs.getBoolean("async_gpu_compute", true)) }
+              SwitchPreference(
+                value = asyncCompute,
+                onValueChange = {
+                  asyncCompute = it
+                  customPrefs.edit().putBoolean("async_gpu_compute", it).apply()
+                },
+                enabled = useVulkan, // Async compute strictly requires the Vulkan API backend!
+                title = { Text("Vulkan Asynchronous Compute") },
+                summary = {
+                  Text(
+                    "Allows Vulkan compute and transfer operations to run asynchronously across queues",
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+              // ==========================================
+
+              PreferenceDivider()
               val debanding by preferences.debanding.collectAsState()
               ListPreference(
                 value = debanding,
@@ -214,41 +246,31 @@ object DecoderPreferencesScreen : Screen {
                 values = Debanding.entries,
                 title = { Text(stringResource(R.string.pref_decoder_debanding_title)) },
                 summary = {
-                  Text(
-                    debanding.name,
-                    color = MaterialTheme.colorScheme.outline,
-                  )
+                  Text(debanding.name, color = MaterialTheme.colorScheme.outline)
                 },
               )
 
               PreferenceDivider()
-
               val useYUV420p by preferences.useYUV420P.collectAsState()
               SwitchPreference(
                 value = useYUV420p,
-                onValueChange = {
-                  preferences.useYUV420P.set(it)
-                },
+                onValueChange = { preferences.useYUV420P.set(it) },
                 title = { Text(stringResource(R.string.pref_decoder_yuv420p_title)) },
                 summary = {
-                  Text(
-                    stringResource(R.string.pref_decoder_yuv420p_summary),
-                    color = MaterialTheme.colorScheme.outline,
-                  )
+                  Text(stringResource(R.string.pref_decoder_yuv420p_summary), color = MaterialTheme.colorScheme.outline)
                 },
               )
 
               PreferenceDivider()
-              
               val enableAnime4K by preferences.enableAnime4K.collectAsState()
               SwitchPreference(
                 value = enableAnime4K,
                 onValueChange = { enabled ->
-                    preferences.enableAnime4K.set(enabled)
-                    if (enabled && !useVulkan) { // Only disable GPU Next if Vulkan is disabled
+                     preferences.enableAnime4K.set(enabled)
+                    if (enabled && !useVulkan) { 
                         preferences.gpuNext.set(false)
                     }
-                },
+                 },
                 title = { Text(stringResource(R.string.pref_anime4k_title)) },
                 summary = {
                   Column {
@@ -262,12 +284,12 @@ object DecoderPreferencesScreen : Screen {
                       style = MaterialTheme.typography.bodySmall,
                       textDecoration = TextDecoration.Underline,
                       modifier = Modifier.clickable {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/bloc97/Anime4K"))
+                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/bloc97/Anime4K"))
                         context.startActivity(intent)
                       }
                     )
                   }
-                },
+                 },
               )
             }
           }
@@ -279,7 +301,7 @@ object DecoderPreferencesScreen : Screen {
 
 object VulkanUtils {
     private const val TAG = "VulkanUtils"
-
+  
     /**
      * Checks if the device supports Vulkan for MPV rendering
      *
@@ -292,35 +314,25 @@ object VulkanUtils {
      */
     fun isVulkanSupported(context: Context): Boolean {
         try {
-            // Vulkan 1.3 requires Android 13 (API 33) minimum
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
                 Log.d(TAG, "Vulkan not supported: Android version ${Build.VERSION.SDK_INT} < 33 (Tiramisu)")
                 return false
             }
 
             val packageManager = context.packageManager
-
-            // Check for OpenGL ES 3.1+ support (required by Android for Vulkan)
-            val configInfo = packageManager.systemAvailableFeatures
-                .firstOrNull { it.name == null }
-
+            val configInfo = packageManager.systemAvailableFeatures.firstOrNull { it.name == null }
             val glesVersion = configInfo?.reqGlEsVersion ?: 0
             val glesMajor = glesVersion shr 16
             val glesMinor = glesVersion and 0xFFFF
 
             Log.d(TAG, "Device OpenGL ES version: $glesMajor.$glesMinor (raw: 0x${glesVersion.toString(16)})")
 
-            // OpenGL ES 3.1 = 0x00030001
             if (glesVersion < 0x00030001) {
                 Log.d(TAG, "Vulkan not supported: OpenGL ES $glesMajor.$glesMinor < 3.1")
                 return false
             }
 
-            // Check for Vulkan 1.3 hardware version (required for proper MPV support)
-            if (packageManager.hasSystemFeature(
-                    PackageManager.FEATURE_VULKAN_HARDWARE_VERSION,
-                    0x00403000 // Vulkan 1.3
-                )) {
+            if (packageManager.hasSystemFeature(PackageManager.FEATURE_VULKAN_HARDWARE_VERSION, 0x00403000)) {
                 Log.d(TAG, "Vulkan 1.3 supported ✓")
                 return true
             }
