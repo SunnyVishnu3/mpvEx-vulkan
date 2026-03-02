@@ -20,6 +20,7 @@ import `is`.xyz.mpv.MPVLib
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.reflect.KProperty
+import java.io.File
 
 class MPVView(
   context: Context,
@@ -97,9 +98,42 @@ class MPVView(
   override fun initOptions() {
     setVo(if (decoderPreferences.gpuNext.get()) "gpu-next" else "gpu")
     
+    // ========================================================================
+    // APPLY CUSTOM SHADER CACHE & AUDIO ENGINE SETTINGS
+    // ========================================================================
+    val customPrefs = context.getSharedPreferences("mpvex_custom_prefs", Context.MODE_PRIVATE)
+
+    // 1. Audio Engine
+    val audioEngine = customPrefs.getString("audio_engine", "auto")
+    if (audioEngine != "auto" && !audioEngine.isNullOrEmpty()) {
+        MPVLib.setOptionString("ao", audioEngine)
+    }
+
+    // 2. Disk Shader Cache
+    val useShaderCache = customPrefs.getBoolean("disk_shader_cache", true)
+    if (useShaderCache) {
+        MPVLib.setOptionString("gpu-shader-cache", "yes")
+        val cacheDir = File(context.cacheDir, "mpv_shaders")
+        cacheDir.mkdirs()
+        MPVLib.setOptionString("gpu-shader-cache-dir", cacheDir.absolutePath)
+    } else {
+        MPVLib.setOptionString("gpu-shader-cache", "no")
+    }
+    // ========================================================================
+
     // Set GPU API context (Vulkan or OpenGL)
     if (decoderPreferences.useVulkan.get()) {
       MPVLib.setOptionString("gpu-context", "androidvk")
+
+      // 3. Vulkan Asynchronous Compute
+      val asyncCompute = customPrefs.getBoolean("async_gpu_compute", true)
+      if (asyncCompute) {
+          MPVLib.setOptionString("vulkan-async-compute", "yes")
+          MPVLib.setOptionString("vulkan-async-transfer", "yes")
+      } else {
+          MPVLib.setOptionString("vulkan-async-compute", "no")
+          MPVLib.setOptionString("vulkan-async-transfer", "no")
+      }
     }
 
     // Set hwdec with fallback order: HW+ (mediacodec) -> HW (mediacodec-copy) -> SW (no)
