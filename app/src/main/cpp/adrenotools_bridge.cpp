@@ -12,9 +12,6 @@
 
 extern "C" {
 
-// ==========================================
-// NEW EDEN FORK ENV VARIABLE INJECTOR (POSIX)
-// ==========================================
 JNIEXPORT jboolean JNICALL
 Java_app_marlboroadvance_mpvex_system_AdrenoTools_nativeSetEnv(
         JNIEnv *env, jobject thiz, jstring name, jstring value) {
@@ -22,7 +19,6 @@ Java_app_marlboroadvance_mpvex_system_AdrenoTools_nativeSetEnv(
     const char *c_name = env->GetStringUTFChars(name, nullptr);
     const char *c_value = env->GetStringUTFChars(value, nullptr);
 
-    // Use standard POSIX setenv to set environment variables natively
     int result = setenv(c_name, c_value, 1);
 
     env->ReleaseStringUTFChars(name, c_name);
@@ -40,20 +36,15 @@ Java_app_marlboroadvance_mpvex_system_AdrenoTools_nativeHookDriver(
     const char *driver_dir = env->GetStringUTFChars(customDriverDir, nullptr);
     const char *d_name = env->GetStringUTFChars(driverName, nullptr); 
     
-    LOGI("Starting AdrenoTools injection...");
+    LOGI("Starting AdrenoTools injection for driver: %s", d_name);
 
-    // 1. Verify the Bait Library actually exists on the phone
     std::string bait_path = std::string(hook_dir) + "/libvulkan_freedreno.so";
     if (access(bait_path.c_str(), F_OK) != 0) {
         LOGE("CRITICAL: The bait file is MISSING from the app's lib folder: %s", bait_path.c_str());
-    } else {
-        LOGI("SUCCESS: Bait file found at %s", bait_path.c_str());
     }
 
-    // 2. Clear any stale "Ghost" errors left behind by Android
     dlerror(); 
 
-    // 3. Trigger the hack
     void* handle = adrenotools_open_libvulkan(
         RTLD_NOW | RTLD_GLOBAL, 
         ADRENOTOOLS_DRIVER_CUSTOM, 
@@ -65,12 +56,15 @@ Java_app_marlboroadvance_mpvex_system_AdrenoTools_nativeHookDriver(
         nullptr
     ); 
     
+    // ==========================================
+    // UPDATED DYNAMIC LOGGING
+    // ==========================================
     if (handle == nullptr) {
         const char* err = dlerror();
-        LOGE("CRITICAL: adrenotools_open_libvulkan failed!");
-        LOGE("Real dlerror: %s", err != nullptr ? err : "No dlerror generated (Likely LinkerNSBypass failed)");
+        LOGE("Driver Hook Failed: Could not load '%s' into memory", d_name);
+        LOGE("Reason: %s", err != nullptr ? err : "Android Linker Namespace Bypass Blocked");
     } else {
-        LOGI("SUCCESS: Custom Turnip driver loaded into memory! Handle: %p", handle);
+        LOGI("SUCCESS: Custom driver '%s' loaded into memory! Handle: %p", d_name, handle);
     }
 
     env->ReleaseStringUTFChars(tmpLibDir, tmp_dir);
