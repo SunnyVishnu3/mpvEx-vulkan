@@ -3,6 +3,7 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include <android/log.h>
+#include <stdlib.h>
 #include "adrenotools/driver.h" 
 
 #define LOG_TAG "AdrenoToolsBridge"
@@ -12,7 +13,7 @@
 extern "C" {
 
 // ==========================================
-// NEW EDEN FORK ENV VARIABLE INJECTOR
+// NEW EDEN FORK ENV VARIABLE INJECTOR (POSIX)
 // ==========================================
 JNIEXPORT jboolean JNICALL
 Java_app_marlboroadvance_mpvex_system_AdrenoTools_nativeSetEnv(
@@ -21,23 +22,23 @@ Java_app_marlboroadvance_mpvex_system_AdrenoTools_nativeSetEnv(
     const char *c_name = env->GetStringUTFChars(name, nullptr);
     const char *c_value = env->GetStringUTFChars(value, nullptr);
 
-    // Call the new function from Eden's driver.h to bypass Android 16 sandboxing
-    bool success = adrenotools_set_env(c_name, c_value); 
+    // Use standard POSIX setenv to set environment variables natively
+    int result = setenv(c_name, c_value, 1);
 
     env->ReleaseStringUTFChars(name, c_name);
     env->ReleaseStringUTFChars(value, c_value);
 
-    return success ? JNI_TRUE : JNI_FALSE;
+    return result == 0 ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT jboolean JNICALL
 Java_app_marlboroadvance_mpvex_system_AdrenoTools_nativeHookDriver(
-        JNIEnv *env, jobject thiz, jstring tmp_lib_dir, jstring hook_lib_dir, jstring custom_driver_dir, jstring driver_name) {
+        JNIEnv *env, jobject thiz, jstring tmpLibDir, jstring hookLibDir, jstring customDriverDir, jstring driverName) {
     
-    const char *tmp_dir = env->GetStringUTFChars(tmp_lib_dir, nullptr);
-    const char *hook_dir = env->GetStringUTFChars(hook_lib_dir, nullptr);
-    const char *driver_dir = env->GetStringUTFChars(custom_driver_dir, nullptr);
-    const char *d_name = env->GetStringUTFChars(driver_name, nullptr); 
+    const char *tmp_dir = env->GetStringUTFChars(tmpLibDir, nullptr);
+    const char *hook_dir = env->GetStringUTFChars(hookLibDir, nullptr);
+    const char *driver_dir = env->GetStringUTFChars(customDriverDir, nullptr);
+    const char *d_name = env->GetStringUTFChars(driverName, nullptr); 
     
     LOGI("Starting AdrenoTools injection...");
 
@@ -71,12 +72,12 @@ Java_app_marlboroadvance_mpvex_system_AdrenoTools_nativeHookDriver(
     } else {
         LOGI("SUCCESS: Custom Turnip driver loaded into memory! Handle: %p", handle);
     }
-    
-    env->ReleaseStringUTFChars(tmp_lib_dir, tmp_dir);
-    env->ReleaseStringUTFChars(hook_lib_dir, hook_dir);
-    env->ReleaseStringUTFChars(custom_driver_dir, driver_dir);
-    env->ReleaseStringUTFChars(driver_name, d_name);
-    
+
+    env->ReleaseStringUTFChars(tmpLibDir, tmp_dir);
+    env->ReleaseStringUTFChars(hookLibDir, hook_dir);
+    env->ReleaseStringUTFChars(customDriverDir, driver_dir);
+    env->ReleaseStringUTFChars(driverName, d_name);
+
     return handle != nullptr ? JNI_TRUE : JNI_FALSE;
 }
 
