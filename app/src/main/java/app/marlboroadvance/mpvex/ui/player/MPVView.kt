@@ -101,8 +101,6 @@ class MPVView(
     if (decoderPreferences.useVulkan.get()) {
       MPVLib.setOptionString("gpu-context", "androidvk")
     }
-    
-    MPVLib.setOptionString("profile", "fast")
 
     // Set hwdec with fallback order: HW+ (mediacodec) -> HW (mediacodec-copy) -> SW (no)
     MPVLib.setOptionString(
