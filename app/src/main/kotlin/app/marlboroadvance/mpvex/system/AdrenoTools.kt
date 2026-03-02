@@ -33,7 +33,7 @@ object AdrenoTools {
         driverName: String
     ): Boolean
 
-    // NEW EDEN FORK INJECTOR
+    // EDEN FORK INJECTOR
     @JvmStatic
     private external fun nativeSetEnv(name: String, value: String): Boolean
 
@@ -63,36 +63,11 @@ object AdrenoTools {
         }
 
         // ==========================================
-        // APPLY TURNIP SETTINGS VIA C++ (EDEN METHOD)
+        // DELEGATE INJECTION TO THE ENVIRONMENT MANAGER
         // ==========================================
-        val prefs = context.getSharedPreferences("gpu_driver_settings", Context.MODE_PRIVATE)
-        
-        if (prefs.getBoolean("env_force_gmem", false)) {
-            nativeSetEnv("TURNIP_FORCE_GMEM", "1")
-        }
-
-        val tuDebugFlags = mutableListOf<String>()
-        if (prefs.getBoolean("env_disable_sync_fd", false)) tuDebugFlags.add("nosyncfd")
-        if (tuDebugFlags.isNotEmpty()) {
-            nativeSetEnv("TU_DEBUG", tuDebugFlags.joinToString(","))
-        }
-
-        if (prefs.getBoolean("env_mailbox_present", false)) {
-            nativeSetEnv("MESA_VK_WSI_PRESENT_MODE", "mailbox")
-        }
-
-        if (prefs.getBoolean("env_debug_shaders", false)) {
-            nativeSetEnv("IR3_SHADER_DEBUG", "nouboopt")
-        }
-
-        val customVarsJson = prefs.getString("env_custom_vars", "{}") ?: "{}"
-        try {
-            val json = org.json.JSONObject(customVarsJson)
-            json.keys().forEach { key ->
-                nativeSetEnv(key, json.getString(key))
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+        val envManager = TurnipEnvManager(context)
+        envManager.applyToDriver { key, value ->
+            nativeSetEnv(key, value)
         }
         // ==========================================
 
