@@ -172,7 +172,6 @@ fun MoreSheet(
       )
       
       LazyRow(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller)) {
-        // CHANGED: We now loop through 7 items (0 to 6)
         items(7) { page ->
           FilterChip(
             label = {
@@ -188,11 +187,9 @@ fun MoreSheet(
               val mpvStatsPreviouslyOn = statisticsPage in 1..5
               val mpvStatsNewlyOn = page in 1..5
 
-              // Toggle MPV's native stat script ON or OFF depending on transition
               if (mpvStatsPreviouslyOn != mpvStatsNewlyOn) {
                   MPVLib.command("script-binding", "stats/display-stats-toggle")
               }
-              // If it's a native MPV page, tell MPV to switch to it
               if (page in 1..5) {
                   MPVLib.command("script-binding", "stats/display-page-$page")
               }
@@ -205,7 +202,6 @@ fun MoreSheet(
         }
       }
       
-      // Shaders Controls
       if (enableAnime4K && (!gpuNext || useVulkan)) {
         val width = MPVLib.getPropertyInt("video-params/w") ?: 0
         val height = MPVLib.getPropertyInt("video-params/h") ?: 0
@@ -281,4 +277,142 @@ fun MoreSheet(
   }
 }
 
-// ... [TimePickerDialog and SectionHeaderWithInfo remain exactly the same below this] ...
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+fun TimePickerDialog(
+  onDismissRequest: () -> Unit,
+  onTimeSelect: (Int) -> Unit,
+  modifier: Modifier = Modifier,
+  remainingTime: Int = 0,
+) {
+  Dialog(
+    onDismissRequest = onDismissRequest,
+    properties = DialogProperties(usePlatformDefaultWidth = false),
+  ) {
+    Surface(
+      shape = MaterialTheme.shapes.extraLarge,
+      color = MaterialTheme.colorScheme.surfaceContainerHigh,
+      tonalElevation = 6.dp,
+      modifier = modifier
+          .width(360.dp)
+          .padding(MaterialTheme.spacing.medium),
+    ) {
+      Column(
+        modifier = Modifier
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+      ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+              text = stringResource(R.string.timer_title),
+              style = MaterialTheme.typography.labelMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+              text = stringResource(R.string.timer_picker_enter_timer),
+              style = MaterialTheme.typography.headlineSmall,
+              color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        val state = rememberTimePickerState(
+            remainingTime / 3600,
+            (remainingTime % 3600) / 60,
+            is24Hour = true,
+        )
+
+        TimeInput(state = state)
+        
+        Column(
+            horizontalAlignment = Alignment.Start,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                "Quick Presets",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                val presets = listOf(15, 30, 45, 60)
+                presets.forEach { minutes ->
+                    FilterChip(
+                        selected = false,
+                        onClick = { 
+                            onTimeSelect(minutes * 60)
+                            onDismissRequest()
+                        },
+                        label = { Text("${minutes}m") },
+                        leadingIcon = null,
+                    )
+                }
+            }
+        }
+
+        Row(
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = Modifier.fillMaxWidth(),
+        ) {
+          TextButton(onClick = {
+             onTimeSelect(0)
+             onDismissRequest()
+          }) {
+              Text(stringResource(id = R.string.generic_reset))
+          }
+          Spacer(Modifier.weight(1f))
+          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = onDismissRequest) {
+              Text(stringResource(id = R.string.generic_cancel))
+            }
+            Button(
+              onClick = {
+                onTimeSelect(state.hour * 3600 + state.minute * 60)
+                onDismissRequest()
+              },
+            ) {
+              Text(stringResource(id = R.string.generic_ok))
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun SectionHeaderWithInfo(
+  title: String,
+  onInfoClick: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  Row(
+    modifier = modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.Start,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Text(
+      text = title,
+      style = MaterialTheme.typography.titleMedium,
+      color = MaterialTheme.colorScheme.primary
+    )
+    Spacer(modifier = Modifier.width(8.dp))
+    IconButton(onClick = onInfoClick, modifier = Modifier.size(24.dp)) {
+      Icon(
+        imageVector = Icons.Outlined.Info,
+        contentDescription = "Info",
+        tint = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.size(16.dp)
+      )
+    }
+  }
+}
