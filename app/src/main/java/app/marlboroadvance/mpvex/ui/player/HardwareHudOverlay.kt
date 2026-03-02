@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.preference.PreferenceManager
 import app.marlboroadvance.mpvex.preferences.AdvancedPreferences
 import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import kotlinx.coroutines.delay
@@ -33,6 +34,7 @@ fun HardwareHudOverlay(modifier: Modifier = Modifier) {
 
     val context = LocalContext.current
     var cpuUsage by remember { mutableStateOf("Calculating...") }
+    var gpuUsage by remember { mutableStateOf("Checking...") }
     var ramUsage by remember { mutableStateOf("0 MB / 0 MB") }
     var batteryTemp by remember { mutableStateOf("0.0°C") }
     var gpuDriver by remember { mutableStateOf("Checking...") }
@@ -61,10 +63,9 @@ fun HardwareHudOverlay(modifier: Modifier = Modifier) {
 
             activeEnvVars = if (varsList.isNotEmpty()) varsList.joinToString("\n") else "None"
             
-            // 2. Detect if Turnip is actively loaded in the app's memory! (Bulletproof method)
+            // 2. Detect if Turnip is actively loaded in the app's memory
             var isTurnipActive = false
             try {
-                // Check the app's own memory map to see if the custom library is hooked
                 val mapsFile = File("/proc/self/maps")
                 if (mapsFile.exists()) {
                     val mapsData = mapsFile.readText()
@@ -77,7 +78,6 @@ fun HardwareHudOverlay(modifier: Modifier = Modifier) {
                 }
             } catch (e: Exception) {}
 
-            // Fallback: Check SharedPreferences blindly for any saved path containing a driver
             if (!isTurnipActive) {
                 try {
                     val defaultPrefs = context.getSharedPreferences(context.packageName + "_preferences", Context.MODE_PRIVATE)
@@ -88,15 +88,80 @@ fun HardwareHudOverlay(modifier: Modifier = Modifier) {
                 } catch (e: Exception) {}
             }
             
-            // Show Turnip if loaded in memory, saved in prefs, OR variables are forced
-            gpuDriver = if (varsList.isNotEmpty() || isTurnipActive) "Mesa Freedreno (Turnip)" else "System Adreno"
+            // ==========================================
+            // UNIVERSAL SYSTEM DRIVER FIX
+            // ==========================================
+            gpuDriver = if (varsList.isNotEmpty() || isTurnipActive) "Mesa Freedreno (Turnip)" else "System Driver"
 
-            // 3. Read Battery Temp
+            // 3. Universal GPU Load Scanner (Adreno, Mali, & Devfreq Subsystems)
+            gpuUsage = "Restricted (OS)"
+            try {
+                // List of known GPU sysfs files across different SOCs
+                val gpuNodes = listOf(
+                    // Qualcomm Adreno Direct
+                    File("/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage"),
+                    File("/sys/class/kgsl/kgsl-3d0/gpubusy"),
+                    // ARM Mali Direct
+                    File("/sys/class/misc/mali0/device/utilization"),
+                    File("/sys/class/misc/mali0/device/gpuinfo"),
+                    File("/sys/module/mali_kbase/parameters/mali_gpu_utilization")
+                )
+
+                // Sweep standard nodes
+                for (file in gpuNodes) {
+                    if (file.exists() && file.canRead()) {
+                        val text = file.readText().trim()
+                        if (file.name == "gpubusy") {
+                            val parts = text.split("\\s+".toRegex())
+                            if (parts.size >= 2) {
+                                val busy = parts[0].toFloatOrNull() ?: 0f
+                                val total = parts[1].toFloatOrNull() ?: 0f
+                                if (total > 0) {
+                                    gpuUsage = String.format("%.1f%%", (busy / total) * 100)
+                                    break
+                                }
+                            }
+                        } else {
+                            // Extract first integer block found (handles Mali text dumps)
+                            val match = Regex("\\d+").find(text)
+                            if (match != null) {
+                                gpuUsage = "${match.value}%"
+                                break
+                            }
+                        }
+                    }
+                }
+
+                // If standard nodes fail, sweep Android's dynamic devfreq scaling paths
+                if (gpuUsage == "Restricted (OS)") {
+                    val devfreqDir = File("/sys/class/devfreq")
+                    if (devfreqDir.exists() && devfreqDir.isDirectory) {
+                        val gpuDirs = devfreqDir.listFiles { _, name -> 
+                            name.contains("kgsl", true) || name.contains("mali", true) || name.contains("gpu", true) 
+                        }
+                        gpuDirs?.forEach { dir ->
+                            val loadFiles = listOf(File(dir, "device/gpu_busy_percentage"), File(dir, "device/utilization"))
+                            for (file in loadFiles) {
+                                if (file.exists() && file.canRead()) {
+                                    val text = file.readText().trim()
+                                    val match = Regex("\\d+").find(text)
+                                    if (match != null) {
+                                        gpuUsage = "${match.value}%"
+                                        break
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {}
+
+            // 4. Read Battery Temp
             val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
             val temp = intent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0
             batteryTemp = "${temp / 10.0}°C"
 
-            // 4. Read RAM Usage
+            // 5. Read RAM Usage
             val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
             val memInfo = ActivityManager.MemoryInfo()
             activityManager.getMemoryInfo(memInfo)
@@ -105,7 +170,7 @@ fun HardwareHudOverlay(modifier: Modifier = Modifier) {
             val usedRamMb = totalRamMb - availRamMb
             ramUsage = "$usedRamMb MB / $totalRamMb MB"
 
-            // 5. Calculate App CPU Percentage
+            // 6. Calculate App CPU Percentage
             val currentCpuTime = android.os.Process.getElapsedCpuTime()
             val currentUptime = SystemClock.elapsedRealtime()
             
@@ -141,6 +206,7 @@ fun HardwareHudOverlay(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(8.dp))
             
             HudRow("GPU Driver", gpuDriver)
+            HudRow("GPU Load", gpuUsage)
             HudRow("Memory (RAM)", ramUsage)
             HudRow("Battery Temp", batteryTemp)
             HudRow("CPU Status", cpuUsage)
