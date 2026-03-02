@@ -301,7 +301,17 @@ object DecoderPreferencesScreen : Screen {
 
 object VulkanUtils {
     private const val TAG = "VulkanUtils"
-
+  
+    /**
+     * Checks if the device supports Vulkan for MPV rendering
+     *
+     * Requirements for MPV androidvk context:
+     * - Android 13 (API 33) minimum for Vulkan 1.3
+     * - Vulkan 1.3 (0x00403000) hardware version
+     * - GPU must also support OpenGL ES 3.1 or higher
+     *
+     * @return true if Vulkan 1.3+ is supported for MPV, false otherwise
+     */
     fun isVulkanSupported(context: Context): Boolean {
         try {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
