@@ -11,6 +11,25 @@
 
 extern "C" {
 
+// ==========================================
+// NEW EDEN FORK ENV VARIABLE INJECTOR
+// ==========================================
+JNIEXPORT jboolean JNICALL
+Java_app_marlboroadvance_mpvex_system_AdrenoTools_nativeSetEnv(
+        JNIEnv *env, jobject thiz, jstring name, jstring value) {
+    
+    const char *c_name = env->GetStringUTFChars(name, nullptr);
+    const char *c_value = env->GetStringUTFChars(value, nullptr);
+
+    // Call the new function from Eden's driver.h to bypass Android 16 sandboxing
+    bool success = adrenotools_set_env(c_name, c_value); 
+
+    env->ReleaseStringUTFChars(name, c_name);
+    env->ReleaseStringUTFChars(value, c_value);
+
+    return success ? JNI_TRUE : JNI_FALSE;
+}
+
 JNIEXPORT jboolean JNICALL
 Java_app_marlboroadvance_mpvex_system_AdrenoTools_nativeHookDriver(
         JNIEnv *env, jobject thiz, jstring tmp_lib_dir, jstring hook_lib_dir, jstring custom_driver_dir, jstring driver_name) {
