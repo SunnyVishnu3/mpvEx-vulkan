@@ -18,11 +18,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.preference.PreferenceManager
 import app.marlboroadvance.mpvex.preferences.AdvancedPreferences
 import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
+import java.io.File
 
 @Composable
 fun HardwareHudOverlay(modifier: Modifier = Modifier) {
@@ -61,14 +61,35 @@ fun HardwareHudOverlay(modifier: Modifier = Modifier) {
 
             activeEnvVars = if (varsList.isNotEmpty()) varsList.joinToString("\n") else "None"
             
-            // 2. Detect if a Custom Driver zip is loaded in your GPU Manager
-            val defaultPrefs = PreferenceManager.getDefaultSharedPreferences(context)
-            val hasCustomDriver = defaultPrefs.all.entries.any { 
-                it.key.contains("driver", ignoreCase = true) && it.value.toString().isNotBlank() 
+            // 2. Detect if Turnip is actively loaded in the app's memory! (Bulletproof method)
+            var isTurnipActive = false
+            try {
+                // Check the app's own memory map to see if the custom library is hooked
+                val mapsFile = File("/proc/self/maps")
+                if (mapsFile.exists()) {
+                    val mapsData = mapsFile.readText()
+                    if (mapsData.contains("freedreno", ignoreCase = true) || 
+                        mapsData.contains("vulkan.ad0", ignoreCase = true) || 
+                        mapsData.contains("vulkan.purple", ignoreCase = true) ||
+                        mapsData.contains("turnip", ignoreCase = true)) {
+                        isTurnipActive = true
+                    }
+                }
+            } catch (e: Exception) {}
+
+            // Fallback: Check SharedPreferences blindly for any saved path containing a driver
+            if (!isTurnipActive) {
+                try {
+                    val defaultPrefs = context.getSharedPreferences(context.packageName + "_preferences", Context.MODE_PRIVATE)
+                    isTurnipActive = defaultPrefs.all.values.any { 
+                        it is String && it.contains("/") && 
+                        (it.contains("vulkan", ignoreCase = true) || it.contains("turnip", ignoreCase = true) || it.contains("driver", ignoreCase = true))
+                    }
+                } catch (e: Exception) {}
             }
             
-            // It will now show Turnip if you have ANY variables set, OR if you selected a driver zip!
-            gpuDriver = if (varsList.isNotEmpty() || hasCustomDriver) "Mesa Freedreno (Turnip)" else "System Adreno"
+            // Show Turnip if loaded in memory, saved in prefs, OR variables are forced
+            gpuDriver = if (varsList.isNotEmpty() || isTurnipActive) "Mesa Freedreno (Turnip)" else "System Adreno"
 
             // 3. Read Battery Temp
             val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
@@ -84,7 +105,7 @@ fun HardwareHudOverlay(modifier: Modifier = Modifier) {
             val usedRamMb = totalRamMb - availRamMb
             ramUsage = "$usedRamMb MB / $totalRamMb MB"
 
-            // 5. Calculate App CPU Percentage (Bypasses Android 16 /proc/stat restriction)
+            // 5. Calculate App CPU Percentage
             val currentCpuTime = android.os.Process.getElapsedCpuTime()
             val currentUptime = SystemClock.elapsedRealtime()
             
