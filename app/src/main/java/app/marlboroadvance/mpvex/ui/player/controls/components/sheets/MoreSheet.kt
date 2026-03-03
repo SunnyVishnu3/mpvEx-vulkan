@@ -81,29 +81,28 @@ fun MoreSheet(
   val useVulkan by decoderPreferences.useVulkan.collectAsState()
   
   val context = LocalContext.current
-val scope = rememberCoroutineScope()
-var infoDialogData by remember { mutableStateOf<Pair<String, String>?>(null) }
+  val scope = rememberCoroutineScope()
+  var infoDialogData by remember { mutableStateOf<Pair<String, String>?>(null) }
 
-if (infoDialogData != null) {
-    AlertDialog(
-        onDismissRequest = { },
-        title = { Text(infoDialogData!!.first) },
-        text = { Text(infoDialogData!!.second) },
-        confirmButton = {
-            TextButton(onClick = { infoDialogData = null }) {
-                Text(stringResource(R.string.generic_ok))
-            }
-        }
-    )
-}
+  if (infoDialogData != null) {
+      AlertDialog(
+          onDismissRequest = { },
+          title = { Text(infoDialogData!!.first) },
+          text = { Text(infoDialogData!!.second) },
+          confirmButton = {
+              TextButton(onClick = { infoDialogData = null }) {
+                  Text(stringResource(R.string.generic_ok))
+              }
+          }
+      )
+  }
 
   PlayerSheet(
     onDismissRequest,
     modifier,
   ) {
     Column(
-      modifier =
-        Modifier
+      modifier = Modifier
           .fillMaxWidth()
           .padding(MaterialTheme.spacing.medium)
           .verticalScroll(rememberScrollState()),
@@ -118,9 +117,7 @@ if (infoDialogData != null) {
           text = stringResource(id = R.string.player_sheets_more_title),
           style = MaterialTheme.typography.headlineMedium,
         )
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
           var isSleepTimerDialogShown by remember { mutableStateOf(false) }
           TextButton(onClick = { isSleepTimerDialogShown = true }) {
             Row(
@@ -129,15 +126,8 @@ if (infoDialogData != null) {
             ) {
               Icon(imageVector = Icons.Outlined.Timer, contentDescription = null)
               Text(
-                text =
-                  if (remainingTime == 0) {
-                    stringResource(R.string.timer_title)
-                  } else {
-                    stringResource(
-                      R.string.timer_remaining,
-                      DateUtils.formatElapsedTime(remainingTime.toLong()),
-                    )
-                  },
+                text = if (remainingTime == 0) stringResource(R.string.timer_title) 
+                       else stringResource(R.string.timer_remaining, DateUtils.formatElapsedTime(remainingTime.toLong())),
               )
               if (isSleepTimerDialogShown) {
                 TimePickerDialog(
@@ -159,42 +149,51 @@ if (infoDialogData != null) {
           }
         }
       }
+      
       SectionHeaderWithInfo(
         title = stringResource(R.string.player_sheets_stats_page_title),
         onInfoClick = {
-             val descResName = "player_sheets_stats_page_${statisticsPage}_desc"
-             val resId = context.resources.getIdentifier(descResName, "string", context.packageName)
-             val description = if (resId != 0) context.getString(resId) else ""
+             val description = if (statisticsPage == 6) {
+                 "Native hardware overlay displaying real-time CPU, RAM, Battery Thermals, and Active GPU Driver."
+             } else {
+                 val descResName = "player_sheets_stats_page_${statisticsPage}_desc"
+                 val resId = context.resources.getIdentifier(descResName, "string", context.packageName)
+                 if (resId != 0) context.getString(resId) else "No description available."
+             }
              
-             // Title for dialog: "Page X" or "Direct Title"
-             val titleRes = if (statisticsPage == 0) R.string.player_sheets_tracks_off else R.string.player_sheets_stats_page_chip
-             val title = if (statisticsPage == 0) context.getString(titleRes) else context.getString(titleRes, statisticsPage)
+             val title = when (statisticsPage) {
+                 0 -> context.getString(R.string.player_sheets_tracks_off)
+                 6 -> "Page 6: Hardware HUD"
+                 else -> context.getString(R.string.player_sheets_stats_page_chip, statisticsPage)
+             }
              
-             infoDialogData = Pair(context.getString(R.string.player_sheets_stats_page_title), "$title: $description")
+             infoDialogData = Pair(context.getString(R.string.player_sheets_stats_page_title), "$title\n\n$description")
         }
       )
-      LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
-      ) {
-        items(6) { page ->
+      
+      LazyRow(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller)) {
+        items(7) { page ->
           FilterChip(
             label = {
               Text(
-                stringResource(
-                  if (page ==
-                    0
-                  ) {
-                    R.string.player_sheets_tracks_off
-                  } else {
-                    R.string.player_sheets_stats_page_chip
-                  },
-                  page,
-                ),
+                when (page) {
+                    0 -> stringResource(R.string.player_sheets_tracks_off)
+                    6 -> "Page 6"
+                    else -> stringResource(R.string.player_sheets_stats_page_chip, page)
+                }
               )
             },
             onClick = {
-              if ((page == 0) xor (statisticsPage == 0)) MPVLib.command("script-binding", "stats/display-stats-toggle")
-              if (page != 0) MPVLib.command("script-binding", "stats/display-page-$page")
+              val mpvStatsPreviouslyOn = statisticsPage in 1..5
+              val mpvStatsNewlyOn = page in 1..5
+
+              if (mpvStatsPreviouslyOn != mpvStatsNewlyOn) {
+                  MPVLib.command("script-binding", "stats/display-stats-toggle")
+              }
+              if (page in 1..5) {
+                  MPVLib.command("script-binding", "stats/display-page-$page")
+              }
+              
               advancedPreferences.enabledStatisticsPage.set(page)
             },
             selected = statisticsPage == page,
@@ -203,14 +202,11 @@ if (infoDialogData != null) {
         }
       }
       
-      // Shaders Controls
       if (enableAnime4K && (!gpuNext || useVulkan)) {
-        // Auto-detect resolution to disable for 4K+
         val width = MPVLib.getPropertyInt("video-params/w") ?: 0
         val height = MPVLib.getPropertyInt("video-params/h") ?: 0
         val isHighRes = width >= 3840 || height >= 2160
 
-        // Presets (Mode) - Now on Top
         Text(
             text = stringResource(R.string.anime4k_mode_title),
             style = MaterialTheme.typography.titleMedium,
@@ -226,9 +222,7 @@ if (infoDialogData != null) {
             )
         }
 
-        LazyRow(
-          horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
-        ) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller)) {
           items(Anime4KManager.Mode.entries) { mode ->
             FilterChip(
               label = { Text(stringResource(mode.titleRes)) },
@@ -237,25 +231,12 @@ if (infoDialogData != null) {
               leadingIcon = null,
               onClick = {
                 decoderPreferences.anime4kMode.set(mode.name)
-                
-                // Apply shaders immediately (runtime change)
                 scope.launch(Dispatchers.IO) {
                   runCatching {
                     val qualityStr = decoderPreferences.anime4kQuality.get()
-                    val quality = try {
-                      Anime4KManager.Quality.valueOf(qualityStr)
-                    } catch (e: IllegalArgumentException) {
-                      Anime4KManager.Quality.BALANCED
-                    }
-                    val currentMode = try {
-                        Anime4KManager.Mode.valueOf(mode.name)
-                    } catch (e: IllegalArgumentException) {
-                        Anime4KManager.Mode.OFF
-                    }
-
+                    val quality = try { Anime4KManager.Quality.valueOf(qualityStr) } catch (e: Exception) { Anime4KManager.Quality.BALANCED }
+                    val currentMode = try { Anime4KManager.Mode.valueOf(mode.name) } catch (e: Exception) { Anime4KManager.Mode.OFF }
                     val shaderChain = anime4kManager.getShaderChain(currentMode, quality)
-
-                    // Use setPropertyString for runtime changes
                     MPVLib.setPropertyString("glsl-shaders", if (shaderChain.isNotEmpty()) shaderChain else "")
                   }
                 }
@@ -269,9 +250,7 @@ if (infoDialogData != null) {
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary
         )
-        LazyRow(
-          horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
-        ) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller)) {
           items(Anime4KManager.Quality.entries) { quality ->
              FilterChip(
               label = { Text(stringResource(quality.titleRes)) },
@@ -280,25 +259,12 @@ if (infoDialogData != null) {
               leadingIcon = null,
               onClick = {
                 decoderPreferences.anime4kQuality.set(quality.name)
-
-                // Apply shaders immediately (runtime change)
                 scope.launch(Dispatchers.IO) {
                   runCatching {
                     val modeStr = decoderPreferences.anime4kMode.get()
-                    val modeEnum = try {
-                      Anime4KManager.Mode.valueOf(modeStr)
-                    } catch (e: IllegalArgumentException) {
-                      Anime4KManager.Mode.OFF
-                    }
-                    val currentQuality = try {
-                        Anime4KManager.Quality.valueOf(quality.name)
-                    } catch (e: IllegalArgumentException) {
-                        Anime4KManager.Quality.BALANCED
-                    }
-
+                    val modeEnum = try { Anime4KManager.Mode.valueOf(modeStr) } catch (e: Exception) { Anime4KManager.Mode.OFF }
+                    val currentQuality = try { Anime4KManager.Quality.valueOf(quality.name) } catch (e: Exception) { Anime4KManager.Quality.BALANCED }
                     val shaderChain = anime4kManager.getShaderChain(modeEnum, currentQuality)
-
-                    // Use setPropertyString for runtime changes
                     MPVLib.setPropertyString("glsl-shaders", if (shaderChain.isNotEmpty()) shaderChain else "")
                   }
                 }
@@ -328,24 +294,22 @@ fun TimePickerDialog(
       color = MaterialTheme.colorScheme.surfaceContainerHigh,
       tonalElevation = 6.dp,
       modifier = modifier
-          .width(360.dp) // Fixed wide width to fit presets
+          .width(360.dp)
           .padding(MaterialTheme.spacing.medium),
     ) {
       Column(
-        modifier =
-          Modifier
+        modifier = Modifier
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
       ) {
-        // Header
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-              text = stringResource(R.string.timer_title), // "Sleep Timer"
+              text = stringResource(R.string.timer_title),
               style = MaterialTheme.typography.labelMedium,
               color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -357,16 +321,14 @@ fun TimePickerDialog(
             )
         }
 
-        val state =
-          rememberTimePickerState(
+        val state = rememberTimePickerState(
             remainingTime / 3600,
             (remainingTime % 3600) / 60,
             is24Hour = true,
-          )
+        )
 
         TimeInput(state = state)
         
-        // Quick Presets
         Column(
             horizontalAlignment = Alignment.Start,
             modifier = Modifier.fillMaxWidth()
@@ -396,7 +358,6 @@ fun TimePickerDialog(
             }
         }
 
-        // Actions
         Row(
           horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.CenterVertically,
@@ -409,9 +370,7 @@ fun TimePickerDialog(
               Text(stringResource(id = R.string.generic_reset))
           }
           Spacer(Modifier.weight(1f))
-          Row(
-              horizontalArrangement = Arrangement.spacedBy(8.dp)
-          ) {
+          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = onDismissRequest) {
               Text(stringResource(id = R.string.generic_cancel))
             }
@@ -428,8 +387,7 @@ fun TimePickerDialog(
       }
     }
   }
-  }
-
+}
 
 @Composable
 fun SectionHeaderWithInfo(
@@ -458,4 +416,3 @@ fun SectionHeaderWithInfo(
     }
   }
 }
-
