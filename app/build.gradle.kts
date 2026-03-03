@@ -20,7 +20,7 @@ android {
     versionCode = 128
     versionName = "1.2.9"
 
-    vectorDrawables {versionName = \"1.2.8\"
+    vectorDrawables {
       useSupportLibrary = true
     }
 
