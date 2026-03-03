@@ -98,6 +98,7 @@ import app.marlboroadvance.mpvex.preferences.preference.deleteAndGet
 import app.marlboroadvance.mpvex.preferences.preference.plusAssign
 import app.marlboroadvance.mpvex.preferences.preference.minusAssign
 import app.marlboroadvance.mpvex.ui.player.Decoder.Companion.getDecoderFromValue
+import app.marlboroadvance.mpvex.ui.player.HardwareHudOverlay
 import app.marlboroadvance.mpvex.ui.player.Panels
 import app.marlboroadvance.mpvex.ui.player.PlayerActivity
 import app.marlboroadvance.mpvex.ui.player.PlayerUpdates
@@ -951,7 +952,7 @@ fun PlayerControls(
                     tonalElevation = 0.dp,
                     shadowElevation = 0.dp,
                     border =
-                      if (!hideBackground) {
+                       if (!hideBackground) {
                         BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                       } else {
                         null
@@ -1007,7 +1008,7 @@ fun PlayerControls(
                     if (!hideBackground) {
                       BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                     } else {
-                      null
+                       null
                     },
                 ) {
                   Image(
@@ -1167,7 +1168,7 @@ fun PlayerControls(
               slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
                 fadeIn(playerControlsEnterAnimationSpec())
             } else {
-              fadeIn(playerControlsEnterAnimationSpec())
+               fadeIn(playerControlsEnterAnimationSpec())
             },
           exit =
             if (!reduceMotion) {
@@ -1181,13 +1182,13 @@ fun PlayerControls(
               .then(
                 if (showSystemStatusBar) {
                   Modifier.windowInsetsPadding(WindowInsets.statusBars)
-                } else {
+                 } else {
                   Modifier
                 }
               )
               .then(
                 if (showSystemNavigationBar) {
-                  val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
+                   val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
                   Modifier.padding(
                     start = navBarPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                     end = navBarPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
@@ -1223,7 +1224,7 @@ fun PlayerControls(
         AnimatedVisibility(
           visible = controlsShown && !areControlsLocked && !areSlidersShown,
           enter =
-            if (!reduceMotion) {
+             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
                 fadeIn(playerControlsEnterAnimationSpec())
             } else {
@@ -1237,7 +1238,7 @@ fun PlayerControls(
               fadeOut(playerControlsExitAnimationSpec())
             },
           modifier =
-            Modifier
+             Modifier
               .then(
                 if (showSystemNavigationBar) {
                   val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
@@ -1273,26 +1274,26 @@ fun PlayerControls(
               hideBackground = hideBackground,
               decoder = decoder,
               playbackSpeed = playbackSpeed ?: 1f,
-              onBackPress = onBackPress,
+               onBackPress = onBackPress,
               onOpenSheet = onOpenSheet,
               onOpenPanel = onOpenPanel,
               viewModel = viewModel,
               activity = activity,
             )
-          } else {
+           } else {
             BottomRightPlayerControlsLandscape(
               buttons = bottomRightButtons,
               chapters = chapters,
               currentChapter = currentChapter,
               isSpeedNonOne = isSpeedNonOne,
               currentZoom = currentZoom,
-              aspect = aspect,
+               aspect = aspect,
               mediaTitle = mediaTitle,
               hideBackground = hideBackground,
               decoder = decoder,
               playbackSpeed = playbackSpeed ?: 1f,
               onBackPress = onBackPress,
-              onOpenSheet = onOpenSheet,
+               onOpenSheet = onOpenSheet,
               onOpenPanel = onOpenPanel,
               viewModel = viewModel,
               activity = activity,
@@ -1301,7 +1302,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isPortrait && !areSlidersShown,
+           visible = controlsShown && !areControlsLocked && !isPortrait && !areSlidersShown,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { -it } +
@@ -1315,18 +1316,18 @@ fun PlayerControls(
                 fadeOut(playerControlsExitAnimationSpec())
             } else {
               fadeOut(playerControlsExitAnimationSpec())
-            },
+             },
           modifier =
             Modifier
               .then(
                 if (showSystemNavigationBar) {
                   val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
-                  Modifier.padding(
+                   Modifier.padding(
                     start = navBarPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                     end = navBarPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
                   )
                 } else {
-                  Modifier
+                   Modifier
                 }
               )
               .constrainAs(bottomLeftControls) {
@@ -1384,7 +1385,7 @@ fun PlayerControls(
       chapter = chapters.getOrNull(currentChapter ?: 0),
       chapters = chapters.toImmutableList(),
       onSeekToChapter = {
-        MPVLib.setPropertyInt("chapter", it)
+         MPVLib.setPropertyInt("chapter", it)
         viewModel.unpause()
       },
       decoder = decoder,
@@ -1411,5 +1412,11 @@ fun PlayerControls(
       panelShown = panel,
       onDismissRequest = { onOpenPanel(Panels.None) },
     )
+    
+    // ==========================================
+    // INJECT THE NATIVE PAGE 6 HARDWARE HUD HERE
+    // ==========================================
+    HardwareHudOverlay()
+
   }
 }

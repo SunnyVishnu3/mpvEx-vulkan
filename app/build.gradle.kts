@@ -18,7 +18,7 @@ android {
     minSdk = 26
     targetSdk = 36
     versionCode = 128
-    versionName = "1.2.8"
+    versionName = "1.2.9"
 
     vectorDrawables {
       useSupportLibrary = true
@@ -26,6 +26,13 @@ android {
 
     buildConfigField("String", "GIT_SHA", "\"${getCommitSha()}\"")
     buildConfigField("int", "GIT_COUNT", getCommitCount())
+
+    // === ADRENOTOOLS: Force 64-bit ARM compilation only ===
+    externalNativeBuild {
+      cmake {
+        abiFilters += "arm64-v8a"
+      }
+    }
   }
 
   flavorDimensions += "distribution"
@@ -105,6 +112,16 @@ android {
     compose = true
     viewBinding = true
     buildConfig = true
+  }
+  composeCompiler {
+    includeSourceInformation = true
+  }
+
+  // === ADRENOTOOLS: Link to CMake bridge ===
+  externalNativeBuild {
+    cmake {
+      path = file("src/main/cpp/CMakeLists.txt")
+    }
   }
 
   packaging {
