@@ -79,7 +79,7 @@ object AdvancedPreferencesScreen : Screen {
   override fun Content() {
     val context = LocalContext.current
     val backStack = LocalBackStack.current
-    
+ 
     val preferences = koinInject<AdvancedPreferences>()
     val settingsManager = koinInject<SettingsManager>()
     val scope = rememberCoroutineScope()
@@ -346,7 +346,7 @@ object AdvancedPreferencesScreen : Screen {
                     val tree = DocumentFile.fromTreeUri(context, mpvConfStorageLocation.toUri())
                     val inputConfFile = tree?.findFile("input.conf")
                     if (inputConfFile != null && inputConfFile.exists()) {
-                       context.contentResolver.openInputStream(inputConfFile.uri)?.copyTo(tempFile.outputStream())
+                      context.contentResolver.openInputStream(inputConfFile.uri)?.copyTo(tempFile.outputStream())
                       val content = tempFile.readLines().fastJoinToString("\n")
                       preferences.inputConf.set(content)
                       File(context.filesDir, "input.conf").writeText(content)
@@ -371,7 +371,7 @@ object AdvancedPreferencesScreen : Screen {
                 },
                 onClick = { locationPicker.launch(null) },
                 iconButtonIcon = { 
-                   Icon(
+                    Icon(
                     Icons.Default.Clear, 
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.error,
@@ -397,13 +397,13 @@ object AdvancedPreferencesScreen : Screen {
                       "Tap to edit configuration",
                       color = MaterialTheme.colorScheme.outline,
                     )
-                  }
+                   }
                 },
                 onClick = {
                   backStack.add(ConfigEditorScreen(ConfigEditorScreen.ConfigType.MPV_CONF))
                 },
               )
-              
+               
               PreferenceDivider()
               
               Preference(
@@ -424,7 +424,7 @@ object AdvancedPreferencesScreen : Screen {
                 },
                 onClick = {
                   backStack.add(ConfigEditorScreen(ConfigEditorScreen.ConfigType.INPUT_CONF))
-                },
+                 },
               )
             }
           }
@@ -499,7 +499,7 @@ object AdvancedPreferencesScreen : Screen {
                     "Load Lua scripts from configuration directory",
                     color = MaterialTheme.colorScheme.outline,
                   ) 
-                },
+                 },
               )
               
               PreferenceDivider()
@@ -636,7 +636,7 @@ object AdvancedPreferencesScreen : Screen {
                     text = "Clear the cached mpv.conf settings",
                     color = MaterialTheme.colorScheme.outline,
                   ) 
-                },
+                 },
                 onClick = {
                   scope.launch(Dispatchers.IO) {
                     val mpvConfFile = File(context.filesDir, "mpv.conf")
@@ -770,8 +770,17 @@ object AdvancedPreferencesScreen : Screen {
                   scope.launch(Dispatchers.IO) {
                     val deviceInfo = CrashActivity.collectDeviceInfo()
                     val logcat = CrashActivity.collectLogcat()
-    
-                    clipboard.setText(AnnotatedString(CrashActivity.concatLogs(deviceInfo, null, logcat)))
+                    
+                    val fullLog = CrashActivity.concatLogs(deviceInfo, null, logcat)
+                    
+                    val safeLimit = 250_000
+                    val safeLogText = if (fullLog.length > safeLimit) {
+                        "--- LOG TRUNCATED FOR CLIPBOARD DUE TO SIZE ---\n" + fullLog.takeLast(safeLimit)
+                    } else {
+                        fullLog
+                    }
+                    
+                    clipboard.setText(AnnotatedString(safeLogText))
                     CrashActivity.shareLogs(deviceInfo, null, logcat, activity)
                   }
                 },
