@@ -1871,6 +1871,9 @@ class PlayerActivity :
     // Reset AB loop values when video changes
     viewModel.clearABLoop()
 
+    // Reset ambient mode to OFF when a new video starts
+    viewModel.resetAmbientMode()
+
     setIntentExtras(intent.extras)
 
     lifecycleScope.launch(Dispatchers.IO) {
