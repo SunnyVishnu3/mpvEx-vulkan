@@ -733,7 +733,7 @@ object AdvancedPreferencesScreen : Screen {
             }
           }
          
-          // Logging Section
+        // Logging Section
           item {
             PreferenceSectionHeader(title = "Logging")
           }
@@ -770,17 +770,8 @@ object AdvancedPreferencesScreen : Screen {
                   scope.launch(Dispatchers.IO) {
                     val deviceInfo = CrashActivity.collectDeviceInfo()
                     val logcat = CrashActivity.collectLogcat()
-                    
-                    val fullLog = CrashActivity.concatLogs(deviceInfo, null, logcat)
-                    
-                    val safeLimit = 250_000
-                    val safeLogText = if (fullLog.length > safeLimit) {
-                        "--- LOG TRUNCATED FOR CLIPBOARD DUE TO SIZE ---\n" + fullLog.takeLast(safeLimit)
-                    } else {
-                        fullLog
-                    }
-                    
-                    clipboard.setText(AnnotatedString(safeLogText))
+    
+                    clipboard.setText(AnnotatedString(CrashActivity.concatLogs(deviceInfo, null, logcat)))
                     CrashActivity.shareLogs(deviceInfo, null, logcat, activity)
                   }
                 },
