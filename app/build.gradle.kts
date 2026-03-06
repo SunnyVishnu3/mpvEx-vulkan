@@ -220,6 +220,17 @@ dependencies {
   implementation(libs.nanohttpd)
   implementation(libs.lazycolumnscrollbar)
   implementation(libs.reorderable)
+
+  // LIQUID GLASS DEPENDENCIES
+  // AndroidLiquidGlass 2.0.0-alpha03 (Contains the advanced lens effects)
+  implementation("io.github.kyant0:backdrop:2.0.0-alpha03")
+
+  // SHAPES LIBRARY 1.2.0 (MINIMUM REQUIRED for G2 continuous curves)
+  implementation("io.github.kyant0:shapes:1.2.0")
+
+  // DataStore for preferences persistence (To toggle the UI on/off)
+  implementation("androidx.datastore:datastore-preferences:1.0.0")
+
 }
 
 /* ---------------- Git helpers ---------------- */
