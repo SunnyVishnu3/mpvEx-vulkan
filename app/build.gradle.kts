@@ -237,10 +237,6 @@ dependencies {
   implementation(libs.nanohttpd)
   implementation(libs.lazycolumnscrollbar)
   implementation(libs.reorderable)
-
-  // === KYANT LIQUID GLASS & SHAPES ===
-  implementation("io.github.kyant0:backdrop:2.0.0-alpha04")
-  implementation("io.github.kyant0:shapes:1.2.0")
 }
 
 /* ---------------- Git helpers ---------------- */
