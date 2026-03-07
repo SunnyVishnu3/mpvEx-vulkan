@@ -104,3 +104,4 @@ object LiquidUIEffects {
     // Surface color for readability (semi-transparent white)
     val glassSurfaceColor = Color.White.copy(alpha = 0.5f)
     val glassDarkSurfaceColor = Color.Black.copy(alpha = 0.3f)
+}
