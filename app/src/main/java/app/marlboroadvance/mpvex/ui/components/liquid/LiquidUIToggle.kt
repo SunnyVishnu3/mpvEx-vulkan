@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import app.marlboroadvance.mpvex.ui.theme.LiquidUIEffects
+import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
 
 /**
  * Liquid Glass Toggle Component
@@ -153,7 +156,7 @@ fun LiquidSwitch(
         modifier = modifier.padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        androidx.compose.material3.Text(
+        Text(
             text = label,
             modifier = Modifier.weight(1f)
         )
@@ -187,13 +190,13 @@ fun AdaptiveToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    preferences: app.marlboroadvance.mpvex.preferences.LiquidUIPreferences,
+    preferences: LiquidUIPreferences,
     enabled: Boolean = true,
     label: String? = null
 ) {
     // Collect liquid UI enabled state
     val isLiquidUIEnabled = preferences.liquidUIEnabledFlow
-        .androidx.compose.runtime.collectAsState(false).value
+        .collectAsState(false).value
 
     if (label != null) {
         LiquidSwitch(
