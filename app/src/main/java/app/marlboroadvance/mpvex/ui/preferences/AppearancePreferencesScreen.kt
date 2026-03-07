@@ -47,6 +47,7 @@ import app.marlboroadvance.mpvex.preferences.MultiChoiceSegmentedButton
 import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import app.marlboroadvance.mpvex.presentation.Screen
 import app.marlboroadvance.mpvex.ui.components.liquid.AdaptiveToggle
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidSwitchPreference as SwitchPreference
 import app.marlboroadvance.mpvex.ui.preferences.components.ThemePicker
 import app.marlboroadvance.mpvex.ui.theme.DarkMode
 import app.marlboroadvance.mpvex.ui.utils.LocalBackStack
@@ -54,9 +55,9 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import me.zhanghai.compose.preference.PreferenceDivider
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
-import me.zhanghai.compose.preference.SwitchPreference
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 
@@ -80,7 +81,6 @@ object AppearancePreferencesScreen : Screen {
         val darkMode by preferences.darkMode.collectAsState()
         val appTheme by preferences.appTheme.collectAsState()
 
-        // Determine if we're in dark mode for theme preview
         val isDarkMode = when (darkMode) {
             DarkMode.Dark -> true
             DarkMode.Light -> false
@@ -100,31 +100,19 @@ object AppearancePreferencesScreen : Screen {
                     },
                     navigationIcon = {
                         IconButton(onClick = backstack::removeLastOrNull) {
-                            Icon(
-                                Icons.AutoMirrored.Outlined.ArrowBack,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary,
-                            )
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
                         }
                     },
                 )
             },
         ) { padding ->
             ProvidePreferenceLocals {
-                LazyColumn(
-                    modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                ) {
-                    item {
-                        PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_theme))
-                    }
+                LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+                    item { PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_theme)) }
 
                     item {
                         PreferenceCard {
                             Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                                // Dark mode selector
                                 MultiChoiceSegmentedButton(
                                     choices = DarkMode.entries.map { stringResource(it.titleRes) }.toImmutableList(),
                                     selectedIndices = persistentListOf(DarkMode.entries.indexOf(darkMode)),
@@ -134,10 +122,8 @@ object AppearancePreferencesScreen : Screen {
 
                             PreferenceDivider()
 
-                            // AMOLED mode state - need it before theme picker
                             val amoledMode by preferences.amoledMode.collectAsState()
 
-                            // Theme picker - Aniyomi style
                             ThemePicker(
                                 currentTheme = appTheme,
                                 isDarkMode = isDarkMode,
@@ -155,7 +141,7 @@ object AppearancePreferencesScreen : Screen {
                                     .padding(horizontal = 16.dp, vertical = 16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
+                                Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                                     Text(text = "Enable Liquid Glass UI", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                     Text(text = "Transform controls with modern glass effects", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                                 }
@@ -189,9 +175,7 @@ object AppearancePreferencesScreen : Screen {
                                         placeholder = { Text("e.g. #FF5733 or blue") },
                                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                                         singleLine = true,
-                                        leadingIcon = {
-                                            Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(toggleColor)))
-                                        }
+                                        leadingIcon = { Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(toggleColor))) }
                                     )
 
                                     var sliderInputText by remember(sliderColor) { mutableStateOf(String.format("#%06X", 0xFFFFFF and sliderColor.toInt())) }
@@ -205,9 +189,7 @@ object AppearancePreferencesScreen : Screen {
                                         placeholder = { Text("e.g. #00FF00 or cyan") },
                                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                                         singleLine = true,
-                                        leadingIcon = {
-                                            Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(sliderColor)))
-                                        }
+                                        leadingIcon = { Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(sliderColor))) }
                                     )
                                 }
                             }
@@ -215,27 +197,17 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
                             // -------------------------------------
 
-                            // AMOLED mode toggle
                             SwitchPreference(
                                 value = amoledMode,
-                                onValueChange = { newValue ->
-                                    preferences.amoledMode.set(newValue)
-                                },
+                                onValueChange = { newValue -> preferences.amoledMode.set(newValue) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_amoled_mode_title)) },
-                                summary = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_appearance_amoled_mode_summary),
-                                        color = MaterialTheme.colorScheme.outline,
-                                    )
-                                },
+                                summary = { Text(text = stringResource(id = R.string.pref_appearance_amoled_mode_summary), color = MaterialTheme.colorScheme.outline) },
                                 enabled = darkMode != DarkMode.Light
                             )
                         }
                     }
 
-                    item {
-                        PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_file_browser))
-                    }
+                    item { PreferenceSectionHeader(title = stringResource(id = R.string.pref_appearance_category_file_browser)) }
 
                     item {
                         PreferenceCard {
@@ -243,17 +215,8 @@ object AppearancePreferencesScreen : Screen {
                             SwitchPreference(
                                 value = unlimitedNameLines,
                                 onValueChange = { preferences.unlimitedNameLines.set(it) },
-                                title = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_appearance_unlimited_name_lines_title),
-                                    )
-                                },
-                                summary = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_appearance_unlimited_name_lines_summary),
-                                        color = MaterialTheme.colorScheme.outline,
-                                    )
-                                }
+                                title = { Text(text = stringResource(id = R.string.pref_appearance_unlimited_name_lines_title)) },
+                                summary = { Text(text = stringResource(id = R.string.pref_appearance_unlimited_name_lines_summary), color = MaterialTheme.colorScheme.outline) }
                             )
 
                             PreferenceDivider()
@@ -262,17 +225,8 @@ object AppearancePreferencesScreen : Screen {
                             SwitchPreference(
                                 value = showUnplayedOldVideoLabel,
                                 onValueChange = { preferences.showUnplayedOldVideoLabel.set(it) },
-                                title = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_appearance_show_unplayed_old_video_label_title),
-                                    )
-                                },
-                                summary = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_appearance_show_unplayed_old_video_label_summary),
-                                        color = MaterialTheme.colorScheme.outline,
-                                    )
-                                }
+                                title = { Text(text = stringResource(id = R.string.pref_appearance_show_unplayed_old_video_label_title)) },
+                                summary = { Text(text = stringResource(id = R.string.pref_appearance_show_unplayed_old_video_label_summary), color = MaterialTheme.colorScheme.outline) }
                             )
 
                             PreferenceDivider()
@@ -283,15 +237,7 @@ object AppearancePreferencesScreen : Screen {
                                 onValueChange = { preferences.unplayedOldVideoDays.set(it.roundToInt()) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_unplayed_old_video_days_title)) },
                                 valueRange = 1f..30f,
-                                summary = {
-                                    Text(
-                                        text = stringResource(
-                                            id = R.string.pref_appearance_unplayed_old_video_days_summary,
-                                            unplayedOldVideoDays,
-                                        ),
-                                        color = MaterialTheme.colorScheme.outline,
-                                    )
-                                },
+                                summary = { Text(text = stringResource(id = R.string.pref_appearance_unplayed_old_video_days_summary, unplayedOldVideoDays), color = MaterialTheme.colorScheme.outline) },
                                 onSliderValueChange = { preferences.unplayedOldVideoDays.set(it.roundToInt()) },
                                 sliderValue = unplayedOldVideoDays.toFloat(),
                                 enabled = showUnplayedOldVideoLabel
@@ -303,15 +249,8 @@ object AppearancePreferencesScreen : Screen {
                             SwitchPreference(
                                 value = autoScrollToLastPlayed,
                                 onValueChange = { browserPreferences.autoScrollToLastPlayed.set(it) },
-                                title = {
-                                    Text(text = stringResource(R.string.pref_appearance_auto_scroll_title))
-                                },
-                                summary = {
-                                    Text(
-                                        text = stringResource(R.string.pref_appearance_auto_scroll_summary),
-                                        color = MaterialTheme.colorScheme.outline,
-                                    )
-                                }
+                                title = { Text(text = stringResource(R.string.pref_appearance_auto_scroll_title)) },
+                                summary = { Text(text = stringResource(R.string.pref_appearance_auto_scroll_summary), color = MaterialTheme.colorScheme.outline) }
                             )
 
                             PreferenceDivider()
@@ -325,15 +264,7 @@ object AppearancePreferencesScreen : Screen {
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_watched_threshold_title)) },
                                 valueRange = 50f..100f,
                                 valueSteps = 9,
-                                summary = {
-                                    Text(
-                                        text = stringResource(
-                                            id = R.string.pref_appearance_watched_threshold_summary,
-                                            watchedThreshold,
-                                        ),
-                                        color = MaterialTheme.colorScheme.outline,
-                                    )
-                                },
+                                summary = { Text(text = stringResource(id = R.string.pref_appearance_watched_threshold_summary, watchedThreshold), color = MaterialTheme.colorScheme.outline) },
                             )
 
                             PreferenceDivider()
@@ -342,17 +273,8 @@ object AppearancePreferencesScreen : Screen {
                             SwitchPreference(
                                 value = tapThumbnailToSelect,
                                 onValueChange = { gesturePreferences.tapThumbnailToSelect.set(it) },
-                                title = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_title),
-                                    )
-                                },
-                                summary = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_summary),
-                                        color = MaterialTheme.colorScheme.outline,
-                                    )
-                                }
+                                title = { Text(text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_title)) },
+                                summary = { Text(text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_summary), color = MaterialTheme.colorScheme.outline) }
                             )
 
                             PreferenceDivider()
@@ -361,21 +283,11 @@ object AppearancePreferencesScreen : Screen {
                             SwitchPreference(
                                 value = showNetworkThumbnails,
                                 onValueChange = { preferences.showNetworkThumbnails.set(it) },
-                                title = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_title),
-                                    )
-                                },
-                                summary = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_summary),
-                                        color = MaterialTheme.colorScheme.outline,
-                                    )
-                                }
+                                title = { Text(text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_title)) },
+                                summary = { Text(text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_summary), color = MaterialTheme.colorScheme.outline) }
                             )
                         }
                     }
-
                 }
             }
         }
