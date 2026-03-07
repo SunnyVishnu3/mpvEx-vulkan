@@ -47,7 +47,7 @@ import app.marlboroadvance.mpvex.preferences.MultiChoiceSegmentedButton
 import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import app.marlboroadvance.mpvex.presentation.Screen
 import app.marlboroadvance.mpvex.ui.components.liquid.AdaptiveToggle
-import app.marlboroadvance.mpvex.ui.components.liquid.LiquidSwitchPreference as SwitchPreference
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidSwitchPreference
 import app.marlboroadvance.mpvex.ui.preferences.components.ThemePicker
 import app.marlboroadvance.mpvex.ui.theme.DarkMode
 import app.marlboroadvance.mpvex.ui.utils.LocalBackStack
@@ -119,7 +119,7 @@ object AppearancePreferencesScreen : Screen {
                                 )
                             }
 
-                            PreferenceDivider()
+                            me.zhanghai.compose.preference.PreferenceDivider()
 
                             val amoledMode by preferences.amoledMode.collectAsState()
 
@@ -130,7 +130,7 @@ object AppearancePreferencesScreen : Screen {
                                 modifier = Modifier.padding(vertical = 8.dp),
                             )
 
-                            PreferenceDivider()
+                            me.zhanghai.compose.preference.PreferenceDivider()
 
                             // --- LIQUID GLASS UI MASTER TOGGLE & COLORS ---
                             Row(
@@ -193,10 +193,10 @@ object AppearancePreferencesScreen : Screen {
                                 }
                             }
 
-                            PreferenceDivider()
+                            me.zhanghai.compose.preference.PreferenceDivider()
                             // -------------------------------------
 
-                            SwitchPreference(
+                            LiquidSwitchPreference(
                                 value = amoledMode,
                                 onValueChange = { newValue -> preferences.amoledMode.set(newValue) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_amoled_mode_title)) },
@@ -211,24 +211,24 @@ object AppearancePreferencesScreen : Screen {
                     item {
                         PreferenceCard {
                             val unlimitedNameLines by preferences.unlimitedNameLines.collectAsState()
-                            SwitchPreference(
+                            LiquidSwitchPreference(
                                 value = unlimitedNameLines,
                                 onValueChange = { preferences.unlimitedNameLines.set(it) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_unlimited_name_lines_title)) },
                                 summary = { Text(text = stringResource(id = R.string.pref_appearance_unlimited_name_lines_summary), color = MaterialTheme.colorScheme.outline) }
                             )
 
-                            PreferenceDivider()
+                            me.zhanghai.compose.preference.PreferenceDivider()
 
                             val showUnplayedOldVideoLabel by preferences.showUnplayedOldVideoLabel.collectAsState()
-                            SwitchPreference(
+                            LiquidSwitchPreference(
                                 value = showUnplayedOldVideoLabel,
                                 onValueChange = { preferences.showUnplayedOldVideoLabel.set(it) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_show_unplayed_old_video_label_title)) },
                                 summary = { Text(text = stringResource(id = R.string.pref_appearance_show_unplayed_old_video_label_summary), color = MaterialTheme.colorScheme.outline) }
                             )
 
-                            PreferenceDivider()
+                            me.zhanghai.compose.preference.PreferenceDivider()
 
                             val unplayedOldVideoDays by preferences.unplayedOldVideoDays.collectAsState()
                             SliderPreference(
@@ -242,17 +242,17 @@ object AppearancePreferencesScreen : Screen {
                                 enabled = showUnplayedOldVideoLabel
                             )
 
-                            PreferenceDivider()
+                            me.zhanghai.compose.preference.PreferenceDivider()
 
                             val autoScrollToLastPlayed by browserPreferences.autoScrollToLastPlayed.collectAsState()
-                            SwitchPreference(
+                            LiquidSwitchPreference(
                                 value = autoScrollToLastPlayed,
                                 onValueChange = { browserPreferences.autoScrollToLastPlayed.set(it) },
                                 title = { Text(text = stringResource(R.string.pref_appearance_auto_scroll_title)) },
                                 summary = { Text(text = stringResource(R.string.pref_appearance_auto_scroll_summary), color = MaterialTheme.colorScheme.outline) }
                             )
 
-                            PreferenceDivider()
+                            me.zhanghai.compose.preference.PreferenceDivider()
 
                             val watchedThreshold by browserPreferences.watchedThreshold.collectAsState()
                             SliderPreference(
@@ -266,20 +266,20 @@ object AppearancePreferencesScreen : Screen {
                                 summary = { Text(text = stringResource(id = R.string.pref_appearance_watched_threshold_summary, watchedThreshold), color = MaterialTheme.colorScheme.outline) },
                             )
 
-                            PreferenceDivider()
+                            me.zhanghai.compose.preference.PreferenceDivider()
 
                             val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
-                            SwitchPreference(
+                            LiquidSwitchPreference(
                                 value = tapThumbnailToSelect,
                                 onValueChange = { gesturePreferences.tapThumbnailToSelect.set(it) },
                                 title = { Text(text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_title)) },
                                 summary = { Text(text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_summary), color = MaterialTheme.colorScheme.outline) }
                             )
 
-                            PreferenceDivider()
+                            me.zhanghai.compose.preference.PreferenceDivider()
 
                             val showNetworkThumbnails by preferences.showNetworkThumbnails.collectAsState()
-                            SwitchPreference(
+                            LiquidSwitchPreference(
                                 value = showNetworkThumbnails,
                                 onValueChange = { preferences.showNetworkThumbnails.set(it) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_title)) },
