@@ -54,7 +54,6 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import me.zhanghai.compose.preference.PreferenceDivider
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
 import me.zhanghai.compose.preference.SwitchPreference
