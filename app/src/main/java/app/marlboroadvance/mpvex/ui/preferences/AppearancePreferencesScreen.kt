@@ -1,28 +1,40 @@
 package app.marlboroadvance.mpvex.ui.preferences
 
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.rememberCoroutineScope
-import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
-import kotlinx.coroutines.launch
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,22 +42,24 @@ import app.marlboroadvance.mpvex.R
 import app.marlboroadvance.mpvex.preferences.AppearancePreferences
 import app.marlboroadvance.mpvex.preferences.BrowserPreferences
 import app.marlboroadvance.mpvex.preferences.GesturePreferences
+import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
 import app.marlboroadvance.mpvex.preferences.MultiChoiceSegmentedButton
 import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import app.marlboroadvance.mpvex.presentation.Screen
+import app.marlboroadvance.mpvex.ui.components.liquid.AdaptiveToggle
 import app.marlboroadvance.mpvex.ui.preferences.components.ThemePicker
 import app.marlboroadvance.mpvex.ui.theme.DarkMode
 import app.marlboroadvance.mpvex.ui.utils.LocalBackStack
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import me.zhanghai.compose.preference.PreferenceDivider
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
 import me.zhanghai.compose.preference.SwitchPreference
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 
 @Serializable
 object AppearancePreferencesScreen : Screen {
@@ -56,6 +70,8 @@ object AppearancePreferencesScreen : Screen {
         val context = LocalContext.current
         val liquidPreferences = remember { LiquidUIPreferences(context) }
         val isLiquidUIEnabled by liquidPreferences.liquidUIEnabledFlow.collectAsState(initial = false)
+        val toggleColor by liquidPreferences.liquidToggleColorFlow.collectAsState(initial = 0xFF4CAF50)
+        val sliderColor by liquidPreferences.liquidSliderColorFlow.collectAsState(initial = 0xFF2196F3)
         val scope = rememberCoroutineScope()
         val browserPreferences = koinInject<BrowserPreferences>()
         val gesturePreferences = koinInject<GesturePreferences>()
@@ -130,28 +146,75 @@ object AppearancePreferencesScreen : Screen {
                                 modifier = Modifier.padding(vertical = 8.dp),
                             )
 
-                           // --- LIQUID GLASS UI MASTER TOGGLE ---
-                            SwitchPreference(
-                                value = isLiquidUIEnabled,
-                                onValueChange = { enabled -> 
-                                    scope.launch { liquidPreferences.setLiquidUIEnabled(enabled) } 
-                                },
-                                title = {
-                                    Text(
-                                        text = "Enable Liquid Glass UI",
-                                        fontWeight = FontWeight.Bold
+                            PreferenceDivider()
+
+                            // --- LIQUID GLASS UI MASTER TOGGLE & COLORS ---
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { scope.launch { liquidPreferences.setLiquidUIEnabled(!isLiquidUIEnabled) } }
+                                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(text = "Enable Liquid Glass UI", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(text = "Transform controls with modern glass effects", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                                }
+                                AdaptiveToggle(
+                                    checked = isLiquidUIEnabled,
+                                    onCheckedChange = { enabled -> scope.launch { liquidPreferences.setLiquidUIEnabled(enabled) } },
+                                    preferences = liquidPreferences
+                                )
+                            }
+
+                            AnimatedVisibility(visible = isLiquidUIEnabled) {
+                                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                    Text("Liquid UI Colors", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 8.dp))
+                                    
+                                    fun parseColorInput(input: String): Long? {
+                                        return try {
+                                            val formatted = if (input.matches(Regex("^[0-9A-Fa-f]{6,8}$"))) "#$input" else input
+                                            val colorInt = android.graphics.Color.parseColor(formatted)
+                                            colorInt.toLong() and 0xFFFFFFFFL
+                                        } catch (e: Exception) { null }
+                                    }
+
+                                    var toggleInputText by remember(toggleColor) { mutableStateOf(String.format("#%06X", 0xFFFFFF and toggleColor.toInt())) }
+                                    OutlinedTextField(
+                                        value = toggleInputText,
+                                        onValueChange = { newValue ->
+                                            toggleInputText = newValue
+                                            parseColorInput(newValue)?.let { colorLong -> scope.launch { liquidPreferences.setToggleColor(colorLong) } }
+                                        },
+                                        label = { Text("Toggle Color") },
+                                        placeholder = { Text("e.g. #FF5733 or blue") },
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                                        singleLine = true,
+                                        leadingIcon = {
+                                            Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(toggleColor)))
+                                        }
                                     )
-                                },
-                                summary = {
-                                    Text(
-                                        text = "Transform player controls and components with modern transparent glass effects",
-                                        color = MaterialTheme.colorScheme.outline,
+
+                                    var sliderInputText by remember(sliderColor) { mutableStateOf(String.format("#%06X", 0xFFFFFF and sliderColor.toInt())) }
+                                    OutlinedTextField(
+                                        value = sliderInputText,
+                                        onValueChange = { newValue ->
+                                            sliderInputText = newValue
+                                            parseColorInput(newValue)?.let { colorLong -> scope.launch { liquidPreferences.setSliderColor(colorLong) } }
+                                        },
+                                        label = { Text("Slider Color") },
+                                        placeholder = { Text("e.g. #00FF00 or cyan") },
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                        singleLine = true,
+                                        leadingIcon = {
+                                            Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(sliderColor)))
+                                        }
                                     )
                                 }
-                            )
+                            }
 
                             PreferenceDivider()
-                            // -----------------------------
+                            // -------------------------------------
 
                             // AMOLED mode toggle
                             SwitchPreference(
