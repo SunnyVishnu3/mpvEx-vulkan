@@ -1,5 +1,8 @@
 package app.marlboroadvance.mpvex.ui.browser.filesystem
 
+import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidGlassCard
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import android.content.Context
 import android.content.Intent
 import android.util.Log
@@ -1165,6 +1168,14 @@ private fun FileSystemBrowserContent(
   isInSelectionMode: Boolean = false,
 ) {
   val gesturePreferences = koinInject<GesturePreferences>()
+  val context = LocalContext.current
+  val liquidPreferences = remember { LiquidUIPreferences(context) }
+  val liquidUIEnabled by liquidPreferences.liquidUIEnabledFlow.collectAsState(initial = false)
+  
+  // The engine that captures the screen behind the cards
+  val backdrop = rememberLayerBackdrop {
+      drawContent()
+  }
   val browserPreferences = koinInject<BrowserPreferences>()
   val thumbnailRepository = koinInject<app.marlboroadvance.mpvex.domain.thumbnail.ThumbnailRepository>()
   val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
@@ -1303,19 +1314,24 @@ private fun FileSystemBrowserContent(
                 lastModified = folder.lastModified / 1000,
               )
 
-              FolderCard(
-                folder = folderModel,
-                isSelected = folderSelectionManager.isSelected(folder),
-                isRecentlyPlayed = false,
-                onClick = { onFolderClick(folder) },
-                onLongClick = { onFolderLongClick(folder) },
-                onThumbClick = if (tapThumbnailToSelect) {
-                  { onFolderLongClick(folder) }
-                } else {
-                  { onFolderClick(folder) }
-                },
-                isGridMode = false,
-              )
+               LiquidGlassCard(
+                backdrop = if (liquidUIEnabled) backdrop else null,
+                modifier = Modifier.padding(vertical = 4.dp)
+              ) {
+                FolderCard(
+                  folder = folderModel,
+                  isSelected = folderSelectionManager.isSelected(folder),
+                  isRecentlyPlayed = false,
+                  onClick = { onFolderClick(folder) },
+                  onLongClick = { onFolderLongClick(folder) },
+                  onThumbClick = if (tapThumbnailToSelect) {
+                    { onFolderLongClick(folder) }
+                  } else {
+                    { onFolderClick(folder) }
+                  },
+                  isGridMode = false,
+                )
+              }
             }
 
             // Videos second
@@ -1323,24 +1339,29 @@ private fun FileSystemBrowserContent(
               items = items.filterIsInstance<FileSystemItem.VideoFile>(),
               key = { "${it.video.id}_${it.video.path}" },
             ) { videoFile ->
-              VideoCard(
-                video = videoFile.video,
-                progressPercentage = videoFilesWithPlayback[videoFile.video.id],
-                isRecentlyPlayed = false,
-                isSelected = videoSelectionManager.isSelected(videoFile.video),
-                onClick = { onVideoClick(videoFile.video) },
-                onLongClick = { onVideoLongClick(videoFile.video) },
-                onThumbClick = if (tapThumbnailToSelect) {
-                  { onVideoLongClick(videoFile.video) }
-                } else {
-                  { onVideoClick(videoFile.video) }
-                },
-                isGridMode = false,
-                showSubtitleIndicator = showSubtitleIndicator,
-                overrideShowSizeChip = null,
-                overrideShowResolutionChip = null,
-                useFolderNameStyle = false,
-              )
+              LiquidGlassCard(
+                backdrop = if (liquidUIEnabled) backdrop else null,
+                modifier = Modifier.padding(vertical = 4.dp)
+              ) {
+                VideoCard(
+                  video = videoFile.video,
+                  progressPercentage = videoFilesWithPlayback[videoFile.video.id],
+                  isRecentlyPlayed = false,
+                  isSelected = videoSelectionManager.isSelected(videoFile.video),
+                  onClick = { onVideoClick(videoFile.video) },
+                  onLongClick = { onVideoLongClick(videoFile.video) },
+                  onThumbClick = if (tapThumbnailToSelect) {
+                    { onVideoLongClick(videoFile.video) }
+                  } else {
+                    { onVideoClick(videoFile.video) }
+                  },
+                  isGridMode = false,
+                  showSubtitleIndicator = showSubtitleIndicator,
+                  overrideShowSizeChip = null,
+                  overrideShowResolutionChip = null,
+                  useFolderNameStyle = false,
+                )
+              }
             }
           }
           
@@ -1501,20 +1522,29 @@ private fun FileSystemSearchContent(
               items = videos,
               key = { "search_video_${it.video.id}_${it.video.path}_${it.hashCode()}" },
             ) { videoFile ->
-              VideoCard(
-                video = videoFile.video,
-                progressPercentage = videoFilesWithPlayback[videoFile.video.id],
-                isRecentlyPlayed = false,
-                isSelected = false,
-                onClick = { onVideoClick(videoFile.video) },
-                onLongClick = { },
-                onThumbClick = { onVideoClick(videoFile.video) },
-                isGridMode = false,
-                showSubtitleIndicator = showSubtitleIndicator,
-                overrideShowSizeChip = null,
-                overrideShowResolutionChip = null,
-                useFolderNameStyle = false,
-              )
+              LiquidGlassCard(
+                backdrop = if (liquidUIEnabled) backdrop else null,
+                modifier = Modifier.padding(vertical = 4.dp)
+              ) {
+                VideoCard(
+                  video = videoFile.video,
+                  progressPercentage = videoFilesWithPlayback[videoFile.video.id],
+                  isRecentlyPlayed = false,
+                  isSelected = videoSelectionManager.isSelected(videoFile.video),
+                  onClick = { onVideoClick(videoFile.video) },
+                  onLongClick = { onVideoLongClick(videoFile.video) },
+                  onThumbClick = if (tapThumbnailToSelect) {
+                    { onVideoLongClick(videoFile.video) }
+                  } else {
+                    { onVideoClick(videoFile.video) }
+                  },
+                  isGridMode = false,
+                  showSubtitleIndicator = showSubtitleIndicator,
+                  overrideShowSizeChip = null,
+                  overrideShowResolutionChip = null,
+                  useFolderNameStyle = false,
+                )
+              }
             }
           }
           
