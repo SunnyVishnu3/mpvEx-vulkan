@@ -63,7 +63,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.Preference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
-import me.zhanghai.compose.preference.SwitchPreference
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidSwitchPreference as SwitchPreference
 import me.zhanghai.compose.preference.TextFieldPreference
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
