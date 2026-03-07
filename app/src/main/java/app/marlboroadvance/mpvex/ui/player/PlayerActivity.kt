@@ -1593,6 +1593,8 @@ class PlayerActivity :
    */
   override fun onConfigurationChanged(newConfig: Configuration) {
     super.onConfigurationChanged(newConfig)
+    val isPortrait = newConfig.orientation == Configuration.ORIENTATION_PORTRAIT
+    viewModel.onOrientationChanged(isPortrait)
     if (isReady) {
       handleConfigurationChange()
     }
@@ -1636,9 +1638,12 @@ class PlayerActivity :
         if (playerPreferences.orientation.get() == PlayerOrientation.Video && aspect != null) {
           setOrientation()
         }
-        
+
         // Re-apply Anime4K shaders (check for resolution limit)
         player.applyAnime4KShaders()
+
+        // Re-check ambient stretch — handles portrait videos and new content
+        viewModel.updateAmbientStretch()
       }
     }
   }
@@ -1870,6 +1875,9 @@ class PlayerActivity :
 
     // Reset AB loop values when video changes
     viewModel.clearABLoop()
+
+    // Reset ambient mode to OFF when a new video starts
+    viewModel.resetAmbientMode()
 
     setIntentExtras(intent.extras)
 

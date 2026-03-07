@@ -66,6 +66,7 @@ fun MoreSheet(
   onStartTimer: (Int) -> Unit,
   onDismissRequest: () -> Unit,
   onEnterFiltersPanel: () -> Unit,
+  onAnime4KChanged: () -> Unit = {},
   modifier: Modifier = Modifier,
 ) {
   val advancedPreferences = koinInject<AdvancedPreferences>()
@@ -238,6 +239,8 @@ fun MoreSheet(
                     val currentMode = try { Anime4KManager.Mode.valueOf(mode.name) } catch (e: Exception) { Anime4KManager.Mode.OFF }
                     val shaderChain = anime4kManager.getShaderChain(currentMode, quality)
                     MPVLib.setPropertyString("glsl-shaders", if (shaderChain.isNotEmpty()) shaderChain else "")
+                    // Restart ambient mode if it was ON (Anime4K reset wiped it)
+                    onAnime4KChanged()
                   }
                 }
               }
@@ -266,6 +269,8 @@ fun MoreSheet(
                     val currentQuality = try { Anime4KManager.Quality.valueOf(quality.name) } catch (e: Exception) { Anime4KManager.Quality.BALANCED }
                     val shaderChain = anime4kManager.getShaderChain(modeEnum, currentQuality)
                     MPVLib.setPropertyString("glsl-shaders", if (shaderChain.isNotEmpty()) shaderChain else "")
+                    // Restart ambient mode if it was ON (Anime4K reset wiped it)
+                    onAnime4KChanged()
                   }
                 }
               }
