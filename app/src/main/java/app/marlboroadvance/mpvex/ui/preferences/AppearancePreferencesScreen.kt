@@ -1,5 +1,9 @@
 package app.marlboroadvance.mpvex.ui.preferences
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
+import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,6 +51,10 @@ object AppearancePreferencesScreen : Screen {
     @Composable
     override fun Content() {
         val preferences = koinInject<AppearancePreferences>()
+        val context = LocalContext.current
+        val liquidPreferences = remember { LiquidUIPreferences(context) }
+        val isLiquidUIEnabled by liquidPreferences.liquidUIEnabledFlow.collectAsState(initial = false)
+        val scope = rememberCoroutineScope()
         val browserPreferences = koinInject<BrowserPreferences>()
         val gesturePreferences = koinInject<GesturePreferences>()
         val backstack = LocalBackStack.current
@@ -120,7 +128,28 @@ object AppearancePreferencesScreen : Screen {
                                 modifier = Modifier.padding(vertical = 8.dp),
                             )
 
+                           // --- LIQUID GLASS UI MASTER TOGGLE ---
+                            SwitchPreference(
+                                value = isLiquidUIEnabled,
+                                onValueChange = { enabled -> 
+                                    scope.launch { liquidPreferences.setLiquidUIEnabled(enabled) } 
+                                },
+                                title = {
+                                    Text(
+                                        text = "Enable Liquid Glass UI",
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                summary = {
+                                    Text(
+                                        text = "Transform player controls and components with modern transparent glass effects",
+                                        color = MaterialTheme.colorScheme.outline,
+                                    )
+                                }
+                            )
+
                             PreferenceDivider()
+                            // -----------------------------
 
                             // AMOLED mode toggle
                             SwitchPreference(
