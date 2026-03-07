@@ -26,27 +26,6 @@ import com.kyant.backdrop.drawBackdrop
 import app.marlboroadvance.mpvex.ui.theme.LiquidUIEffects
 import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
 
-/**
- * Liquid Glass Toggle Component
- * 
- * A beautiful animated toggle with liquid glass effect.
- * When liquid UI is disabled in preferences, falls back to standard Material Switch.
- * 
- * Features:
- * - Smooth animation between states
- * - Liquid glass effect with customizable blur and lens
- * - iOS-like appearance
- * - Full accessibility support
- * 
- * @param checked Whether the toggle is in the ON position
- * @param onCheckedChange Callback when toggle state changes
- * @param modifier Modifier for the toggle
- * @param enabled Whether the toggle can be interacted with
- * @param checkedColor Color when toggle is ON
- * @param uncheckedColor Color when toggle is OFF
- * @param thumbColor Color of the toggle thumb (circle)
- * @param applyLiquidEffect Whether to apply liquid glass effect (set false for fallback)
- */
 @Composable
 fun LiquidToggle(
     checked: Boolean,
@@ -58,7 +37,6 @@ fun LiquidToggle(
     thumbColor: Color = Color.White,
     applyLiquidEffect: Boolean = true
 ) {
-    // Fallback to standard Material Switch if liquid effect not enabled
     if (!applyLiquidEffect) {
         Switch(
             checked = checked,
@@ -72,13 +50,11 @@ fun LiquidToggle(
     val backgroundColor = if (checked) checkedColor else uncheckedColor
     val thumbPadding = if (checked) 24.dp else 2.dp
 
-    // Create backdrop for liquid glass effect
     val backdrop = rememberLayerBackdrop {
         drawRect(backgroundColor)
         drawContent()
     }
 
-    // Animate thumb position
     val animatedThumbPadding = animateDpAsState(
         targetValue = thumbPadding,
         label = "toggle_thumb_position"
@@ -100,12 +76,11 @@ fun LiquidToggle(
             .clickable(
                 enabled = enabled,
                 onClick = { onCheckedChange(!checked) },
-                indication = null,  // Remove ripple effect
+                indication = null,  
                 interactionSource = remember { MutableInteractionSource() }
             ),
         contentAlignment = Alignment.CenterStart
     ) {
-        // Toggle thumb (the circle that moves)
         Box(
             modifier = Modifier
                 .size(28.dp)
@@ -118,18 +93,6 @@ fun LiquidToggle(
     }
 }
 
-/**
- * Liquid Glass Switch Component (with label)
- * 
- * A toggle switch with optional label text.
- * 
- * @param checked Whether the switch is ON
- * @param onCheckedChange Callback when switch state changes
- * @param modifier Modifier for the entire row
- * @param enabled Whether the switch can be interacted with
- * @param label Optional label text to display
- * @param applyLiquidEffect Whether to apply liquid glass effect
- */
 @Composable
 fun LiquidSwitch(
     checked: Boolean,
@@ -137,11 +100,10 @@ fun LiquidSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     label: String? = null,
-    checkedColor: Color = Color(0xFF4CAF50), // Added color support!
+    checkedColor: Color = Color(0xFF4CAF50), 
     applyLiquidEffect: Boolean = true
 ) {
     if (label == null) {
-        // Just the toggle without label
         LiquidToggle(
             checked = checked,
             onCheckedChange = onCheckedChange,
@@ -153,12 +115,11 @@ fun LiquidSwitch(
         return
     }
 
-    // Toggle with label
     Row(
         modifier = modifier.padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        androidx.compose.material3.Text(
+        Text(
             text = label,
             modifier = Modifier.weight(1f)
         )
@@ -175,21 +136,17 @@ fun LiquidSwitch(
     }
 }
 
-/**
- * Adaptive Toggle - Automatically uses liquid or standard based on settings
- */
 @Composable
 fun AdaptiveToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    preferences: app.marlboroadvance.mpvex.preferences.LiquidUIPreferences,
+    preferences: LiquidUIPreferences,
     enabled: Boolean = true,
     label: String? = null
 ) {
-    // Collect liquid UI enabled state and custom color
-    val isLiquidUIEnabled = preferences.liquidUIEnabledFlow.androidx.compose.runtime.collectAsState(false).value
-    val toggleColorLong = preferences.liquidToggleColorFlow.androidx.compose.runtime.collectAsState(0xFF4CAF50).value
+    val isLiquidUIEnabled = preferences.liquidUIEnabledFlow.collectAsState(false).value
+    val toggleColorLong = preferences.liquidToggleColorFlow.collectAsState(0xFF4CAF50).value
     val customColor = Color(toggleColorLong)
 
     if (label != null) {
@@ -214,9 +171,6 @@ fun AdaptiveToggle(
     }
 }
 
-/**
- * Simple Liquid Toggle (no adaptation)
- */
 @Composable
 fun SimpleToggle(
     checked: Boolean,
@@ -247,5 +201,4 @@ fun SimpleToggle(
             applyLiquidEffect = isLiquidUI
         )
     }
-}
 }
