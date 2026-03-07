@@ -1405,6 +1405,10 @@ private fun FileSystemSearchContent(
   val gesturePreferences = koinInject<GesturePreferences>()
   val browserPreferences = koinInject<BrowserPreferences>()
   val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
+  val context = LocalContext.current
+  val liquidPreferences = remember { LiquidUIPreferences(context) }
+  val liquidUIEnabled by liquidPreferences.liquidUIEnabledFlow.collectAsState(initial = false)
+  val backdrop = rememberLayerBackdrop { drawContent() }
 
   // Track scroll for FAB visibility in search mode with proper scroll direction detection
   val previousIndex = remember { mutableIntStateOf(0) }
@@ -1506,23 +1510,27 @@ private fun FileSystemSearchContent(
                 lastModified = folder.lastModified / 1000,
               )
 
-              FolderCard(
-                folder = folderModel,
-                isSelected = false,
-                isRecentlyPlayed = false,
-                onClick = { onFolderClick(folder) },
-                onLongClick = { },
-                onThumbClick = { onFolderClick(folder) },
-                isGridMode = false,
-              )
-            }
+             LiquidGlassCard(
+                backdrop = if (liquidUIEnabled) backdrop else null,
+                modifier = Modifier.padding(vertical = 4.dp)
+              ) {
+                FolderCard(
+                  folder = folderModel,
+                  isSelected = false, // Search doesn't use selection manager
+                  isRecentlyPlayed = false,
+                  onClick = { onFolderClick(folder) },
+                  onLongClick = { },
+                  onThumbClick = { onFolderClick(folder) },
+                  isGridMode = false,
+                )
+              }
             
             // Videos second
             items(
               items = videos,
               key = { "search_video_${it.video.id}_${it.video.path}_${it.hashCode()}" },
             ) { videoFile ->
-              LiquidGlassCard(
+             LiquidGlassCard(
                 backdrop = if (liquidUIEnabled) backdrop else null,
                 modifier = Modifier.padding(vertical = 4.dp)
               ) {
@@ -1530,14 +1538,10 @@ private fun FileSystemSearchContent(
                   video = videoFile.video,
                   progressPercentage = videoFilesWithPlayback[videoFile.video.id],
                   isRecentlyPlayed = false,
-                  isSelected = videoSelectionManager.isSelected(videoFile.video),
+                  isSelected = false, // Search doesn't use selection manager
                   onClick = { onVideoClick(videoFile.video) },
-                  onLongClick = { onVideoLongClick(videoFile.video) },
-                  onThumbClick = if (tapThumbnailToSelect) {
-                    { onVideoLongClick(videoFile.video) }
-                  } else {
-                    { onVideoClick(videoFile.video) }
-                  },
+                  onLongClick = { },
+                  onThumbClick = { onVideoClick(videoFile.video) },
                   isGridMode = false,
                   showSubtitleIndicator = showSubtitleIndicator,
                   overrideShowSizeChip = null,
