@@ -137,6 +137,7 @@ fun LiquidSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     label: String? = null,
+    checkedColor: Color = Color(0xFF4CAF50), // Added color support!
     applyLiquidEffect: Boolean = true
 ) {
     if (label == null) {
@@ -146,6 +147,7 @@ fun LiquidSwitch(
             onCheckedChange = onCheckedChange,
             modifier = modifier,
             enabled = enabled,
+            checkedColor = checkedColor,
             applyLiquidEffect = applyLiquidEffect
         )
         return
@@ -156,7 +158,7 @@ fun LiquidSwitch(
         modifier = modifier.padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
+        androidx.compose.material3.Text(
             text = label,
             modifier = Modifier.weight(1f)
         )
@@ -167,6 +169,7 @@ fun LiquidSwitch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             enabled = enabled,
+            checkedColor = checkedColor,
             applyLiquidEffect = applyLiquidEffect
         )
     }
@@ -174,29 +177,20 @@ fun LiquidSwitch(
 
 /**
  * Adaptive Toggle - Automatically uses liquid or standard based on settings
- * 
- * This is the recommended component to use throughout the app.
- * It automatically adapts to the liquid UI preference setting.
- * 
- * @param checked Whether the toggle is ON
- * @param onCheckedChange Callback when state changes
- * @param modifier Modifier
- * @param preferences LiquidUIPreferences to check liquid UI setting
- * @param enabled Whether the toggle is interactive
- * @param label Optional label text
  */
 @Composable
 fun AdaptiveToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    preferences: LiquidUIPreferences,
+    preferences: app.marlboroadvance.mpvex.preferences.LiquidUIPreferences,
     enabled: Boolean = true,
     label: String? = null
 ) {
-    // Collect liquid UI enabled state
-    val isLiquidUIEnabled = preferences.liquidUIEnabledFlow
-        .collectAsState(false).value
+    // Collect liquid UI enabled state and custom color
+    val isLiquidUIEnabled = preferences.liquidUIEnabledFlow.androidx.compose.runtime.collectAsState(false).value
+    val toggleColorLong = preferences.liquidToggleColorFlow.androidx.compose.runtime.collectAsState(0xFF4CAF50).value
+    val customColor = Color(toggleColorLong)
 
     if (label != null) {
         LiquidSwitch(
@@ -205,6 +199,7 @@ fun AdaptiveToggle(
             modifier = modifier,
             enabled = enabled,
             label = label,
+            checkedColor = customColor,
             applyLiquidEffect = isLiquidUIEnabled
         )
     } else {
@@ -213,6 +208,7 @@ fun AdaptiveToggle(
             onCheckedChange = onCheckedChange,
             modifier = modifier,
             enabled = enabled,
+            checkedColor = customColor,
             applyLiquidEffect = isLiquidUIEnabled
         )
     }
@@ -220,16 +216,6 @@ fun AdaptiveToggle(
 
 /**
  * Simple Liquid Toggle (no adaptation)
- * 
- * Use this when you're already checking liquid UI settings elsewhere
- * and want to directly control whether liquid effect is shown.
- * 
- * @param checked Toggle state
- * @param onCheckedChange State change callback
- * @param modifier Modifier
- * @param enabled Interactive state
- * @param isLiquidUI Whether to show liquid glass version (not adaptive)
- * @param label Optional label
  */
 @Composable
 fun SimpleToggle(
@@ -238,7 +224,8 @@ fun SimpleToggle(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     isLiquidUI: Boolean = true,
-    label: String? = null
+    label: String? = null,
+    checkedColor: Color = Color(0xFF4CAF50)
 ) {
     if (label != null) {
         LiquidSwitch(
@@ -247,6 +234,7 @@ fun SimpleToggle(
             modifier = modifier,
             enabled = enabled,
             label = label,
+            checkedColor = checkedColor,
             applyLiquidEffect = isLiquidUI
         )
     } else {
@@ -255,7 +243,9 @@ fun SimpleToggle(
             onCheckedChange = onCheckedChange,
             modifier = modifier,
             enabled = enabled,
+            checkedColor = checkedColor,
             applyLiquidEffect = isLiquidUI
         )
     }
+}
 }
