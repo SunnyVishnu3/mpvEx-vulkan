@@ -119,7 +119,7 @@ object AppearancePreferencesScreen : Screen {
                                 )
                             }
 
-                            me.zhanghai.compose.preference.PreferenceDivider()
+                            PreferenceDivider()
 
                             val amoledMode by preferences.amoledMode.collectAsState()
 
@@ -130,7 +130,7 @@ object AppearancePreferencesScreen : Screen {
                                 modifier = Modifier.padding(vertical = 8.dp),
                             )
 
-                            me.zhanghai.compose.preference.PreferenceDivider()
+                            PreferenceDivider()
 
                             // --- LIQUID GLASS UI MASTER TOGGLE & COLORS ---
                             Row(
@@ -193,7 +193,7 @@ object AppearancePreferencesScreen : Screen {
                                 }
                             }
 
-                            me.zhanghai.compose.preference.PreferenceDivider()
+                            PreferenceDivider()
                             // -------------------------------------
 
                             LiquidSwitchPreference(
@@ -218,7 +218,7 @@ object AppearancePreferencesScreen : Screen {
                                 summary = { Text(text = stringResource(id = R.string.pref_appearance_unlimited_name_lines_summary), color = MaterialTheme.colorScheme.outline) }
                             )
 
-                            me.zhanghai.compose.preference.PreferenceDivider()
+                            PreferenceDivider()
 
                             val showUnplayedOldVideoLabel by preferences.showUnplayedOldVideoLabel.collectAsState()
                             LiquidSwitchPreference(
@@ -228,7 +228,7 @@ object AppearancePreferencesScreen : Screen {
                                 summary = { Text(text = stringResource(id = R.string.pref_appearance_show_unplayed_old_video_label_summary), color = MaterialTheme.colorScheme.outline) }
                             )
 
-                            me.zhanghai.compose.preference.PreferenceDivider()
+                            PreferenceDivider()
 
                             val unplayedOldVideoDays by preferences.unplayedOldVideoDays.collectAsState()
                             SliderPreference(
@@ -242,7 +242,7 @@ object AppearancePreferencesScreen : Screen {
                                 enabled = showUnplayedOldVideoLabel
                             )
 
-                            me.zhanghai.compose.preference.PreferenceDivider()
+                            PreferenceDivider()
 
                             val autoScrollToLastPlayed by browserPreferences.autoScrollToLastPlayed.collectAsState()
                             LiquidSwitchPreference(
@@ -252,7 +252,7 @@ object AppearancePreferencesScreen : Screen {
                                 summary = { Text(text = stringResource(R.string.pref_appearance_auto_scroll_summary), color = MaterialTheme.colorScheme.outline) }
                             )
 
-                            me.zhanghai.compose.preference.PreferenceDivider()
+                            PreferenceDivider()
 
                             val watchedThreshold by browserPreferences.watchedThreshold.collectAsState()
                             SliderPreference(
@@ -266,7 +266,7 @@ object AppearancePreferencesScreen : Screen {
                                 summary = { Text(text = stringResource(id = R.string.pref_appearance_watched_threshold_summary, watchedThreshold), color = MaterialTheme.colorScheme.outline) },
                             )
 
-                            me.zhanghai.compose.preference.PreferenceDivider()
+                            PreferenceDivider()
 
                             val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
                             LiquidSwitchPreference(
@@ -276,7 +276,7 @@ object AppearancePreferencesScreen : Screen {
                                 summary = { Text(text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_summary), color = MaterialTheme.colorScheme.outline) }
                             )
 
-                            me.zhanghai.compose.preference.PreferenceDivider()
+                            PreferenceDivider()
 
                             val showNetworkThumbnails by preferences.showNetworkThumbnails.collectAsState()
                             LiquidSwitchPreference(
