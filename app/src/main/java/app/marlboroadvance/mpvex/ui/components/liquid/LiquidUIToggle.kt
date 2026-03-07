@@ -1,6 +1,5 @@
 package app.marlboroadvance.mpvex.ui.components.liquid
 
-import android.os.Build
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -14,14 +13,12 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -61,7 +58,6 @@ fun LiquidToggle(
         return
     }
 
-    // Physics Dimensions
     val trackWidthDp = 52.dp
     val baseThumbSizeDp = 28.dp
     val paddingDp = 2.dp
@@ -74,37 +70,29 @@ fun LiquidToggle(
     var dragOffset by remember { mutableFloatStateOf(if (checked) maxDragPx else 0f) }
     var isDragging by remember { mutableStateOf(false) }
 
-    // Sync external state changes gracefully
     LaunchedEffect(checked) {
-        if (!isDragging) {
-            dragOffset = if (checked) maxDragPx else 0f
-        }
+        if (!isDragging) dragOffset = if (checked) maxDragPx else 0f
     }
 
-    // Drag physics logic
     val draggableState = rememberDraggableState { delta ->
         dragOffset = (dragOffset + delta).coerceIn(0f, maxDragPx)
     }
 
-    // Smooth springing animation for the drag position
     val animatedOffset by animateFloatAsState(
         targetValue = if (isDragging) dragOffset else (if (checked) maxDragPx else 0f),
         animationSpec = spring(dampingRatio = 0.65f, stiffness = 400f),
         label = "thumb_offset"
     )
 
-    // Interaction states for stretch effect
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    // iOS style thumb stretching: wider when pressed or dragged
     val thumbWidth by animateDpAsState(
         targetValue = if (isPressed || isDragging) 34.dp else baseThumbSizeDp,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
         label = "thumb_width"
     )
 
-    // Smoothly blend the glass tint color based on exact drag position
     val progress = (animatedOffset / maxDragPx).coerceIn(0f, 1f)
     val dynamicTrackColor = lerp(
         start = uncheckedColor.copy(alpha = 0.2f),
@@ -162,20 +150,18 @@ fun AdaptiveToggle(
 ) {
     val isLiquidUIEnabled = preferences.liquidUIEnabledFlow.collectAsState(false).value
     val toggleColorLong = preferences.liquidToggleColorFlow.collectAsState(0xFF4CAF50).value
-    val customColor = Color(toggleColorLong)
-
+    
     LiquidToggle(
         checked = checked,
         onCheckedChange = onCheckedChange,
         modifier = modifier,
         enabled = enabled,
-        checkedColor = customColor,
+        checkedColor = Color(toggleColorLong),
         applyLiquidEffect = isLiquidUIEnabled
     )
 }
 
-// THE DROP-IN REPLACEMENT WRAPPER
-// This exactly matches the library's signature so it can replace standard toggles everywhere!
+// DROP-IN REPLACEMENT WRAPPER FOR THE ENTIRE APP
 @Composable
 fun LiquidSwitchPreference(
     value: Boolean,
@@ -184,11 +170,10 @@ fun LiquidSwitchPreference(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     summary: @Composable (() -> Unit)? = null,
-    icon: @Composable (() -> Unit)? = null,
-    preferences: LiquidUIPreferences? = null
+    icon: @Composable (() -> Unit)? = null
 ) {
     val context = LocalContext.current
-    val activePrefs = preferences ?: remember { LiquidUIPreferences(context) }
+    val preferences = remember { LiquidUIPreferences(context) }
 
     Row(
         modifier = modifier
@@ -208,7 +193,7 @@ fun LiquidSwitchPreference(
         AdaptiveToggle(
             checked = value,
             onCheckedChange = onValueChange,
-            preferences = activePrefs,
+            preferences = preferences,
             enabled = enabled
         )
     }
