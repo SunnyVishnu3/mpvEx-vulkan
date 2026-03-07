@@ -1110,6 +1110,7 @@ fun PlayerControls(
             }
           }
         }
+      }   
 
         AnimatedVisibility(
           visible = controlsShown && !areControlsLocked,
