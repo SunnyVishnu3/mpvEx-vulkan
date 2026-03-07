@@ -47,7 +47,7 @@ import app.marlboroadvance.mpvex.preferences.MultiChoiceSegmentedButton
 import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import app.marlboroadvance.mpvex.presentation.Screen
 import app.marlboroadvance.mpvex.ui.components.liquid.AdaptiveToggle
-import app.marlboroadvance.mpvex.ui.components.liquid.LiquidSwitchPreference as SwitchPreference
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidSwitchPreference
 import app.marlboroadvance.mpvex.ui.preferences.components.ThemePicker
 import app.marlboroadvance.mpvex.ui.theme.DarkMode
 import app.marlboroadvance.mpvex.ui.utils.LocalBackStack
@@ -55,6 +55,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import me.zhanghai.compose.preference.PreferenceDivider
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
 import org.koin.compose.koinInject
@@ -196,7 +197,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
                             // -------------------------------------
 
-                            SwitchPreference(
+                            LiquidSwitchPreference(
                                 value = amoledMode,
                                 onValueChange = { newValue -> preferences.amoledMode.set(newValue) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_amoled_mode_title)) },
@@ -211,7 +212,7 @@ object AppearancePreferencesScreen : Screen {
                     item {
                         PreferenceCard {
                             val unlimitedNameLines by preferences.unlimitedNameLines.collectAsState()
-                            SwitchPreference(
+                            LiquidSwitchPreference(
                                 value = unlimitedNameLines,
                                 onValueChange = { preferences.unlimitedNameLines.set(it) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_unlimited_name_lines_title)) },
@@ -221,7 +222,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val showUnplayedOldVideoLabel by preferences.showUnplayedOldVideoLabel.collectAsState()
-                            SwitchPreference(
+                            LiquidSwitchPreference(
                                 value = showUnplayedOldVideoLabel,
                                 onValueChange = { preferences.showUnplayedOldVideoLabel.set(it) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_show_unplayed_old_video_label_title)) },
@@ -245,7 +246,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val autoScrollToLastPlayed by browserPreferences.autoScrollToLastPlayed.collectAsState()
-                            SwitchPreference(
+                            LiquidSwitchPreference(
                                 value = autoScrollToLastPlayed,
                                 onValueChange = { browserPreferences.autoScrollToLastPlayed.set(it) },
                                 title = { Text(text = stringResource(R.string.pref_appearance_auto_scroll_title)) },
@@ -269,7 +270,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
-                            SwitchPreference(
+                            LiquidSwitchPreference(
                                 value = tapThumbnailToSelect,
                                 onValueChange = { gesturePreferences.tapThumbnailToSelect.set(it) },
                                 title = { Text(text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_title)) },
@@ -279,7 +280,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val showNetworkThumbnails by preferences.showNetworkThumbnails.collectAsState()
-                            SwitchPreference(
+                            LiquidSwitchPreference(
                                 value = showNetworkThumbnails,
                                 onValueChange = { preferences.showNetworkThumbnails.set(it) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_title)) },
