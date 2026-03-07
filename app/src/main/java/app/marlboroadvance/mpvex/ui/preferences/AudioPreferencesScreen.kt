@@ -32,7 +32,7 @@ import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
-import me.zhanghai.compose.preference.SwitchPreference
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidSwitchPreference as SwitchPreference
 import me.zhanghai.compose.preference.TextFieldPreference
 import org.koin.compose.koinInject
 
