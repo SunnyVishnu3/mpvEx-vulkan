@@ -63,24 +63,23 @@ fun LiquidGlassCard(
     onClick: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
+    // If liquid UI is off, just draw a transparent box so the inner card works normally
     if (backdrop == null) {
-        Card(modifier = modifier.clickable { onClick() }) { content() }
+        androidx.compose.foundation.layout.Box(modifier = modifier) { 
+            content() 
+        }
         return
     }
 
-    Card(
+    // If liquid UI is on, apply the effects engine to a transparent box
+    androidx.compose.foundation.layout.Box(
         modifier = modifier
-            .clickable { onClick() }
-            .drawBackdrop(
+            .applyLiquidEffects(
                 backdrop = backdrop,
-                shape = { RoundedCornerShape(12.dp) },
-                effects = LiquidUIEffects.glassCardEffects(),
-                onDrawSurface = { drawRect(LiquidUIEffects.glassSurfaceColor) }
-            ),
-        shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                config = LiquidEffectConfig(LiquidEffectType.CARD)
+            )
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            content()
-        }
+        content()
     }
 }
