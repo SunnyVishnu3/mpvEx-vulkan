@@ -19,10 +19,10 @@ import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
 fun LiquidSwitchPreference(
     value: Boolean,
     onValueChange: (Boolean) -> Unit,
+    title: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     icon: @Composable (() -> Unit)? = null,
-    title: @Composable () -> Unit,
     summary: @Composable (() -> Unit)? = null
 ) {
     val context = LocalContext.current
