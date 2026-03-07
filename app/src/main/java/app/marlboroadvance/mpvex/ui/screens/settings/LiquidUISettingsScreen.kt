@@ -1,5 +1,6 @@
 package app.marlboroadvance.mpvex.ui.screens.settings
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -17,7 +19,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
 import app.marlboroadvance.mpvex.ui.components.liquid.AdaptiveToggle
 import kotlinx.coroutines.launch
@@ -71,7 +72,7 @@ fun LiquidUISettingsScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 12.dp),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -114,7 +115,7 @@ fun LiquidUISettingsScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 12.dp),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -146,7 +147,7 @@ fun LiquidUISettingsScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 12.dp),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -178,7 +179,7 @@ fun LiquidUISettingsScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 12.dp),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -248,7 +249,7 @@ private fun InfoCard(
     description: String,
     modifier: Modifier = Modifier
 ) {
-    androidx.compose.material3.Card(
+    Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
@@ -266,49 +267,4 @@ private fun InfoCard(
             )
         }
     }
-}
-
-/**
- * Preview of LiquidUISettingsScreen
- */
-@Composable
-fun LiquidUISettingsScreenPreview() {
-    // Create a mock preferences for preview
-    // In real app, this will be provided by DI
-    val mockPreferences = remember {
-        // This won't work in preview, but shows the structure
-        app.marlboroadvance.mpvex.preferences.LiquidUIPreferences(
-            androidx.compose.ui.platform.LocalContext.current
-        )
-    }
-    
-    LiquidUISettingsScreen(
-        preferences = mockPreferences
-    )
-}
-
-// For preview
-@androidx.compose.ui.tooling.preview.Preview(
-    showBackground = true,
-    backgroundColor = 0xFFFFFFFF
-)
-@Composable
-private fun LiquidUISettingsScreenPreviewLight() {
-    // Note: Preview won't show real preferences in action
-    // This is just for UI structure visualization
-}
-
-@androidx.compose.ui.tooling.preview.Preview(
-    showBackground = true,
-    backgroundColor = 0xFF1F1F1F
-)
-@Composable
-private fun LiquidUISettingsScreenPreviewDark() {
-    // Dark mode preview
-}
-
-// Remember helper for preview
-@Composable
-private fun <T> remember(calculation: () -> T): T {
-    return androidx.compose.runtime.remember(calculation = calculation)
 }
