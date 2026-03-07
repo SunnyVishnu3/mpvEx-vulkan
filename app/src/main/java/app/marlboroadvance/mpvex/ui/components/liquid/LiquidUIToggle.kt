@@ -11,9 +11,6 @@ import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,10 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -159,42 +154,4 @@ fun AdaptiveToggle(
         checkedColor = Color(toggleColorLong),
         applyLiquidEffect = isLiquidUIEnabled
     )
-}
-
-// DROP-IN REPLACEMENT WRAPPER FOR THE ENTIRE APP
-@Composable
-fun LiquidSwitchPreference(
-    value: Boolean,
-    onValueChange: (Boolean) -> Unit,
-    title: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    summary: @Composable (() -> Unit)? = null,
-    icon: @Composable (() -> Unit)? = null
-) {
-    val context = LocalContext.current
-    val preferences = remember { LiquidUIPreferences(context) }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled) { onValueChange(!value) }
-            .padding(horizontal = 16.dp, vertical = 16.dp)
-            .alpha(if (enabled) 1f else 0.5f),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (icon != null) {
-            Box(modifier = Modifier.padding(end = 16.dp)) { icon() }
-        }
-        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
-            title()
-            if (summary != null) summary()
-        }
-        AdaptiveToggle(
-            checked = value,
-            onCheckedChange = onValueChange,
-            preferences = preferences,
-            enabled = enabled
-        )
-    }
 }
