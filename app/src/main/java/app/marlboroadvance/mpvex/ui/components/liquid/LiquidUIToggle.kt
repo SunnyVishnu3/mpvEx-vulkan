@@ -1,6 +1,7 @@
 package app.marlboroadvance.mpvex.ui.components.liquid
 
 import android.os.Build
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +17,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,8 +34,8 @@ fun LiquidToggle(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    checkedColor: Color = Color(0xFF4CAF50),  // Green when ON
-    uncheckedColor: Color = Color(0xFFBDBDBD),  // Gray when OFF
+    checkedColor: Color = Color(0xFF4CAF50),  
+    uncheckedColor: Color = Color(0xFFBDBDBD),  
     thumbColor: Color = Color.White,
     applyLiquidEffect: Boolean = true
 ) {
@@ -47,31 +49,28 @@ fun LiquidToggle(
         return
     }
 
-    val backgroundColor = if (checked) checkedColor else uncheckedColor
-    val thumbPadding = if (checked) 24.dp else 2.dp
-
-    val backdrop = rememberLayerBackdrop {
-        drawRect(backgroundColor)
-        drawContent()
-    }
-
-    val animatedThumbPadding = animateDpAsState(
-        targetValue = thumbPadding,
+    // Smoothly animate the tint color of the glass
+    val targetColor = if (checked) checkedColor.copy(alpha = 0.6f) else uncheckedColor.copy(alpha = 0.2f)
+    val animatedColor by animateColorAsState(targetValue = targetColor, label = "toggle_color")
+    
+    val thumbPadding by animateDpAsState(
+        targetValue = if (checked) 24.dp else 2.dp,
         label = "toggle_thumb_position"
     )
+
+    // Capture the screen behind the toggle perfectly
+    val backdrop = rememberLayerBackdrop {
+        drawContent()
+    }
 
     Box(
         modifier = modifier
             .size(width = 52.dp, height = 32.dp)
-            .background(
-                color = backgroundColor,
-                shape = RoundedCornerShape(16.dp)
-            )
             .drawBackdrop(
                 backdrop = backdrop,
                 shape = { RoundedCornerShape(16.dp) },
                 effects = LiquidUIEffects.glassCardEffects(enableBlur = true),
-                onDrawSurface = { drawRect(LiquidUIEffects.glassSurfaceColor) }
+                onDrawSurface = { drawRect(animatedColor) } // Tint the glass, don't paint a solid block!
             )
             .clickable(
                 enabled = enabled,
@@ -84,7 +83,7 @@ fun LiquidToggle(
         Box(
             modifier = Modifier
                 .size(28.dp)
-                .padding(start = animatedThumbPadding.value)
+                .padding(start = thumbPadding)
                 .background(
                     color = thumbColor,
                     shape = RoundedCornerShape(14.dp)
