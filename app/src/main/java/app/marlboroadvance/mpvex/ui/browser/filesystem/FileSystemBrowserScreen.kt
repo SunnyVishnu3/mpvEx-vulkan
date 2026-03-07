@@ -1314,7 +1314,7 @@ private fun FileSystemBrowserContent(
                 lastModified = folder.lastModified / 1000,
               )
 
-               LiquidGlassCard(
+              LiquidGlassCard(
                 backdrop = if (liquidUIEnabled) backdrop else null,
                 modifier = Modifier.padding(vertical = 4.dp)
               ) {
@@ -1363,7 +1363,6 @@ private fun FileSystemBrowserContent(
                 )
               }
             }
-          }
           
           // Scrollbar with bottom padding to avoid overlap with navigation
           Box(
@@ -1510,13 +1509,13 @@ private fun FileSystemSearchContent(
                 lastModified = folder.lastModified / 1000,
               )
 
-             LiquidGlassCard(
+              LiquidGlassCard(
                 backdrop = if (liquidUIEnabled) backdrop else null,
                 modifier = Modifier.padding(vertical = 4.dp)
               ) {
                 FolderCard(
                   folder = folderModel,
-                  isSelected = false, // Search doesn't use selection manager
+                  isSelected = false,
                   isRecentlyPlayed = false,
                   onClick = { onFolderClick(folder) },
                   onLongClick = { },
@@ -1524,13 +1523,14 @@ private fun FileSystemSearchContent(
                   isGridMode = false,
                 )
               }
+            }
             
             // Videos second
             items(
               items = videos,
               key = { "search_video_${it.video.id}_${it.video.path}_${it.hashCode()}" },
             ) { videoFile ->
-             LiquidGlassCard(
+              LiquidGlassCard(
                 backdrop = if (liquidUIEnabled) backdrop else null,
                 modifier = Modifier.padding(vertical = 4.dp)
               ) {
@@ -1538,7 +1538,7 @@ private fun FileSystemSearchContent(
                   video = videoFile.video,
                   progressPercentage = videoFilesWithPlayback[videoFile.video.id],
                   isRecentlyPlayed = false,
-                  isSelected = false, // Search doesn't use selection manager
+                  isSelected = false,
                   onClick = { onVideoClick(videoFile.video) },
                   onLongClick = { },
                   onThumbClick = { onVideoClick(videoFile.video) },
@@ -1550,7 +1550,6 @@ private fun FileSystemSearchContent(
                 )
               }
             }
-          }
           
           // Scrollbar with bottom padding to avoid overlap with navigation
           Box(
