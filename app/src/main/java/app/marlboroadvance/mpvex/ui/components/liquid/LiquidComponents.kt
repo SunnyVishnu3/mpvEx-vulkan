@@ -14,9 +14,8 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import app.marlboroadvance.mpvex.ui.theme.LiquidUIEffects
-import app.marlboroadvance.mpvex.ui.theme.applyLiquidEffects
-import app.marlboroadvance.mpvex.ui.theme.LiquidEffectConfig
-import app.marlboroadvance.mpvex.ui.theme.LiquidEffectType
+import com.kyant.backdrop.drawBackdrop
+import app.marlboroadvance.mpvex.ui.theme.LiquidUIEffects
 
 /**
  * Reusable Transparent Liquid Button
@@ -62,7 +61,7 @@ fun TransparentLiquidButton(
 @Composable
 fun LiquidGlassCard(
     modifier: Modifier = Modifier,
-    backdrop: Backdrop?,
+    backdrop: com.kyant.backdrop.Backdrop?,
     onClick: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
@@ -77,10 +76,11 @@ fun LiquidGlassCard(
     // If liquid UI is on, apply the effects engine to a transparent box
     androidx.compose.foundation.layout.Box(
         modifier = modifier
-            .applyLiquidEffects(
+            .drawBackdrop(
                 backdrop = backdrop,
-                shape = RoundedCornerShape(12.dp),
-                config = LiquidEffectConfig(LiquidEffectType.CARD)
+                shape = { RoundedCornerShape(12.dp) },
+                effects = LiquidUIEffects.glassCardEffects(enableBlur = true),
+                onDrawSurface = { drawRect(LiquidUIEffects.glassSurfaceColor) }
             )
     ) {
         content()
