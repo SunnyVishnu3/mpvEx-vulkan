@@ -26,14 +26,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
-import app.marlboroadvance.mpvex.ui.theme.LiquidUIEffects
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
 import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
 import kotlin.math.roundToInt
 
@@ -89,9 +93,9 @@ fun LiquidToggle(
     )
 
     val progress = (animatedOffset / maxDragPx).coerceIn(0f, 1f)
-    val dynamicTrackColor = lerp(
-        start = uncheckedColor.copy(alpha = 0.2f),
-        stop = checkedColor.copy(alpha = 0.6f),
+    val dynamicTint = lerp(
+        start = uncheckedColor,
+        stop = checkedColor,
         fraction = progress
     )
 
@@ -102,9 +106,18 @@ fun LiquidToggle(
             .size(width = trackWidthDp, height = 32.dp)
             .drawBackdrop(
                 backdrop = backdrop,
-                shape = { RoundedCornerShape(16.dp) },
-                effects = LiquidUIEffects.glassCardEffects(enableBlur = true),
-                onDrawSurface = { drawRect(dynamicTrackColor) }
+                shape = { RoundedCornerShape(percent = 50) },
+                effects = {
+                    vibrancy()
+                    blur(2f.dp.toPx())
+                    lens(12f.dp.toPx(), 24f.dp.toPx())
+                },
+                onDrawSurface = { 
+                    if (dynamicTint.isSpecified) {
+                        drawRect(dynamicTint, blendMode = BlendMode.Hue)
+                        drawRect(dynamicTint.copy(alpha = 0.75f))
+                    }
+                }
             )
             .clickable(
                 enabled = enabled,
@@ -130,7 +143,7 @@ fun LiquidToggle(
                 .padding(start = paddingDp)
                 .offset { IntOffset(animatedOffset.roundToInt(), 0) }
                 .size(width = thumbWidth, height = baseThumbSizeDp)
-                .background(color = thumbColor, shape = RoundedCornerShape(14.dp))
+                .background(color = thumbColor, shape = RoundedCornerShape(percent = 50))
         )
     }
 }
