@@ -1363,6 +1363,7 @@ private fun FileSystemBrowserContent(
                 )
               }
             }
+          }     
           
           // Scrollbar with bottom padding to avoid overlap with navigation
           Box(
@@ -1550,6 +1551,7 @@ private fun FileSystemSearchContent(
                 )
               }
             }
+          } 
           
           // Scrollbar with bottom padding to avoid overlap with navigation
           Box(
