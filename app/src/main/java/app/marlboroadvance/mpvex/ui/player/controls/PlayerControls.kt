@@ -1,5 +1,9 @@
 package app.marlboroadvance.mpvex.ui.player.controls
 
+import androidx.compose.ui.platform.LocalContext
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
+import app.marlboroadvance.mpvex.ui.components.liquid.TransparentLiquidButton
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -157,6 +161,15 @@ fun PlayerControls(
 ) {
   val spacing = MaterialTheme.spacing
   val appearancePreferences = koinInject<AppearancePreferences>()
+  val context = LocalContext.current
+  val liquidUIPreferences = remember { LiquidUIPreferences(context) }
+  // Wired directly to the DataStore, defaults to false until toggled
+  val liquidUIEnabled by liquidUIPreferences.liquidUIEnabledFlow.collectAsState(initial = false) 
+  
+  // The engine that captures the screen for the blur/lens effects
+  val backdrop = rememberLayerBackdrop {
+      drawContent()
+  }
   val hideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
   val playerPreferences = koinInject<PlayerPreferences>()
   val audioPreferences = koinInject<AudioPreferences>()
