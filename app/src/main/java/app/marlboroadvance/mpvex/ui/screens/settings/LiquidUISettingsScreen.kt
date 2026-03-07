@@ -81,9 +81,105 @@ fun LiquidUISettingsScreen(
             )
             
             // Use standard switch for the master toggle (meta-UI)
-            Switch(
+             AdaptiveToggle(
                 checked = liquidUIEnabled,
                 onCheckedChange = { enabled ->
+                    scope.launch { preferences.setLiquidUIEnabled(enabled) }
+                },
+                preferences = preferences
+            )
+        }
+
+        // ============================================================
+        // SECTION 1.5: CUSTOM COLORS (DYNAMIC INPUT)
+        // ============================================================
+        
+        AnimatedVisibility(visible = liquidUIEnabled) {
+            Column {
+                Divider(modifier = Modifier.padding(vertical = 16.dp))
+                
+                Text(
+                    text = "Custom Colors",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                Text(
+                    text = "Type a hex code (e.g. #FF5733) or a basic color name (e.g. red, blue, cyan)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                val toggleColor = preferences.liquidToggleColorFlow.collectAsState(0xFF4CAF50).value
+                val sliderColor = preferences.liquidSliderColorFlow.collectAsState(0xFF2196F3).value
+                
+                // Smart parser that reads names ("red") or hex codes ("#FF0000" or "FF0000")
+                fun parseColorInput(input: String): Long? {
+                    return try {
+                        val formatted = if (input.matches(Regex("^[0-9A-Fa-f]{6,8}$"))) "#$input" else input
+                        val colorInt = android.graphics.Color.parseColor(formatted)
+                        colorInt.toLong() and 0xFFFFFFFFL
+                    } catch (e: Exception) { null }
+                }
+
+                // --- TOGGLE COLOR INPUT ---
+                var toggleInputText by remember(toggleColor) { 
+                    mutableStateOf(String.format("#%06X", 0xFFFFFF and toggleColor.toInt())) 
+                }
+                
+                androidx.compose.material3.OutlinedTextField(
+                    value = toggleInputText,
+                    onValueChange = { newValue ->
+                        toggleInputText = newValue
+                        // Only save to database if the color is valid!
+                        parseColorInput(newValue)?.let { colorLong ->
+                            scope.launch { preferences.setToggleColor(colorLong) }
+                        }
+                    },
+                    label = { Text("Toggle Color") },
+                    placeholder = { Text("e.g. #FF5733 or blue") },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    singleLine = true,
+                    leadingIcon = {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(androidx.compose.ui.graphics.Color(toggleColor))
+                        )
+                    }
+                )
+
+                // --- SLIDER COLOR INPUT ---
+                var sliderInputText by remember(sliderColor) { 
+                    mutableStateOf(String.format("#%06X", 0xFFFFFF and sliderColor.toInt())) 
+                }
+                
+                androidx.compose.material3.OutlinedTextField(
+                    value = sliderInputText,
+                    onValueChange = { newValue ->
+                        sliderInputText = newValue
+                        // Only save to database if the color is valid!
+                        parseColorInput(newValue)?.let { colorLong ->
+                            scope.launch { preferences.setSliderColor(colorLong) }
+                        }
+                    },
+                    label = { Text("Slider Color") },
+                    placeholder = { Text("e.g. #00FF00 or cyan") },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    singleLine = true,
+                    leadingIcon = {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(androidx.compose.ui.graphics.Color(sliderColor))
+                        )
+                    }
+                )
+            }
+        }
                     scope.launch {
                         preferences.setLiquidUIEnabled(enabled)
                     }
