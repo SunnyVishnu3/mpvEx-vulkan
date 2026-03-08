@@ -64,6 +64,7 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.backdrops.rememberBackdrop
 // ----------------------------------------------------
 
 import app.marlboroadvance.mpvex.ui.player.controls.LocalPlayerButtonsClickEvent
@@ -251,7 +252,7 @@ fun LiquidSeekbar(
     val thumbWidth = androidx.compose.ui.unit.lerp(56.dp, pressProgress)
     val thumbHeight = 32.dp
     
-    val trackBackdrop = rememberLayerBackdrop { drawContent() }
+    val trackBackdrop = rememberlayerBackdrop { drawContent() }
 
     androidx.compose.foundation.layout.BoxWithConstraints(
         modifier = modifier
@@ -315,7 +316,7 @@ fun LiquidSeekbar(
                 .width(thumbWidth)
                 .height(thumbHeight)
                 .drawBackdrop(
-                    backdrop = rememberBackdrop,
+                    backdrop = backdrop,
                     shape = { CircleShape }, // Perfectly rounded pill!
                     effects = {
                         vibrancy()
@@ -326,9 +327,7 @@ fun LiquidSeekbar(
                         lens(
                             30f.dp.toPx() * pressProgress,
                             20f.dp.toPx() * pressProgress
-                            depthEffect = true
                         )
-                    },
                     onDrawSurface = {
                         // 5. Glass opacity: 0 (Pure transparent glass)
                         drawRect(Color.White.copy(alpha = 1f - pressProgress))
