@@ -29,22 +29,29 @@ class LiquidUIPreferences(context: Context) {
         val LIQUID_TOGGLE_COLOR = longPreferencesKey("liquid_toggle_color")
         val LIQUID_SLIDER_COLOR = longPreferencesKey("liquid_slider_color")
         val LIQUID_TINT_ALPHA = floatPreferencesKey("liquid_tint_alpha")
+
+        // Legacy Keys (Kept to prevent LiquidUISettingsScreen from crashing)
+        val LIQUID_BLUR_ENABLED = booleanPreferencesKey("liquid_blur_enabled")
+        val LIQUID_LENS_ENABLED = booleanPreferencesKey("liquid_lens_enabled")
     }
 
-    // --- STATE FLOWS (With your exact custom defaults!) ---
+    // --- STATE FLOWS ---
     val liquidUIEnabledFlow: Flow<Boolean> = dataStore.data.map { it[LIQUID_UI_ENABLED] ?: false }
     
     val liquidBlurRadiusFlow: Flow<Float> = dataStore.data.map { it[LIQUID_BLUR_RADIUS] ?: 0f }
     val liquidRefractionHeightFlow: Flow<Float> = dataStore.data.map { it[LIQUID_REFRACTION_HEIGHT] ?: 40f }
     val liquidRefractionAmountFlow: Flow<Float> = dataStore.data.map { it[LIQUID_REFRACTION_AMOUNT] ?: 23f }
-    
     val liquidChromaticAberrationFlow: Flow<Boolean> = dataStore.data.map { it[LIQUID_CHROMATIC_ABERRATION] ?: false }
     val liquidDepthEffectFlow: Flow<Boolean> = dataStore.data.map { it[LIQUID_DEPTH_EFFECT] ?: true }
     val liquidVibrancyEnabledFlow: Flow<Boolean> = dataStore.data.map { it[LIQUID_VIBRANCY_ENABLED] ?: true }
-    
     val liquidTintAlphaFlow: Flow<Float> = dataStore.data.map { it[LIQUID_TINT_ALPHA] ?: 0.15f }
+    
     val liquidToggleColorFlow: Flow<Long> = dataStore.data.map { it[LIQUID_TOGGLE_COLOR] ?: 0xFF4CAF50 }
     val liquidSliderColorFlow: Flow<Long> = dataStore.data.map { it[LIQUID_SLIDER_COLOR] ?: 0xFF2196F3 }
+
+    // Legacy Flows
+    val liquidBlurEnabledFlow: Flow<Boolean> = dataStore.data.map { it[LIQUID_BLUR_ENABLED] ?: true }
+    val liquidLensEnabledFlow: Flow<Boolean> = dataStore.data.map { it[LIQUID_LENS_ENABLED] ?: true }
 
     // --- SETTERS ---
     suspend fun setLiquidUIEnabled(enabled: Boolean) { dataStore.edit { it[LIQUID_UI_ENABLED] = enabled } }
@@ -57,4 +64,8 @@ class LiquidUIPreferences(context: Context) {
     suspend fun setTintAlpha(value: Float) { dataStore.edit { it[LIQUID_TINT_ALPHA] = value } }
     suspend fun setToggleColor(color: Long) { dataStore.edit { it[LIQUID_TOGGLE_COLOR] = color } }
     suspend fun setSliderColor(color: Long) { dataStore.edit { it[LIQUID_SLIDER_COLOR] = color } }
+    
+    // Legacy Setters
+    suspend fun setBlurEnabled(enabled: Boolean) { dataStore.edit { it[LIQUID_BLUR_ENABLED] = enabled } }
+    suspend fun setLensEnabled(enabled: Boolean) { dataStore.edit { it[LIQUID_LENS_ENABLED] = enabled } }
 }
