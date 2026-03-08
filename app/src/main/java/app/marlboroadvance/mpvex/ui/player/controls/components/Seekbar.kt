@@ -225,71 +225,93 @@ fun SeekbarWithTimers(
               liquidColor = liquidColor
           )
       } else {
-          // If Liquid UI is off, fall back to the standard mpvEx styles
-          when (seekbarStyle) {
-            SeekbarStyle.Standard -> {
-              StandardSeekbar(
-                position = if (isUserInteracting) userPosition else animatedPosition.value,
-                duration = duration,
-                chapters = chapters,
-                isPaused = paused,
-                isScrubbing = isUserInteracting,
-                seekbarStyle = SeekbarStyle.Standard,
-                onSeek = { newPosition ->
-                  if (!isUserInteracting) isUserInteracting = true
-                  userPosition = newPosition
-                  onValueChange(newPosition)
-                },
-                onSeekFinished = {
-                  scope.launch { animatedPosition.snapTo(userPosition) }
-                  isUserInteracting = false
-                  onValueChangeFinished()
-                },
-                loopStart = loopStart,
-                loopEnd = loopEnd,
-              )
-            }
-            SeekbarStyle.Wavy -> {
-              SquigglySeekbar(
-                position = if (isUserInteracting) userPosition else animatedPosition.value,
-                duration = duration,
-                chapters = chapters,
-                isPaused = paused,
-                isScrubbing = isUserInteracting,
-                useWavySeekbar = true,
-                seekbarStyle = SeekbarStyle.Wavy,
-                onSeek = { },
-                onSeekFinished = { },
-                loopStart = loopStart,
-                loopEnd = loopEnd,
-              )
-            }
-            SeekbarStyle.Thick -> {
-              StandardSeekbar(
-                position = if (isUserInteracting) userPosition else animatedPosition.value,
-                duration = duration,
-                chapters = chapters,
-                isPaused = paused,
-                isScrubbing = isUserInteracting,
-                seekbarStyle = SeekbarStyle.Thick,
-                onSeek = { newPosition ->
-                  if (!isUserInteracting) isUserInteracting = true
-                  userPosition = newPosition
-                  onValueChange(newPosition)
-                },
-                onSeekFinished = {
-                  scope.launch { animatedPosition.snapTo(userPosition) }
-                  isUserInteracting = false
-                  onValueChangeFinished()
-                },
-                loopStart = loopStart,
-                loopEnd = loopEnd,
-              )
-            }
+      // ROUTING LOGIC: Let the user choose explicitly from the settings menu!
+      when (seekbarStyle) {
+        SeekbarStyle.Liquid -> {
+          LiquidSeekbar(
+            position = if (isUserInteracting) userPosition else animatedPosition.value,
+            duration = duration,
+            chapters = chapters,
+            isPaused = paused,
+            isScrubbing = isUserInteracting,
+            onSeek = { newPosition ->
+              if (!isUserInteracting) isUserInteracting = true
+              userPosition = newPosition
+              onValueChange(newPosition)
+            },
+            onSeekFinished = {
+              scope.launch { animatedPosition.snapTo(userPosition) }
+              isUserInteracting = false
+              onValueChangeFinished()
+            },
+            loopStart = loopStart,
+            loopEnd = loopEnd,
+            liquidColor = liquidColor
+          )
+        }
+        SeekbarStyle.Standard -> {
+          StandardSeekbar(
+            position = if (isUserInteracting) userPosition else animatedPosition.value,
+            duration = duration,
+            chapters = chapters,
+            isPaused = paused,
+            isScrubbing = isUserInteracting,
+            seekbarStyle = SeekbarStyle.Standard,
+            onSeek = { newPosition ->
+              if (!isUserInteracting) isUserInteracting = true
+              userPosition = newPosition
+              onValueChange(newPosition)
+            },
+            onSeekFinished = {
+              scope.launch { animatedPosition.snapTo(userPosition) }
+              isUserInteracting = false
+              onValueChangeFinished()
+            },
+            loopStart = loopStart,
+            loopEnd = loopEnd,
+          )
+        }
+        SeekbarStyle.Wavy -> {
+          SquigglySeekbar(
+            position = if (isUserInteracting) userPosition else animatedPosition.value,
+            duration = duration,
+            chapters = chapters,
+            isPaused = paused,
+            isScrubbing = isUserInteracting,
+            useWavySeekbar = true,
+            seekbarStyle = SeekbarStyle.Wavy,
+            onSeek = { },
+            onSeekFinished = { },
+            loopStart = loopStart,
+            loopEnd = loopEnd,
+          )
+        }
+        SeekbarStyle.Thick -> {
+          StandardSeekbar(
+            position = if (isUserInteracting) userPosition else animatedPosition.value,
+            duration = duration,
+            chapters = chapters,
+            isPaused = paused,
+            isScrubbing = isUserInteracting,
+            seekbarStyle = SeekbarStyle.Thick,
+            onSeek = { newPosition ->
+              if (!isUserInteracting) isUserInteracting = true
+              userPosition = newPosition
+              onValueChange(newPosition)
+            },
+            onSeekFinished = {
+              scope.launch { animatedPosition.snapTo(userPosition) }
+              isUserInteracting = false
+              onValueChangeFinished()
+            },
+            loopStart = loopStart,
+            loopEnd = loopEnd,
+            )
           }
-      }
-    }
-  }
+        }
+     }
+   }
+ }
 
     VideoTimer(
       value = if (timersInverted.second) position - duration else duration,
