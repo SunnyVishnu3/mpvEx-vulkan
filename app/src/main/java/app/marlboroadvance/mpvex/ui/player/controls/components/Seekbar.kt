@@ -57,15 +57,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.geometry.Size
+import kotlin.math.roundToInt
 
-// --- KYANT BACKDROP 2.0.0-ALPHA03 IMPORTS ---
+// --- KYANT BACKDROP 2.0.0-ALPHA03 IMPORTS (FIXED) ---
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-// --------------------------------------------
+// ----------------------------------------------------
 
 import app.marlboroadvance.mpvex.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.marlboroadvance.mpvex.ui.theme.spacing
@@ -229,10 +231,9 @@ fun SeekbarWithTimers(
 }
 
 // =========================================================================
-// NEW: CRASH-PROOF LIQUID SEEKBAR WITH NATIVE SQUISH PHYSICS
+// NEW: OPTION 3 COMBINED LIQUID SEEKBAR (CRASH-PROOF NATIVE BOX)
 // =========================================================================
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 fun LiquidSeekbar(
     position: Float,
     duration: Float,
@@ -247,8 +248,6 @@ fun LiquidSeekbar(
     modifier: Modifier = Modifier,
 ) {
     val activeColor = if (liquidColor.isSpecified) liquidColor else MaterialTheme.colorScheme.primary
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
     
     var heightFraction by remember { mutableFloatStateOf(1f) }
     val scope = rememberCoroutineScope()
@@ -270,142 +269,128 @@ fun LiquidSeekbar(
     val thumbHeight = 16.dp
     val thumbShape = RoundedCornerShape(percent = 50)
 
-    // Native Squish Physics (No DampedDragAnimation file needed!)
+    // Native Squish Animation when Scrubbing
     val thumbWidth by animateDpAsState(
-        targetValue = if (isPressed || isScrubbing) 24.dp else 16.dp,
+        targetValue = if (isScrubbing) 24.dp else 16.dp,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
         label = "thumb_stretch"
     )
 
-    // Option 3: Combined Backdrop Implementation (Crash-Proof)
-    val parentBackdrop = rememberLayerBackdrop() 
+    // OPTION 3: THE TRUE COMBINED BACKDROP ENGINE
+    val parentBackdrop = rememberLayerBackdrop { drawContent() }
     val trackBackdrop = rememberLayerBackdrop { drawContent() }
     val combinedBackdrop = rememberCombinedBackdrop(parentBackdrop, trackBackdrop)
 
-    Slider(
-        value = position,
-        onValueChange = onSeek,
-        onValueChangeFinished = onSeekFinished,
-        valueRange = 0f..duration.coerceAtLeast(0.1f),
-        modifier = modifier.fillMaxWidth(),
-        interactionSource = interactionSource,
-        track = { sliderState ->
-            Canvas(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(trackHeightDp)
-                    .layerBackdrop(trackBackdrop) 
-            ) {
-                val min = sliderState.valueRange.start
-                val max = sliderState.valueRange.endInclusive
-                val range = (max - min).takeIf { it > 0f } ?: 1f
-                val playedFraction = ((sliderState.value - min) / range).coerceIn(0f, 1f)
-                val playedPx = size.width * playedFraction
-                val trackHeight = size.height
+    androidx.compose.foundation.layout.BoxWithConstraints(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(24.dp)
+            .layerBackdrop(parentBackdrop), // Captures the Video Playing behind it!
+        contentAlignment = Alignment.CenterStart
+    ) {
+        val trackWidthPx = constraints.maxWidth.toFloat()
+        val progress = if (duration > 0f) (position / duration).coerceIn(0f, 1f) else 0f
+        val playedPx = trackWidthPx * progress
+        
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(trackHeightDp)
+                .layerBackdrop(trackBackdrop) // Captures the Colored Track!
+        ) {
+            val trackHeight = size.height
+            val outerRadius = trackHeight / 2f
+            val innerRadius = outerRadius
+            
+            val gapHalf = 14.dp.toPx() / 2f
+            val chapterGapHalf = 1.dp.toPx()
+            
+            val thumbGapStart = (playedPx - gapHalf).coerceIn(0f, size.width)
+            val thumbGapEnd = (playedPx + gapHalf).coerceIn(0f, size.width)
+            
+            val chapterGaps = chapters
+                .map { (it.start / duration).coerceIn(0f, 1f) * size.width }
+                .filter { it > 0f && it < size.width }
+                .map { x -> (x - chapterGapHalf) to (x + chapterGapHalf) }
+            
+            fun drawSegment(startX: Float, endX: Float, color: Color) {
+                if (endX - startX < 0.5f) return
+                val path = Path()
+                val isOuterLeft = startX <= 0.5f
+                val isInnerLeft = kotlin.math.abs(startX - thumbGapEnd) < 0.5f
                 
-                val outerRadius = trackHeight / 2f
-                val innerRadius = outerRadius
-                
-                val gapHalf = 14.dp.toPx() / 2f
-                val chapterGapHalf = 1.dp.toPx()
-                
-                val thumbGapStart = (playedPx - gapHalf).coerceIn(0f, size.width)
-                val thumbGapEnd = (playedPx + gapHalf).coerceIn(0f, size.width)
-                
-                val chapterGaps = chapters
-                    .map { (it.start / duration).coerceIn(0f, 1f) * size.width }
-                    .filter { it > 0f && it < size.width }
-                    .map { x -> (x - chapterGapHalf) to (x + chapterGapHalf) }
-                
-                fun drawSegment(startX: Float, endX: Float, color: Color) {
-                    if (endX - startX < 0.5f) return
-                    val path = Path()
-                    val isOuterLeft = startX <= 0.5f
-                    val isInnerLeft = kotlin.math.abs(startX - thumbGapEnd) < 0.5f
-                    
-                    val cornerRadiusLeft = when {
-                        isOuterLeft -> androidx.compose.ui.geometry.CornerRadius(outerRadius)
-                        isInnerLeft -> androidx.compose.ui.geometry.CornerRadius(innerRadius)
-                        else -> androidx.compose.ui.geometry.CornerRadius.Zero
-                    }
+                val cornerRadiusLeft = when {
+                    isOuterLeft -> androidx.compose.ui.geometry.CornerRadius(outerRadius)
+                    isInnerLeft -> androidx.compose.ui.geometry.CornerRadius(innerRadius)
+                    else -> androidx.compose.ui.geometry.CornerRadius.Zero
+                }
 
-                    val isOuterRight = endX >= size.width - 0.5f
-                    val isInnerRight = kotlin.math.abs(endX - thumbGapStart) < 0.5f
+                val isOuterRight = endX >= size.width - 0.5f
+                val isInnerRight = kotlin.math.abs(endX - thumbGapStart) < 0.5f
 
-                    val cornerRadiusRight = when {
-                        isOuterRight -> androidx.compose.ui.geometry.CornerRadius(outerRadius)
-                        isInnerRight -> androidx.compose.ui.geometry.CornerRadius(innerRadius)
-                        else -> androidx.compose.ui.geometry.CornerRadius.Zero
-                    }
-                    
-                    path.addRoundRect(
-                        androidx.compose.ui.geometry.RoundRect(
-                            left = startX, top = 0f, right = endX, bottom = trackHeight,
-                            topLeftCornerRadius = cornerRadiusLeft, bottomLeftCornerRadius = cornerRadiusLeft,
-                            topRightCornerRadius = cornerRadiusRight, bottomRightCornerRadius = cornerRadiusRight
-                        )
+                val cornerRadiusRight = when {
+                    isOuterRight -> androidx.compose.ui.geometry.CornerRadius(outerRadius)
+                    isInnerRight -> androidx.compose.ui.geometry.CornerRadius(innerRadius)
+                    else -> androidx.compose.ui.geometry.CornerRadius.Zero
+                }
+                
+                path.addRoundRect(
+                    androidx.compose.ui.geometry.RoundRect(
+                        left = startX, top = 0f, right = endX, bottom = trackHeight,
+                        topLeftCornerRadius = cornerRadiusLeft, bottomLeftCornerRadius = cornerRadiusLeft,
+                        topRightCornerRadius = cornerRadiusRight, bottomRightCornerRadius = cornerRadiusRight
                     )
-                    drawPath(path, color)
-                }
-                
-                fun drawRangeWithGaps(rangeStart: Float, rangeEnd: Float, gaps: List<Pair<Float, Float>>, color: Color) {
-                    if (rangeEnd <= rangeStart) return
-                    val relevantGaps = gaps.filter { (gStart, gEnd) -> gEnd > rangeStart && gStart < rangeEnd }.sortedBy { it.first }
-                    var currentPos = rangeStart
-                    for ((gStart, gEnd) in relevantGaps) {
-                        val segmentEnd = gStart.coerceAtMost(rangeEnd)
-                        if (segmentEnd > currentPos) drawSegment(currentPos, segmentEnd, color)
-                        currentPos = gEnd.coerceAtLeast(currentPos)
-                    }
-                    if (currentPos < rangeEnd) drawSegment(currentPos, rangeEnd, color)
-                }
-                
-                drawRangeWithGaps(thumbGapEnd, size.width, chapterGaps, activeColor.copy(alpha = 0.3f))
-                if (thumbGapStart > 0) drawRangeWithGaps(0f, thumbGapStart, chapterGaps, activeColor)
-
-                if (loopStart != null || loopEnd != null) {
-                    val loopColor = Color(0xFFFFB300)
-                    val markerWidth = 2.dp.toPx()
-                    if (loopStart != null) {
-                        val startPx = (loopStart / duration).coerceIn(0f, 1f) * size.width
-                        drawLine(color = loopColor, start = Offset(startPx, 0f), end = Offset(startPx, size.height), strokeWidth = markerWidth)
-                    }
-                    if (loopEnd != null) {
-                        val endPx = (loopEnd / duration).coerceIn(0f, 1f) * size.width
-                        drawLine(color = loopColor, start = Offset(endPx, 0f), end = Offset(endPx, size.height), strokeWidth = markerWidth)
-                    }
-                    if (loopStart != null && loopEnd != null) {
-                        val minPx = (minOf(loopStart, loopEnd) / duration).coerceIn(0f, 1f) * size.width
-                        val maxPx = (maxOf(loopStart, loopEnd) / duration).coerceIn(0f, 1f) * size.width
-                        drawRect(color = loopColor.copy(alpha = 0.3f), topLeft = Offset(minPx, 0f), size = Size(maxPx - minPx, size.height))
-                    }
-                }
+                )
+                drawPath(path, color)
             }
-        },
-        thumb = {
-            Box(
-                modifier = Modifier
-                    .width(thumbWidth)
-                    .height(thumbHeight)
-                    .drawBackdrop(
-                        backdrop = combinedBackdrop, 
-                        shape = { thumbShape },
-                        effects = {
-                            vibrancy()
-                            blur(if (isPressed || isScrubbing) 4f.dp.toPx() else 8f.dp.toPx())
-                            lens(
-                                if (isPressed || isScrubbing) 14f.dp.toPx() else 10f.dp.toPx(),
-                                if (isPressed || isScrubbing) 28f.dp.toPx() else 14f.dp.toPx()
-                            )
-                        },
-                        onDrawSurface = {
-                            drawRect(activeColor, blendMode = BlendMode.Hue)
-                            drawRect(activeColor.copy(alpha = 0.75f))
-                        }
-                    )
-            )
+            
+            fun drawRangeWithGaps(rangeStart: Float, rangeEnd: Float, gaps: List<Pair<Float, Float>>, color: Color) {
+                if (rangeEnd <= rangeStart) return
+                val relevantGaps = gaps.filter { (gStart, gEnd) -> gEnd > rangeStart && gStart < rangeEnd }.sortedBy { it.first }
+                var currentPos = rangeStart
+                for ((gStart, gEnd) in relevantGaps) {
+                    val segmentEnd = gStart.coerceAtMost(rangeEnd)
+                    if (segmentEnd > currentPos) drawSegment(currentPos, segmentEnd, color)
+                    currentPos = gEnd.coerceAtLeast(currentPos)
+                }
+                if (currentPos < rangeEnd) drawSegment(currentPos, rangeEnd, color)
+            }
+            
+            drawRangeWithGaps(thumbGapEnd, size.width, chapterGaps, activeColor.copy(alpha = 0.3f))
+            if (thumbGapStart > 0) drawRangeWithGaps(0f, thumbGapStart, chapterGaps, activeColor)
+
+            if (loopStart != null || loopEnd != null) {
+                val loopColor = Color(0xFFFFB300)
+                val markerWidth = 2.dp.toPx()
+                if (loopStart != null) drawLine(color = loopColor, start = Offset((loopStart / duration).coerceIn(0f, 1f) * size.width, 0f), end = Offset((loopStart / duration).coerceIn(0f, 1f) * size.width, size.height), strokeWidth = markerWidth)
+                if (loopEnd != null) drawLine(color = loopColor, start = Offset((loopEnd / duration).coerceIn(0f, 1f) * size.width, 0f), end = Offset((loopEnd / duration).coerceIn(0f, 1f) * size.width, size.height), strokeWidth = markerWidth)
+                if (loopStart != null && loopEnd != null) drawRect(color = loopColor.copy(alpha = 0.3f), topLeft = Offset((minOf(loopStart, loopEnd) / duration).coerceIn(0f, 1f) * size.width, 0f), size = Size((maxOf(loopStart, loopEnd) / duration).coerceIn(0f, 1f) * size.width - (minOf(loopStart, loopEnd) / duration).coerceIn(0f, 1f) * size.width, size.height))
+            }
         }
-    )
+        
+        Box(
+            modifier = Modifier
+                .offset { androidx.compose.ui.unit.IntOffset((playedPx - (thumbWidth.toPx() / 2)).roundToInt(), 0) }
+                .width(thumbWidth)
+                .height(thumbHeight)
+                .drawBackdrop(
+                    backdrop = combinedBackdrop, // Refract BOTH!
+                    shape = { thumbShape },
+                    effects = {
+                        vibrancy()
+                        blur(if (isScrubbing) 4f.dp.toPx() else 8f.dp.toPx())
+                        lens(
+                            if (isScrubbing) 14f.dp.toPx() else 10f.dp.toPx(),
+                            if (isScrubbing) 28f.dp.toPx() else 14f.dp.toPx()
+                        )
+                    },
+                    onDrawSurface = {
+                        drawRect(activeColor, blendMode = BlendMode.Hue)
+                        drawRect(activeColor.copy(alpha = 0.75f))
+                    }
+                )
+        )
+    }
 }
 
 // =========================================================================
