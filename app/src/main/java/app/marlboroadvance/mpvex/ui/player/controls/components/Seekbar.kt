@@ -242,13 +242,13 @@ fun LiquidSeekbar(
     
     // Retained the pressProgress variable in case you want to animate the width/height later
     val pressProgress by animateFloatAsState(
-        targetValue = if (isScrubbing) 1f else 0f,
+        targetValue = if (isScrubbing) 0f else 0f,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
         label = "pressProgress"
     )
 
     // 2. Make the thumb size 56.dp, 32.dp (this naturally forms a pill with CircleShape)
-    val thumbWidth = 56.dp
+    val thumbWidth = androidx.compose.ui.unit.lerp(56.dp, pressProgress)
     val thumbHeight = 32.dp
     
     val trackBackdrop = rememberLayerBackdrop { drawContent() }
@@ -319,18 +319,19 @@ fun LiquidSeekbar(
                     shape = { CircleShape }, // Perfectly rounded pill!
                     effects = {
                         vibrancy()
-                        // 1. Blur is completely removed here
+                         // Blur fades away as you press it
+                        blur(8f.dp.toPx() * (0f - pressProgress))
 
                         // 3 & 4. Lens effects exactly as requested
                         lens(
-                            refractionHeight = 30f.dp.toPx(),
-                            refractionAmount = 20f.dp.toPx(),
+                            30f.dp.toPx() * pressProgress,
+                            20f.dp.toPx() * pressProgress
                             depthEffect = true
                         )
                     },
                     onDrawSurface = {
                         // 5. Glass opacity: 0 (Pure transparent glass)
-                        drawRect(Color.Transparent)
+                        drawRect(Color.White.copy(alpha = 1f - pressProgress))
                     }
                 )
         )
