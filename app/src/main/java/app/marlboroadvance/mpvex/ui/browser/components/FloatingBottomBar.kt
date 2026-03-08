@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 
 // --- LIQUID GLASS IMPORTS ---
 import app.marlboroadvance.mpvex.ui.components.liquid.LiquidGlassSurface
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.Backdrop
 import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
 // ----------------------------
 
