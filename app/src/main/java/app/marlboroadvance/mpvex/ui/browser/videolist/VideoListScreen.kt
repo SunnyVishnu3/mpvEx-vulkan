@@ -365,45 +365,34 @@ data class VideoListScreen(
         
         // Floating Material 3 Button Group overlay with animation
         // Play Store gating is intentionally bypassed here.
-        AnimatedVisibility(
+        FloatingBottomBar(
           visible = showFloatingBottomBar,
-          enter = slideInVertically(
-            animationSpec = tween(durationMillis = animationDuration),
-            initialOffsetY = { fullHeight -> fullHeight }
-          ),
-          exit = slideOutVertically(
-            animationSpec = tween(durationMillis = animationDuration),
-            targetOffsetY = { fullHeight -> fullHeight }
-          ),
+          showCopy = true,
+          showMove = true,
+          showRename = selectionManager.isSingleSelection,
+          showDelete = true,
+          showAddToPlaylist = true,
+          onCopyClick = {
+            operationType.value = CopyPasteOps.OperationType.Copy
+            if (CopyPasteOps.canUseDirectFileOperations()) {
+              folderPickerOpen.value = true
+            } else {
+              treePickerLauncher.launch(null)
+            }
+          },
+          onMoveClick = {
+            operationType.value = CopyPasteOps.OperationType.Move
+            if (CopyPasteOps.canUseDirectFileOperations()) {
+              folderPickerOpen.value = true
+            } else {
+              treePickerLauncher.launch(null)
+            }
+          },
+          onRenameClick = { renameDialogOpen.value = true },
+          onDeleteClick = { deleteDialogOpen.value = true },
+          onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
           modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-          FloatingBottomBar(
-            visible = true,
-            showCopy = true,
-            showMove = true,
-            showDelete = true,
-            showAddToPlaylist = true,
-            showRename = selectionManager.isSingleSelection,
-            onCopyClick = {
-              operationType.value = CopyPasteOps.OperationType.Copy
-              if (CopyPasteOps.canUseDirectFileOperations()) {
-                folderPickerOpen.value = true
-              } else {
-                treePickerLauncher.launch(null)
-              }
-            },
-            onMoveClick = {
-              operationType.value = CopyPasteOps.OperationType.Move
-              if (CopyPasteOps.canUseDirectFileOperations()) {
-                folderPickerOpen.value = true
-              } else {
-                treePickerLauncher.launch(null)
-              }
-            },
-            onRenameClick = { renameDialogOpen.value = true },
-            onDeleteClick = { deleteDialogOpen.value = true },
-            onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
-            showRename = selectionManager.isSingleSelection
+          showRename = selectionManager.isSingleSelection
           )
         }
       }
