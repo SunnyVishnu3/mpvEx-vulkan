@@ -181,7 +181,7 @@ object AppearancePreferencesScreen : Screen {
                                                 parseColorInput(newValue)?.let { colorLong -> scope.launch { liquidPreferences.setToggleColor(colorLong) } }
                                             },
                                             label = { Text("Toggle Color") },
-                                            placeholder = { Text("e.g. #FF5733 or blue") },
+                                            placeholder = { Text("e.g. #FF5733") },
                                             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                                             singleLine = true,
                                             leadingIcon = { Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(toggleColor))) }
@@ -195,7 +195,7 @@ object AppearancePreferencesScreen : Screen {
                                                 parseColorInput(newValue)?.let { colorLong -> scope.launch { liquidPreferences.setSliderColor(colorLong) } }
                                             },
                                             label = { Text("Slider Color") },
-                                            placeholder = { Text("e.g. #00FF00 or cyan") },
+                                            placeholder = { Text("e.g. #00FF00") },
                                             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                                             singleLine = true,
                                             leadingIcon = { Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(sliderColor))) }
@@ -314,5 +314,61 @@ object AppearancePreferencesScreen : Screen {
                             SliderPreference(
                                 value = unplayedOldVideoDays.toFloat(),
                                 onValueChange = { preferences.unplayedOldVideoDays.set(it.roundToInt()) },
+                                sliderValue = unplayedOldVideoDays.toFloat(),
+                                onSliderValueChange = { preferences.unplayedOldVideoDays.set(it.roundToInt()) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_unplayed_old_video_days_title)) },
-               
+                                valueRange = 1f..30f,
+                                enabled = showUnplayedOldVideoLabel,
+                                summary = { Text(text = stringResource(id = R.string.pref_appearance_unplayed_old_video_days_summary, unplayedOldVideoDays), color = MaterialTheme.colorScheme.outline) }
+                            )
+
+                            PreferenceDivider()
+
+                            val autoScrollToLastPlayed by browserPreferences.autoScrollToLastPlayed.collectAsState()
+                            LiquidSwitchPreference(
+                                value = autoScrollToLastPlayed,
+                                onValueChange = { browserPreferences.autoScrollToLastPlayed.set(it) },
+                                title = { Text(text = stringResource(R.string.pref_appearance_auto_scroll_title)) },
+                                summary = { Text(text = stringResource(R.string.pref_appearance_auto_scroll_summary), color = MaterialTheme.colorScheme.outline) }
+                            )
+
+                            PreferenceDivider()
+
+                            val watchedThreshold by browserPreferences.watchedThreshold.collectAsState()
+                            SliderPreference(
+                                value = watchedThreshold.toFloat(),
+                                onValueChange = { browserPreferences.watchedThreshold.set(it.roundToInt()) },
+                                sliderValue = watchedThreshold.toFloat(),
+                                onSliderValueChange = { browserPreferences.watchedThreshold.set(it.roundToInt()) },
+                                title = { Text(text = stringResource(id = R.string.pref_appearance_watched_threshold_title)) },
+                                valueRange = 50f..100f,
+                                valueSteps = 9,
+                                summary = { Text(text = stringResource(id = R.string.pref_appearance_watched_threshold_summary, watchedThreshold), color = MaterialTheme.colorScheme.outline) }
+                            )
+
+                            PreferenceDivider()
+
+                            val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
+                            LiquidSwitchPreference(
+                                value = tapThumbnailToSelect,
+                                onValueChange = { gesturePreferences.tapThumbnailToSelect.set(it) },
+                                title = { Text(text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_title)) },
+                                summary = { Text(text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_summary), color = MaterialTheme.colorScheme.outline) }
+                            )
+
+                            PreferenceDivider()
+
+                            val showNetworkThumbnails by preferences.showNetworkThumbnails.collectAsState()
+                            LiquidSwitchPreference(
+                                value = showNetworkThumbnails,
+                                onValueChange = { preferences.showNetworkThumbnails.set(it) },
+                                title = { Text(text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_title)) },
+                                summary = { Text(text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_summary), color = MaterialTheme.colorScheme.outline) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
