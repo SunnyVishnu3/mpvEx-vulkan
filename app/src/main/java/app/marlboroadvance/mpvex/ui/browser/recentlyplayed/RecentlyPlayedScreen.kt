@@ -184,8 +184,9 @@ object RecentlyPlayedScreen : Screen {
       onExpandedChange = { isFabExpanded.value = it },
     )
 
-    Scaffold(
-        topBar = {
+      Scaffold(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+         topBar = {
           BrowserTopBar(
             title = "Recently Played",
             isInSelectionMode = selectionManager.isInSelectionMode,
