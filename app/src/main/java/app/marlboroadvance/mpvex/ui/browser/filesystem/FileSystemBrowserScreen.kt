@@ -95,7 +95,7 @@ import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import app.marlboroadvance.mpvex.presentation.components.pullrefresh.PullRefreshBox
 import app.marlboroadvance.mpvex.ui.browser.cards.FolderCard
 import app.marlboroadvance.mpvex.ui.browser.cards.VideoCard
-import app.marlboroadvance.mpvex.ui.browser.components.BrowserBottomBar
+import app.marlboroadvance.mpvex.ui.browser.components.FloatingBottomBar
 import app.marlboroadvance.mpvex.ui.browser.components.BrowserTopBar
 import app.marlboroadvance.mpvex.ui.browser.dialogs.AddToPlaylistDialog
 import app.marlboroadvance.mpvex.ui.browser.dialogs.DeleteConfirmationDialog
@@ -881,43 +881,35 @@ fun FileSystemBrowserScreen(path: String? = null) {
 
     // Independent Floating Bottom Bar - positioned at absolute bottom
     // Play Store gating is intentionally bypassed here.
-    AnimatedVisibility(
+   FloatingBottomBar(
       visible = showFloatingBottomBar,
-      enter = slideInVertically(
-        animationSpec = tween(durationMillis = animationDuration),
-        initialOffsetY = { fullHeight -> fullHeight }
-      ),
-      exit = slideOutVertically(
-        animationSpec = tween(durationMillis = animationDuration),
-        targetOffsetY = { fullHeight -> fullHeight }
-      ),
+      showCopy = true,
+      showMove = true,
+      showRename = videoSelectionManager.isSingleSelection,
+      showDelete = true,
+      showAddToPlaylist = true,
+      onCopyClick = {
+        operationType.value = CopyPasteOps.OperationType.Copy
+        if (CopyPasteOps.canUseDirectFileOperations()) {
+          folderPickerOpen.value = true
+        } else {
+          treePickerLauncher.launch(null)
+        }
+      },
+      onMoveClick = {
+        operationType.value = CopyPasteOps.OperationType.Move
+        if (CopyPasteOps.canUseDirectFileOperations()) {
+          folderPickerOpen.value = true
+        } else {
+          treePickerLauncher.launch(null)
+        }
+      },
+      onRenameClick = { renameDialogOpen.value = true },
+      onDeleteClick = { deleteDialogOpen.value = true },
+      onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
       modifier = Modifier.align(Alignment.BottomCenter)
-    ) {
-      BrowserBottomBar(
-        isSelectionMode = true,
-        onCopyClick = {
-          operationType.value = CopyPasteOps.OperationType.Copy
-          if (CopyPasteOps.canUseDirectFileOperations()) {
-            folderPickerOpen.value = true
-          } else {
-            treePickerLauncher.launch(null)
-          }
-        },
-        onMoveClick = {
-          operationType.value = CopyPasteOps.OperationType.Move
-          if (CopyPasteOps.canUseDirectFileOperations()) {
-            folderPickerOpen.value = true
-          } else {
-            treePickerLauncher.launch(null)
-          }
-        },
-        onRenameClick = { renameDialogOpen.value = true },
-        onDeleteClick = { deleteDialogOpen.value = true },
-        onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
-        showRename = videoSelectionManager.isSingleSelection,
-        modifier = Modifier.padding(bottom = 0.dp) // Zero bottom padding - absolute bottom
-      )
-    }
+     )
+   }
 
     // Dialogs
     PlayLinkSheet(
