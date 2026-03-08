@@ -85,7 +85,7 @@ import app.marlboroadvance.mpvex.presentation.Screen
 import app.marlboroadvance.mpvex.presentation.components.pullrefresh.PullRefreshBox
 import app.marlboroadvance.mpvex.BuildConfig
 import app.marlboroadvance.mpvex.ui.browser.cards.VideoCard
-import app.marlboroadvance.mpvex.ui.browser.components.BrowserBottomBar
+import app.marlboroadvance.mpvex.ui.browser.components.FloatingBottomBar
 import app.marlboroadvance.mpvex.ui.browser.components.BrowserTopBar
 import app.marlboroadvance.mpvex.ui.browser.dialogs.AddToPlaylistDialog
 import app.marlboroadvance.mpvex.ui.browser.dialogs.DeleteConfirmationDialog
@@ -377,8 +377,13 @@ data class VideoListScreen(
           ),
           modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-          BrowserBottomBar(
-            isSelectionMode = true,
+          FloatingBottomBar(
+            visible = true,
+            showCopy = true,
+            showMove = true,
+            showDelete = true,
+            showAddToPlaylist = true,
+            showRename = selectionManager.isSingleSelection,
             onCopyClick = {
               operationType.value = CopyPasteOps.OperationType.Copy
               if (CopyPasteOps.canUseDirectFileOperations()) {
@@ -397,7 +402,7 @@ data class VideoListScreen(
             },
             onRenameClick = { renameDialogOpen.value = true },
             onDeleteClick = { deleteDialogOpen.value = true },
-            onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
+            onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true }
             showRename = selectionManager.isSingleSelection
           )
         }
