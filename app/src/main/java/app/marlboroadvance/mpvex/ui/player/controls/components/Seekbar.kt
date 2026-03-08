@@ -322,12 +322,12 @@ fun LiquidSeekbar(
                         vibrancy()
                          // Blur fades away as you press it
                         blur(8f.dp.toPx() * (0f - pressProgress))
-
                         // 3 & 4. Lens effects exactly as requested
                         lens(
                             30f.dp.toPx() * pressProgress,
                             20f.dp.toPx() * pressProgress
                         )
+                    },
                     onDrawSurface = {
                         // 5. Glass opacity: 0 (Pure transparent glass)
                         drawRect(Color.White.copy(alpha = 1f - pressProgress))
