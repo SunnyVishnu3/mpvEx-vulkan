@@ -5,6 +5,10 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,7 +25,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -56,14 +59,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.geometry.Size
 import kotlin.math.roundToInt
 
-// --- KYANT BACKDROP 2.0.0-ALPHA03 IMPORTS ---
+// --- KYANT BACKDROP 2.0.0-ALPHA03 IMPORTS (FIXED) ---
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-// --------------------------------------------
+// ----------------------------------------------------
 
 import app.marlboroadvance.mpvex.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.marlboroadvance.mpvex.ui.theme.spacing
@@ -227,7 +231,7 @@ fun SeekbarWithTimers(
 }
 
 // =========================================================================
-// NEW: SAFE LIQUID SEEKBAR (Crash-Proof Track Refraction)
+// NEW: OPTION 3 COMBINED LIQUID SEEKBAR (CRASH-PROOF NATIVE BOX)
 // =========================================================================
 @Composable
 fun LiquidSeekbar(
@@ -265,20 +269,23 @@ fun LiquidSeekbar(
     val thumbHeight = 16.dp
     val thumbShape = RoundedCornerShape(percent = 50)
 
+    // Native Squish Animation when Scrubbing
     val thumbWidth by animateDpAsState(
         targetValue = if (isScrubbing) 24.dp else 16.dp,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
         label = "thumb_stretch"
     )
 
-    // THE ULTIMATE FIX: We ONLY capture the track layer. 
-    // This perfectly refracts your Cyan color while remaining 100% crash-proof!
+    // OPTION 3: THE TRUE COMBINED BACKDROP ENGINE
+    val parentBackdrop = rememberLayerBackdrop { drawContent() }
     val trackBackdrop = rememberLayerBackdrop { drawContent() }
+    val combinedBackdrop = rememberCombinedBackdrop(parentBackdrop, trackBackdrop)
 
     androidx.compose.foundation.layout.BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .height(24.dp),
+            .height(24.dp)
+            .layerBackdrop(parentBackdrop), // Captures the Video Playing behind it!
         contentAlignment = Alignment.CenterStart
     ) {
         val trackWidthPx = constraints.maxWidth.toFloat()
@@ -289,7 +296,7 @@ fun LiquidSeekbar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(trackHeightDp)
-                .layerBackdrop(trackBackdrop) // Applies the capture to the track ONLY
+                .layerBackdrop(trackBackdrop) // Captures the Colored Track!
         ) {
             val trackHeight = size.height
             val outerRadius = trackHeight / 2f
@@ -367,7 +374,7 @@ fun LiquidSeekbar(
                 .width(thumbWidth)
                 .height(thumbHeight)
                 .drawBackdrop(
-                    backdrop = trackBackdrop, // Refracts the colored track beautifully!
+                    backdrop = combinedBackdrop, // Refract BOTH!
                     shape = { thumbShape },
                     effects = {
                         vibrancy()
