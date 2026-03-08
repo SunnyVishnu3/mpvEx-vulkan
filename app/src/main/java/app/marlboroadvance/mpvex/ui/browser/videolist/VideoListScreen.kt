@@ -392,7 +392,6 @@ data class VideoListScreen(
           onDeleteClick = { deleteDialogOpen.value = true },
           onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
           modifier = Modifier.align(Alignment.BottomCenter)
-          showRename = selectionManager.isSingleSelection
           )
         }
       }
