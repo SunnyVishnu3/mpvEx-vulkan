@@ -64,7 +64,8 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-import com.kyant.backdrop.backdrops.rememberBackdrop
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.rememberBackdrop
 // ----------------------------------------------------
 
 import app.marlboroadvance.mpvex.ui.player.controls.LocalPlayerButtonsClickEvent
@@ -252,7 +253,7 @@ fun LiquidSeekbar(
     val thumbWidth = androidx.compose.ui.unit.lerp(56.dp, pressProgress)
     val thumbHeight = 32.dp
     
-    val trackBackdrop = rememberlayerBackdrop { drawContent() }
+    val trackBackdrop = rememberLayerBackdrop { drawContent() }
 
     androidx.compose.foundation.layout.BoxWithConstraints(
         modifier = modifier
