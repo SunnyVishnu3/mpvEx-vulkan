@@ -259,7 +259,8 @@ data class VideoListScreen(
       }
     }
 
-    Scaffold(
+  Scaffold(
+    containerColor = Color.Transparent,
       topBar = {
         BrowserTopBar(
           title = displayFolderName,
