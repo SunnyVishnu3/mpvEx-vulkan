@@ -38,12 +38,14 @@ import androidx.compose.ui.unit.dp
 import app.marlboroadvance.mpvex.ui.components.liquid.LiquidGlassSurface
 import com.kyant.backdrop.Backdrop
 import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 // ----------------------------
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FloatingBottomBar(
   visible: Boolean,
+  backdrop:Backdrop,
   showCopy: Boolean = false,
   showMove: Boolean = false,
   showRename: Boolean = false,
@@ -67,8 +69,6 @@ fun FloatingBottomBar(
     exit = fadeOut(),
     modifier = modifier
   ) {
-    val backdrop = rememberLayerBackdrop { drawContent() }
-
     val contentRow = @Composable {
       Row(
         modifier = Modifier
