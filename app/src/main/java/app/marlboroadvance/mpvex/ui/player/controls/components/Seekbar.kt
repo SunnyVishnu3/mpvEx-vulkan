@@ -57,13 +57,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.geometry.Size
 import kotlin.math.roundToInt
 
-// --- KYANT BACKDROP 2.0.0-ALPHA03 IMPORTS ---
+// --- KYANT BACKDROP 2.0.0-ALPHA03 IMPORTS (FIXED) ---
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-// --------------------------------------------
+// ----------------------------------------------------
 
 import app.marlboroadvance.mpvex.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.marlboroadvance.mpvex.ui.theme.spacing
