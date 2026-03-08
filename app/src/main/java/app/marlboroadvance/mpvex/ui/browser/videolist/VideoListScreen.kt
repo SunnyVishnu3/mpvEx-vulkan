@@ -23,6 +23,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -223,6 +226,8 @@ data class VideoListScreen(
     // Bottom bar animation state
     var showFloatingBottomBar by remember { mutableStateOf(false) }
     val animationDuration = 300
+
+    val floatingBarBackdrop = rememberLayerBackdrop { drawContent() }
 
     // Handle selection mode changes with animation
     LaunchedEffect(selectionManager.isInSelectionMode) {
