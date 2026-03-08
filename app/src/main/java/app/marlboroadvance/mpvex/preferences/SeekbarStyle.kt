@@ -4,5 +4,5 @@ enum class SeekbarStyle {
     Standard,
     Wavy,
     Thick,
-    Liquid
+    Liquid,
 }
