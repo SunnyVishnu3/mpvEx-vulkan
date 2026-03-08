@@ -343,8 +343,9 @@ data class VideoListScreen(
       val autoScrollToLastPlayed by browserPreferences.autoScrollToLastPlayed.collectAsState()
       
       Box(modifier = Modifier.fillMaxSize()) {
-        VideoListContent(
-          folderId = bucketId,
+        Box(modifier = Modifier.fillMaxSize().layerBackdrop(floatingBarBackdrop)) {
+          VideoListContent(
+            folderId = bucketId,
           videosWithInfo = sortedVideosWithInfo,
           isLoading = isLoading && videos.isEmpty(),
           isRefreshing = isRefreshing,
