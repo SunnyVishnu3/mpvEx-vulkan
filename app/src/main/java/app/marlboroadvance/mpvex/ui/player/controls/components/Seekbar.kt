@@ -238,19 +238,18 @@ fun LiquidSeekbar(
     liquidColor: Color = Color.Unspecified,
     modifier: Modifier = Modifier,
 ) {
-    // TRACK COLOR: Automatically uses the color from your App Settings
     val activeColor = if (liquidColor.isSpecified) liquidColor else MaterialTheme.colorScheme.primary
     
-    // Smooth transition from 0f (Unpressed) to 1f (Pressed)
+    // Retained the pressProgress variable in case you want to animate the width/height later
     val pressProgress by animateFloatAsState(
         targetValue = if (isScrubbing) 1f else 0f,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
         label = "pressProgress"
     )
 
-    // Thumb smoothly squishes and widens
-    val thumbWidth = androidx.compose.ui.unit.lerp(16.dp, 36.dp, pressProgress)
-    val thumbHeight = 24.dp
+    // 2. Make the thumb size 56.dp, 32.dp (this naturally forms a pill with CircleShape)
+    val thumbWidth = 56.dp
+    val thumbHeight = 32.dp
     
     val trackBackdrop = rememberLayerBackdrop { drawContent() }
 
@@ -320,22 +319,24 @@ fun LiquidSeekbar(
                     shape = { CircleShape }, // Perfectly rounded pill!
                     effects = {
                         vibrancy()
-                        // Blur fades away as you press it
-                        blur(8f.dp.toPx() * (1f - pressProgress))
-                        // Lens grows from 0 to maximum as you press it
+                        // 1. Blur is completely removed here
+
+                        // 3 & 4. Lens effects exactly as requested
                         lens(
-                            14f.dp.toPx() * pressProgress,
-                            24f.dp.toPx() * pressProgress
+                            refractionHeight = 30f.dp.toPx(),
+                            refractionAmount = 20f.dp.toPx(),
+                            depthEffect = true
                         )
                     },
                     onDrawSurface = {
-                        // THE SECRET: Starts pure white, melts into transparent glass!
-                        drawRect(Color.White.copy(alpha = 1f - pressProgress))
+                        // 5. Glass opacity: 0 (Pure transparent glass)
+                        drawRect(Color.Transparent)
                     }
                 )
         )
     }
 }
+
 
 // =========================================================================
 // ORIGINAL MPVEX SEEKBARS
