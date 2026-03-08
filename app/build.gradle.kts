@@ -230,7 +230,7 @@ dependencies {
 
   // DataStore for preferences persistence (To toggle the UI on/off)
   implementation("androidx.datastore:datastore-preferences:1.0.0")
-
+  implementation("androidx.graphics:graphics-core:1.0.4")
 }
 
 /* ---------------- Git helpers ---------------- */
