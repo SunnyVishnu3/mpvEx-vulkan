@@ -5,10 +5,6 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,13 +14,16 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -59,7 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.geometry.Size
 import kotlin.math.roundToInt
 
-// --- KYANT BACKDROP 2.0.0-ALPHA03 IMPORTS (FIXED) ---
+// --- KYANT BACKDROP 2.0.0-ALPHA03 IMPORTS ---
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
@@ -67,7 +66,7 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-// ----------------------------------------------------
+// --------------------------------------------
 
 import app.marlboroadvance.mpvex.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.marlboroadvance.mpvex.ui.theme.spacing
@@ -192,11 +191,9 @@ fun SeekbarWithTimers(
                 chapters = chapters,
                 isPaused = paused,
                 isScrubbing = isUserInteracting,
-                onSeek = { }, 
-                onSeekFinished = { }, 
+                liquidColor = liquidColor,
                 loopStart = loopStart,
-                loopEnd = loopEnd,
-                liquidColor = liquidColor
+                loopEnd = loopEnd
             )
         } else {
             when (seekbarStyle) {
@@ -231,7 +228,7 @@ fun SeekbarWithTimers(
 }
 
 // =========================================================================
-// NEW: OPTION 3 COMBINED LIQUID SEEKBAR (CRASH-PROOF NATIVE BOX)
+// THE ULTIMATE OPTION 3 COMBINED LIQUID SEEKBAR (CRASH-PROOF)
 // =========================================================================
 @Composable
 fun LiquidSeekbar(
@@ -240,11 +237,9 @@ fun LiquidSeekbar(
     chapters: ImmutableList<Segment>,
     isPaused: Boolean = false,
     isScrubbing: Boolean = false,
-    onSeek: (Float) -> Unit,
-    onSeekFinished: () -> Unit,
+    liquidColor: Color = Color.Unspecified,
     loopStart: Float? = null,
     loopEnd: Float? = null,
-    liquidColor: Color = Color.Unspecified,
     modifier: Modifier = Modifier,
 ) {
     val activeColor = if (liquidColor.isSpecified) liquidColor else MaterialTheme.colorScheme.primary
@@ -269,34 +264,38 @@ fun LiquidSeekbar(
     val thumbHeight = 16.dp
     val thumbShape = RoundedCornerShape(percent = 50)
 
-    // Native Squish Animation when Scrubbing
     val thumbWidth by animateDpAsState(
         targetValue = if (isScrubbing) 24.dp else 16.dp,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
         label = "thumb_stretch"
     )
 
-    // OPTION 3: THE TRUE COMBINED BACKDROP ENGINE
+    // MAXIMUM QUALITY: The Combined Backdrop Engines
     val parentBackdrop = rememberLayerBackdrop { drawContent() }
     val trackBackdrop = rememberLayerBackdrop { drawContent() }
     val combinedBackdrop = rememberCombinedBackdrop(parentBackdrop, trackBackdrop)
 
-    androidx.compose.foundation.layout.BoxWithConstraints(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .height(24.dp)
-            .layerBackdrop(parentBackdrop), // Captures the Video Playing behind it!
+            .height(24.dp),
         contentAlignment = Alignment.CenterStart
     ) {
         val trackWidthPx = constraints.maxWidth.toFloat()
         val progress = if (duration > 0f) (position / duration).coerceIn(0f, 1f) else 0f
         val playedPx = trackWidthPx * progress
         
+        // LAYER 1: The Environment Capture. 
+        // This safely captures the video playing behind the compose window without causing a recursive loop!
+        Box(modifier = Modifier.fillMaxSize().layerBackdrop(parentBackdrop))
+
+        // LAYER 2: The Track Capture.
+        // This captures your custom Cyan track layout.
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(trackHeightDp)
-                .layerBackdrop(trackBackdrop) // Captures the Colored Track!
+                .layerBackdrop(trackBackdrop) 
         ) {
             val trackHeight = size.height
             val outerRadius = trackHeight / 2f
@@ -368,13 +367,15 @@ fun LiquidSeekbar(
             }
         }
         
+        // LAYER 3: The Combined Glass Thumb!
+        // Perfectly bends the light from the video (Layer 1) AND the track (Layer 2).
         Box(
             modifier = Modifier
                 .offset { androidx.compose.ui.unit.IntOffset((playedPx - (thumbWidth.toPx() / 2)).roundToInt(), 0) }
                 .width(thumbWidth)
                 .height(thumbHeight)
                 .drawBackdrop(
-                    backdrop = combinedBackdrop, // Refract BOTH!
+                    backdrop = combinedBackdrop,
                     shape = { thumbShape },
                     effects = {
                         vibrancy()
@@ -394,7 +395,7 @@ fun LiquidSeekbar(
 }
 
 // =========================================================================
-// ORIGINAL MPVEX SEEKBARS
+// ORIGINAL MPVEX SEEKBARS (SAFE FALLBACKS)
 // =========================================================================
 
 @Composable
