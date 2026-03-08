@@ -889,7 +889,8 @@ fun FileSystemBrowserScreen(path: String? = null) {
 
     // Independent Floating Bottom Bar - positioned at absolute bottom
     // Play Store gating is intentionally bypassed here.
-   FloatingBottomBar(
+    FloatingBottomBar(
+      backdrop = floatingBarBackdrop,
       visible = showFloatingBottomBar,
       showCopy = true,
       showMove = true,
