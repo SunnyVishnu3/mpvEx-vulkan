@@ -68,9 +68,6 @@ object AppearancePreferencesScreen : Screen {
         val preferences = koinInject<AppearancePreferences>()
         val context = LocalContext.current
         val liquidPreferences = remember { LiquidUIPreferences(context) }
-        val isLiquidUIEnabled by liquidPreferences.liquidUIEnabledFlow.collectAsState(initial = false)
-        val toggleColor by liquidPreferences.liquidToggleColorFlow.collectAsState(initial = 0xFF4CAF50)
-        val sliderColor by liquidPreferences.liquidSliderColorFlow.collectAsState(initial = 0xFF2196F3)
         val scope = rememberCoroutineScope()
         val browserPreferences = koinInject<BrowserPreferences>()
         val gesturePreferences = koinInject<GesturePreferences>()
@@ -85,6 +82,18 @@ object AppearancePreferencesScreen : Screen {
             DarkMode.Light -> false
             DarkMode.System -> systemDarkTheme
         }
+
+        // --- LIQUID GLASS STATE COLLECTIONS ---
+        val isLiquidUIEnabled by liquidPreferences.liquidUIEnabledFlow.collectAsState(initial = false)
+        val toggleColor by liquidPreferences.liquidToggleColorFlow.collectAsState(initial = 0xFF4CAF50)
+        val sliderColor by liquidPreferences.liquidSliderColorFlow.collectAsState(initial = 0xFF2196F3)
+        val blurRadius by liquidPreferences.liquidBlurRadiusFlow.collectAsState(initial = 0f)
+        val refractionHeight by liquidPreferences.liquidRefractionHeightFlow.collectAsState(initial = 40f)
+        val refractionAmount by liquidPreferences.liquidRefractionAmountFlow.collectAsState(initial = 23f)
+        val tintAlpha by liquidPreferences.liquidTintAlphaFlow.collectAsState(initial = 0.15f)
+        val chromaticAberration by liquidPreferences.liquidChromaticAberrationFlow.collectAsState(initial = false)
+        val depthEffect by liquidPreferences.liquidDepthEffectFlow.collectAsState(initial = true)
+        val vibrancyEnabled by liquidPreferences.liquidVibrancyEnabledFlow.collectAsState(initial = true)
 
         Scaffold(
             topBar = {
@@ -132,7 +141,7 @@ object AppearancePreferencesScreen : Screen {
 
                             PreferenceDivider()
 
-                            // --- LIQUID GLASS UI MASTER TOGGLE & COLORS ---
+                            // --- LIQUID GLASS UI MASTER TOGGLE ---
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -152,43 +161,114 @@ object AppearancePreferencesScreen : Screen {
                             }
 
                             AnimatedVisibility(visible = isLiquidUIEnabled) {
-                                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                                    Text("Liquid UI Colors", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 8.dp))
-                                    
-                                    fun parseColorInput(input: String): Long? {
-                                        return try {
-                                            val formatted = if (input.matches(Regex("^[0-9A-Fa-f]{6,8}$"))) "#$input" else input
-                                            val colorInt = android.graphics.Color.parseColor(formatted)
-                                            colorInt.toLong() and 0xFFFFFFFFL
-                                        } catch (e: Exception) { null }
+                                Column {
+                                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                        Text("Liquid UI Colors", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 8.dp))
+                                        
+                                        fun parseColorInput(input: String): Long? {
+                                            return try {
+                                                val formatted = if (input.matches(Regex("^[0-9A-Fa-f]{6,8}$"))) "#$input" else input
+                                                val colorInt = android.graphics.Color.parseColor(formatted)
+                                                colorInt.toLong() and 0xFFFFFFFFL
+                                            } catch (e: Exception) { null }
+                                        }
+
+                                        var toggleInputText by remember(toggleColor) { mutableStateOf(String.format("#%06X", 0xFFFFFF and toggleColor.toInt())) }
+                                        OutlinedTextField(
+                                            value = toggleInputText,
+                                            onValueChange = { newValue ->
+                                                toggleInputText = newValue
+                                                parseColorInput(newValue)?.let { colorLong -> scope.launch { liquidPreferences.setToggleColor(colorLong) } }
+                                            },
+                                            label = { Text("Toggle Color") },
+                                            placeholder = { Text("e.g. #FF5733 or blue") },
+                                            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                                            singleLine = true,
+                                            leadingIcon = { Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(toggleColor))) }
+                                        )
+
+                                        var sliderInputText by remember(sliderColor) { mutableStateOf(String.format("#%06X", 0xFFFFFF and sliderColor.toInt())) }
+                                        OutlinedTextField(
+                                            value = sliderInputText,
+                                            onValueChange = { newValue ->
+                                                sliderInputText = newValue
+                                                parseColorInput(newValue)?.let { colorLong -> scope.launch { liquidPreferences.setSliderColor(colorLong) } }
+                                            },
+                                            label = { Text("Slider Color") },
+                                            placeholder = { Text("e.g. #00FF00 or cyan") },
+                                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                            singleLine = true,
+                                            leadingIcon = { Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(sliderColor))) }
+                                        )
                                     }
 
-                                    var toggleInputText by remember(toggleColor) { mutableStateOf(String.format("#%06X", 0xFFFFFF and toggleColor.toInt())) }
-                                    OutlinedTextField(
-                                        value = toggleInputText,
-                                        onValueChange = { newValue ->
-                                            toggleInputText = newValue
-                                            parseColorInput(newValue)?.let { colorLong -> scope.launch { liquidPreferences.setToggleColor(colorLong) } }
-                                        },
-                                        label = { Text("Toggle Color") },
-                                        placeholder = { Text("e.g. #FF5733 or blue") },
-                                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                                        singleLine = true,
-                                        leadingIcon = { Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(toggleColor))) }
+                                    PreferenceDivider()
+                                    
+                                    // --- KYANT BACKDROP LIVE SLIDERS ---
+                                    Text("Backdrop Engine Tuning", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+
+                                    SliderPreference(
+                                        value = blurRadius,
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setBlurRadius(v) } },
+                                        sliderValue = blurRadius,
+                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setBlurRadius(v) } },
+                                        title = { Text("Blur Radius") },
+                                        valueRange = 0f..64f,
+                                        summary = { Text("${blurRadius.roundToInt()} px", color = MaterialTheme.colorScheme.outline) }
                                     )
 
-                                    var sliderInputText by remember(sliderColor) { mutableStateOf(String.format("#%06X", 0xFFFFFF and sliderColor.toInt())) }
-                                    OutlinedTextField(
-                                        value = sliderInputText,
-                                        onValueChange = { newValue ->
-                                            sliderInputText = newValue
-                                            parseColorInput(newValue)?.let { colorLong -> scope.launch { liquidPreferences.setSliderColor(colorLong) } }
-                                        },
-                                        label = { Text("Slider Color") },
-                                        placeholder = { Text("e.g. #00FF00 or cyan") },
-                                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                                        singleLine = true,
-                                        leadingIcon = { Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(sliderColor))) }
+                                    SliderPreference(
+                                        value = refractionHeight,
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setRefractionHeight(v) } },
+                                        sliderValue = refractionHeight,
+                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setRefractionHeight(v) } },
+                                        title = { Text("Refraction Height") },
+                                        valueRange = 0f..100f,
+                                        summary = { Text("${refractionHeight.roundToInt()} dp", color = MaterialTheme.colorScheme.outline) }
+                                    )
+
+                                    SliderPreference(
+                                        value = refractionAmount,
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setRefractionAmount(v) } },
+                                        sliderValue = refractionAmount,
+                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setRefractionAmount(v) } },
+                                        title = { Text("Refraction Amount") },
+                                        valueRange = 0f..100f,
+                                        summary = { Text("${refractionAmount.roundToInt()} dp", color = MaterialTheme.colorScheme.outline) }
+                                    )
+
+                                    SliderPreference(
+                                        value = tintAlpha,
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setTintAlpha(v) } },
+                                        sliderValue = tintAlpha,
+                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setTintAlpha(v) } },
+                                        title = { Text("Glass Opacity (Tint)") },
+                                        valueRange = 0.0f..1.0f,
+                                        summary = { Text("${(tintAlpha * 100).roundToInt()}%", color = MaterialTheme.colorScheme.outline) }
+                                    )
+
+                                    PreferenceDivider()
+
+                                    // --- KYANT BACKDROP LIVE SWITCHES ---
+                                    LiquidSwitchPreference(
+                                        value = depthEffect,
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setDepthEffect(v) } },
+                                        title = { Text("Depth Effect") },
+                                        summary = { Text("Enables 3D lens depth calculation", color = MaterialTheme.colorScheme.outline) }
+                                    )
+
+                                    LiquidSwitchPreference(
+                                        value = chromaticAberration,
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setChromaticAberration(v) } },
+                                        title = { Text("Chromatic Aberration") },
+                                        summary = { Text("Enables RGB color-split on glass edges", color = MaterialTheme.colorScheme.outline) }
+                                    )
+
+                                    LiquidSwitchPreference(
+                                        value = vibrancyEnabled,
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setVibrancyEnabled(v) } },
+                                        title = { Text("Vibrancy") },
+                                        summary = { Text("Multiplies background saturation by 1.5x", color = MaterialTheme.colorScheme.outline) }
                                     )
                                 }
                             }
@@ -235,60 +315,4 @@ object AppearancePreferencesScreen : Screen {
                                 value = unplayedOldVideoDays.toFloat(),
                                 onValueChange = { preferences.unplayedOldVideoDays.set(it.roundToInt()) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_unplayed_old_video_days_title)) },
-                                valueRange = 1f..30f,
-                                summary = { Text(text = stringResource(id = R.string.pref_appearance_unplayed_old_video_days_summary, unplayedOldVideoDays), color = MaterialTheme.colorScheme.outline) },
-                                onSliderValueChange = { preferences.unplayedOldVideoDays.set(it.roundToInt()) },
-                                sliderValue = unplayedOldVideoDays.toFloat(),
-                                enabled = showUnplayedOldVideoLabel
-                            )
-
-                            PreferenceDivider()
-
-                            val autoScrollToLastPlayed by browserPreferences.autoScrollToLastPlayed.collectAsState()
-                            LiquidSwitchPreference(
-                                value = autoScrollToLastPlayed,
-                                onValueChange = { browserPreferences.autoScrollToLastPlayed.set(it) },
-                                title = { Text(text = stringResource(R.string.pref_appearance_auto_scroll_title)) },
-                                summary = { Text(text = stringResource(R.string.pref_appearance_auto_scroll_summary), color = MaterialTheme.colorScheme.outline) }
-                            )
-
-                            PreferenceDivider()
-
-                            val watchedThreshold by browserPreferences.watchedThreshold.collectAsState()
-                            SliderPreference(
-                                value = watchedThreshold.toFloat(),
-                                onValueChange = { browserPreferences.watchedThreshold.set(it.roundToInt()) },
-                                sliderValue = watchedThreshold.toFloat(),
-                                onSliderValueChange = { browserPreferences.watchedThreshold.set(it.roundToInt()) },
-                                title = { Text(text = stringResource(id = R.string.pref_appearance_watched_threshold_title)) },
-                                valueRange = 50f..100f,
-                                valueSteps = 9,
-                                summary = { Text(text = stringResource(id = R.string.pref_appearance_watched_threshold_summary, watchedThreshold), color = MaterialTheme.colorScheme.outline) },
-                            )
-
-                            PreferenceDivider()
-
-                            val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
-                            LiquidSwitchPreference(
-                                value = tapThumbnailToSelect,
-                                onValueChange = { gesturePreferences.tapThumbnailToSelect.set(it) },
-                                title = { Text(text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_title)) },
-                                summary = { Text(text = stringResource(id = R.string.pref_gesture_tap_thumbnail_to_select_summary), color = MaterialTheme.colorScheme.outline) }
-                            )
-
-                            PreferenceDivider()
-
-                            val showNetworkThumbnails by preferences.showNetworkThumbnails.collectAsState()
-                            LiquidSwitchPreference(
-                                value = showNetworkThumbnails,
-                                onValueChange = { preferences.showNetworkThumbnails.set(it) },
-                                title = { Text(text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_title)) },
-                                summary = { Text(text = stringResource(id = R.string.pref_appearance_show_network_thumbnails_summary), color = MaterialTheme.colorScheme.outline) }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
+               
