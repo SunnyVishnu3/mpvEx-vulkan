@@ -317,7 +317,7 @@ fun LiquidSeekbar(
                 .width(thumbWidth)
                 .height(thumbHeight)
                 .drawBackdrop(
-                    backdrop = backdrop,
+                    backdrop = rememberCombinedBackdrop(backdrop, trackBackdrop),
                     shape = { CircleShape }, // Perfectly rounded pill!
                     effects = {
                         vibrancy()
