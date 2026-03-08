@@ -490,11 +490,16 @@ fun FileSystemBrowserScreen(path: String? = null) {
     onExpandedChange = { isFabExpanded.value = it },
   )
 
+    val floatingBarBackdrop = rememberLayerBackdrop { drawContent() }
+
   // Main content
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
+      modifier = Modifier.layerBackdrop(floatingBarBackdrop),
+      containerColor = Color.Transparent,
       topBar = {
         if (isSearching) {
+
           // Search mode - show search bar instead of top bar
           SearchBar(
             inputField = {
