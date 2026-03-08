@@ -12,10 +12,14 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
@@ -25,17 +29,21 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -50,61 +58,45 @@ import app.marlboroadvance.mpvex.ui.browser.selection.SelectionManager
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 
-// --- NEW IMPORTS FOR LIQUID TABS ---
+// --- LIQUID GLASS IMPORTS ---
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import app.marlboroadvance.mpvex.ui.components.liquid.LiquidBottomTabs
-// -----------------------------------
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidGlassSurface
+import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
+// ----------------------------
 
 @Serializable
 object MainScreen : Screen {
   private var persistentSelectedTab: Int = 0
   
-  @Volatile
-  private var isInSelectionModeShared: Boolean = false  
+  @Volatile private var isInSelectionModeShared: Boolean = false  
+  @Volatile private var shouldHideNavigationBar: Boolean = false  
+  @Volatile private var isBrowserBottomBarVisible: Boolean = false  
+  @Volatile private var sharedVideoSelectionManager: Any? = null
+  @Volatile private var onlyVideosSelected: Boolean = false
+  @Volatile private var isPermissionDenied: Boolean = false
   
-  @Volatile
-  private var shouldHideNavigationBar: Boolean = false  
-  
-  @Volatile
-  private var isBrowserBottomBarVisible: Boolean = false  
-  
-  @Volatile
-  private var sharedVideoSelectionManager: Any? = null
-  
-  @Volatile
-  private var onlyVideosSelected: Boolean = false
-  
-  @Volatile
-  private var isPermissionDenied: Boolean = false
-  
-  fun updateSelectionState(
-    isInSelectionMode: Boolean,
-    isOnlyVideosSelected: Boolean,
-    selectionManager: Any?
-  ) {
+  fun updateSelectionState(isInSelectionMode: Boolean, isOnlyVideosSelected: Boolean, selectionManager: Any?) {
     this.isInSelectionModeShared = isInSelectionMode
     this.onlyVideosSelected = isOnlyVideosSelected
     this.sharedVideoSelectionManager = selectionManager
     this.shouldHideNavigationBar = isInSelectionMode && isOnlyVideosSelected
   }
   
-  fun updatePermissionState(isDenied: Boolean) {
-    this.isPermissionDenied = isDenied
-  }
-
+  fun updatePermissionState(isDenied: Boolean) { this.isPermissionDenied = isDenied }
   fun getPermissionDeniedState(): Boolean = isPermissionDenied
-
-  fun updateBottomBarVisibility(shouldShow: Boolean) {
-    this.shouldHideNavigationBar = !shouldShow
-  }
+  fun updateBottomBarVisibility(shouldShow: Boolean) { this.shouldHideNavigationBar = !shouldShow }
 
   @Composable
   @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
   override fun Content() {
     var selectedTab by remember { mutableIntStateOf(persistentSelectedTab) }
-    val context = LocalContext.current
     val density = LocalDensity.current
+
+    // Read the Liquid UI Settings!
+    val context = LocalContext.current
+    val liquidPrefs = remember { LiquidUIPreferences(context) }
+    val isLiquidUI by liquidPrefs.liquidUIEnabledFlow.collectAsState(false)
 
     val isInSelectionMode = remember { mutableStateOf(isInSelectionModeShared) }
     val hideNavigationBar = remember { mutableStateOf(shouldHideNavigationBar) }
@@ -112,25 +104,16 @@ object MainScreen : Screen {
     
     LaunchedEffect(Unit) {
       while (true) {
-        if (isInSelectionMode.value != isInSelectionModeShared) {
-          isInSelectionMode.value = isInSelectionModeShared
-        }
-        if (hideNavigationBar.value != shouldHideNavigationBar) {
-          hideNavigationBar.value = shouldHideNavigationBar
-        }
+        if (isInSelectionMode.value != isInSelectionModeShared) isInSelectionMode.value = isInSelectionModeShared
+        if (hideNavigationBar.value != shouldHideNavigationBar) hideNavigationBar.value = shouldHideNavigationBar
         val currentManager = sharedVideoSelectionManager as? SelectionManager<*, *>
-        if (videoSelectionManager.value != currentManager) {
-          videoSelectionManager.value = currentManager
-        }
+        if (videoSelectionManager.value != currentManager) videoSelectionManager.value = currentManager
         delay(16)
       }
     }
     
-    LaunchedEffect(selectedTab) {
-      persistentSelectedTab = selectedTab
-    }
+    LaunchedEffect(selectedTab) { persistentSelectedTab = selectedTab }
 
-    // THE FIX: We create the Backdrop here to capture the screen underneath!
     val bottomBarBackdrop = rememberLayerBackdrop { drawContent() }
 
     Scaffold(
@@ -138,45 +121,75 @@ object MainScreen : Screen {
       bottomBar = {
         AnimatedVisibility(
           visible = !hideNavigationBar.value,
-          enter = slideInVertically(
-            animationSpec = tween(durationMillis = 300),
-            initialOffsetY = { fullHeight -> fullHeight }
-          ),
-          exit = slideOutVertically(
-            animationSpec = tween(durationMillis = 300),
-            targetOffsetY = { fullHeight -> fullHeight }
-          )
+          enter = slideInVertically(animationSpec = tween(durationMillis = 300), initialOffsetY = { it }),
+          exit = slideOutVertically(animationSpec = tween(durationMillis = 300), targetOffsetY = { it })
         ) {
-          // Wrap the new Liquid tabs in a Box with padding so it floats beautifully at the bottom
-          Box(
-              modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(horizontal = 24.dp, vertical = 24.dp)
-          ) {
-              LiquidBottomTabs(
-                  tabsCount = 4,
-                  selectedIndex = selectedTab,
-                  backdrop = bottomBarBackdrop
-              ) {
-                  IconButton(onClick = { selectedTab = 0 }, modifier = Modifier.weight(1f)) {
-                      Icon(Icons.Filled.Home, "Home", tint = if (selectedTab == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                  }
-                  IconButton(onClick = { selectedTab = 1 }, modifier = Modifier.weight(1f)) {
-                      Icon(Icons.Filled.History, "Recents", tint = if (selectedTab == 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                  }
-                  IconButton(onClick = { selectedTab = 2 }, modifier = Modifier.weight(1f)) {
-                      Icon(Icons.AutoMirrored.Filled.PlaylistPlay, "Playlists", tint = if (selectedTab == 2) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                  }
-                  IconButton(onClick = { selectedTab = 3 }, modifier = Modifier.weight(1f)) {
-                      Icon(Icons.Filled.Language, "Network", tint = if (selectedTab == 3) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                  }
-              }
+          
+          // THE TOGGLE LOGIC
+          if (isLiquidUI) {
+            // The Floating Glass Capsule (from the 1.0.4 fork, upgraded to alpha03)
+            LiquidGlassSurface(
+                backdrop = bottomBarBackdrop,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 24.dp)
+                    .fillMaxWidth()
+                    .height(64.dp),
+                shape = RoundedCornerShape(32.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val activeColor = MaterialTheme.colorScheme.primary
+                    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    
+                    IconButton(onClick = { selectedTab = 0 }) {
+                        Icon(Icons.Filled.Home, "Home", modifier = Modifier.size(28.dp), tint = if (selectedTab == 0) activeColor else inactiveColor)
+                    }
+                    IconButton(onClick = { selectedTab = 1 }) {
+                        Icon(Icons.Filled.History, "Recents", modifier = Modifier.size(28.dp), tint = if (selectedTab == 1) activeColor else inactiveColor)
+                    }
+                    IconButton(onClick = { selectedTab = 2 }) {
+                        Icon(Icons.AutoMirrored.Filled.PlaylistPlay, "Playlists", modifier = Modifier.size(28.dp), tint = if (selectedTab == 2) activeColor else inactiveColor)
+                    }
+                    IconButton(onClick = { selectedTab = 3 }) {
+                        Icon(Icons.Filled.Language, "Network", modifier = Modifier.size(28.dp), tint = if (selectedTab == 3) activeColor else inactiveColor)
+                    }
+                }
+            }
+          } else {
+            // The Classic mpvEx Navigation Bar
+            NavigationBar(
+              modifier = Modifier.clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 0.dp, bottomEnd = 0.dp))
+            ) {
+              NavigationBarItem(
+                icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
+                label = { Text("Home") },
+                selected = selectedTab == 0, onClick = { selectedTab = 0 }
+              )
+              NavigationBarItem(
+                icon = { Icon(Icons.Filled.History, contentDescription = "Recents") },
+                label = { Text("Recents") },
+                selected = selectedTab == 1, onClick = { selectedTab = 1 }
+              )
+              NavigationBarItem(
+                icon = { Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = "Playlists") },
+                label = { Text("Playlists") },
+                selected = selectedTab == 2, onClick = { selectedTab = 2 }
+              )
+              NavigationBarItem(
+                icon = { Icon(Icons.Filled.Language, contentDescription = "Network") },
+                label = { Text("Network") },
+                selected = selectedTab == 3, onClick = { selectedTab = 3 }
+              )
+            }
           }
         }
       }
     ) { paddingValues ->
-      // THE FIX: Attach the backdrop to the Box that holds the screens, so the nav bar can refract them!
-      Box(modifier = Modifier.fillMaxSize().layerBackdrop(bottomBarBackdrop)) {
+      // Only apply layerBackdrop if Liquid UI is enabled (saves battery!)
+      Box(modifier = Modifier.fillMaxSize().then(if (isLiquidUI) Modifier.layerBackdrop(bottomBarBackdrop) else Modifier)) {
         val fabBottomPadding = 80.dp
 
         AnimatedContent(
@@ -185,16 +198,14 @@ object MainScreen : Screen {
             val slideDistance = with(density) { 48.dp.roundToPx() }
             val animationDuration = 250
             if (targetState > initialState) {
-              (slideInHorizontally(animationSpec = tween(durationMillis = animationDuration, easing = FastOutSlowInEasing), initialOffsetX = { slideDistance }) + fadeIn(animationSpec = tween(durationMillis = animationDuration, easing = FastOutSlowInEasing))) togetherWith (slideOutHorizontally(animationSpec = tween(durationMillis = animationDuration, easing = FastOutSlowInEasing), targetOffsetX = { -slideDistance }) + fadeOut(animationSpec = tween(durationMillis = animationDuration / 2, easing = FastOutSlowInEasing)))
+              (slideInHorizontally(animationSpec = tween(animationDuration, easing = FastOutSlowInEasing), initialOffsetX = { slideDistance }) + fadeIn(animationSpec = tween(animationDuration, easing = FastOutSlowInEasing))) togetherWith (slideOutHorizontally(animationSpec = tween(animationDuration, easing = FastOutSlowInEasing), targetOffsetX = { -slideDistance }) + fadeOut(animationSpec = tween(animationDuration / 2, easing = FastOutSlowInEasing)))
             } else {
-              (slideInHorizontally(animationSpec = tween(durationMillis = animationDuration, easing = FastOutSlowInEasing), initialOffsetX = { -slideDistance }) + fadeIn(animationSpec = tween(durationMillis = animationDuration, easing = FastOutSlowInEasing))) togetherWith (slideOutHorizontally(animationSpec = tween(durationMillis = animationDuration, easing = FastOutSlowInEasing), targetOffsetX = { slideDistance }) + fadeOut(animationSpec = tween(durationMillis = animationDuration / 2, easing = FastOutSlowInEasing)))
+              (slideInHorizontally(animationSpec = tween(animationDuration, easing = FastOutSlowInEasing), initialOffsetX = { -slideDistance }) + fadeIn(animationSpec = tween(animationDuration, easing = FastOutSlowInEasing))) togetherWith (slideOutHorizontally(animationSpec = tween(animationDuration, easing = FastOutSlowInEasing), targetOffsetX = { slideDistance }) + fadeOut(animationSpec = tween(animationDuration / 2, easing = FastOutSlowInEasing)))
             }
           },
           label = "tab_animation"
         ) { targetTab ->
-          CompositionLocalProvider(
-            LocalNavigationBarHeight provides fabBottomPadding
-          ) {
+          CompositionLocalProvider(LocalNavigationBarHeight provides fabBottomPadding) {
             when (targetTab) {
               0 -> FolderListScreen.Content()
               1 -> RecentlyPlayedScreen.Content()
