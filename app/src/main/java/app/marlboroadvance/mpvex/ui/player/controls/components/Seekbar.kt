@@ -3,6 +3,7 @@ package app.marlboroadvance.mpvex.ui.player.controls.components
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -11,13 +12,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -43,6 +41,7 @@ import androidx.compose.runtime.withFrameMillis
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -59,9 +58,7 @@ import androidx.compose.ui.geometry.Size
 import kotlin.math.roundToInt
 
 // --- KYANT BACKDROP 2.0.0-ALPHA03 IMPORTS ---
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -189,11 +186,10 @@ fun SeekbarWithTimers(
                 position = if (isUserInteracting) userPosition else animatedPosition.value,
                 duration = duration,
                 chapters = chapters,
-                isPaused = paused,
                 isScrubbing = isUserInteracting,
-                liquidColor = liquidColor,
                 loopStart = loopStart,
-                loopEnd = loopEnd
+                loopEnd = loopEnd,
+                liquidColor = liquidColor
             )
         } else {
             when (seekbarStyle) {
@@ -228,120 +224,57 @@ fun SeekbarWithTimers(
 }
 
 // =========================================================================
-// THE ULTIMATE OPTION 3 COMBINED LIQUID SEEKBAR (CRASH-PROOF)
+// NEW: LIQUID SEEKBAR (Kyant Lens & Fade Mechanics)
 // =========================================================================
 @Composable
 fun LiquidSeekbar(
     position: Float,
     duration: Float,
     chapters: ImmutableList<Segment>,
-    isPaused: Boolean = false,
     isScrubbing: Boolean = false,
-    liquidColor: Color = Color.Unspecified,
     loopStart: Float? = null,
     loopEnd: Float? = null,
+    liquidColor: Color = Color.Unspecified,
     modifier: Modifier = Modifier,
 ) {
+    // TRACK COLOR: Automatically uses the color from your App Settings
     val activeColor = if (liquidColor.isSpecified) liquidColor else MaterialTheme.colorScheme.primary
     
-    var heightFraction by remember { mutableFloatStateOf(1f) }
-    val scope = rememberCoroutineScope()
-    
-    LaunchedEffect(isPaused, isScrubbing) {
-        scope.launch {
-            val shouldFlatten = isPaused || isScrubbing
-            val targetHeight = if (shouldFlatten) 0.7f else 1f
-            kotlinx.coroutines.delay(if (shouldFlatten) 0L else 60L)
-            Animatable(heightFraction).animateTo(
-                targetValue = targetHeight,
-                animationSpec = tween(durationMillis = if (shouldFlatten) 550 else 800, easing = LinearEasing),
-            ) { heightFraction = value }
-        }
-    }
-    
-    val baseTrackHeight = 16.dp 
-    val trackHeightDp = baseTrackHeight * heightFraction
-    val thumbHeight = 16.dp
-    val thumbShape = RoundedCornerShape(percent = 50)
-
-    val thumbWidth by animateDpAsState(
-        targetValue = if (isScrubbing) 24.dp else 16.dp,
+    // Smooth transition from 0f (Unpressed) to 1f (Pressed)
+    val pressProgress by animateFloatAsState(
+        targetValue = if (isScrubbing) 1f else 0f,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
-        label = "thumb_stretch"
+        label = "pressProgress"
     )
 
-    // MAXIMUM QUALITY: The Combined Backdrop Engines
-    val parentBackdrop = rememberLayerBackdrop { drawContent() }
+    // Thumb smoothly squishes and widens
+    val thumbWidth = androidx.compose.ui.unit.lerp(16.dp, 36.dp, pressProgress)
+    val thumbHeight = 24.dp
+    
     val trackBackdrop = rememberLayerBackdrop { drawContent() }
-    val combinedBackdrop = rememberCombinedBackdrop(parentBackdrop, trackBackdrop)
 
-    BoxWithConstraints(
+    androidx.compose.foundation.layout.BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .height(24.dp),
+            .height(32.dp),
         contentAlignment = Alignment.CenterStart
     ) {
         val trackWidthPx = constraints.maxWidth.toFloat()
         val progress = if (duration > 0f) (position / duration).coerceIn(0f, 1f) else 0f
         val playedPx = trackWidthPx * progress
         
-        // LAYER 1: The Environment Capture. 
-        // This safely captures the video playing behind the compose window without causing a recursive loop!
-        Box(modifier = Modifier.fillMaxSize().layerBackdrop(parentBackdrop))
-
-        // LAYER 2: The Track Capture.
-        // This captures your custom Cyan track layout.
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(trackHeightDp)
-                .layerBackdrop(trackBackdrop) 
+                .height(8.dp) // Perfect Kyant track thickness
+                .clip(CircleShape) // Perfectly round track edges
+                .layerBackdrop(trackBackdrop) // Feed track colors to the glass thumb
         ) {
-            val trackHeight = size.height
-            val outerRadius = trackHeight / 2f
-            val innerRadius = outerRadius
-            
-            val gapHalf = 14.dp.toPx() / 2f
             val chapterGapHalf = 1.dp.toPx()
-            
-            val thumbGapStart = (playedPx - gapHalf).coerceIn(0f, size.width)
-            val thumbGapEnd = (playedPx + gapHalf).coerceIn(0f, size.width)
-            
             val chapterGaps = chapters
                 .map { (it.start / duration).coerceIn(0f, 1f) * size.width }
                 .filter { it > 0f && it < size.width }
                 .map { x -> (x - chapterGapHalf) to (x + chapterGapHalf) }
-            
-            fun drawSegment(startX: Float, endX: Float, color: Color) {
-                if (endX - startX < 0.5f) return
-                val path = Path()
-                val isOuterLeft = startX <= 0.5f
-                val isInnerLeft = kotlin.math.abs(startX - thumbGapEnd) < 0.5f
-                
-                val cornerRadiusLeft = when {
-                    isOuterLeft -> androidx.compose.ui.geometry.CornerRadius(outerRadius)
-                    isInnerLeft -> androidx.compose.ui.geometry.CornerRadius(innerRadius)
-                    else -> androidx.compose.ui.geometry.CornerRadius.Zero
-                }
-
-                val isOuterRight = endX >= size.width - 0.5f
-                val isInnerRight = kotlin.math.abs(endX - thumbGapStart) < 0.5f
-
-                val cornerRadiusRight = when {
-                    isOuterRight -> androidx.compose.ui.geometry.CornerRadius(outerRadius)
-                    isInnerRight -> androidx.compose.ui.geometry.CornerRadius(innerRadius)
-                    else -> androidx.compose.ui.geometry.CornerRadius.Zero
-                }
-                
-                path.addRoundRect(
-                    androidx.compose.ui.geometry.RoundRect(
-                        left = startX, top = 0f, right = endX, bottom = trackHeight,
-                        topLeftCornerRadius = cornerRadiusLeft, bottomLeftCornerRadius = cornerRadiusLeft,
-                        topRightCornerRadius = cornerRadiusRight, bottomRightCornerRadius = cornerRadiusRight
-                    )
-                )
-                drawPath(path, color)
-            }
             
             fun drawRangeWithGaps(rangeStart: Float, rangeEnd: Float, gaps: List<Pair<Float, Float>>, color: Color) {
                 if (rangeEnd <= rangeStart) return
@@ -349,14 +282,23 @@ fun LiquidSeekbar(
                 var currentPos = rangeStart
                 for ((gStart, gEnd) in relevantGaps) {
                     val segmentEnd = gStart.coerceAtMost(rangeEnd)
-                    if (segmentEnd > currentPos) drawSegment(currentPos, segmentEnd, color)
+                    if (segmentEnd > currentPos) {
+                        drawRect(color, topLeft = Offset(currentPos, 0f), size = Size(segmentEnd - currentPos, size.height))
+                    }
                     currentPos = gEnd.coerceAtLeast(currentPos)
                 }
-                if (currentPos < rangeEnd) drawSegment(currentPos, rangeEnd, color)
+                if (currentPos < rangeEnd) {
+                    drawRect(color, topLeft = Offset(currentPos, 0f), size = Size(rangeEnd - currentPos, size.height))
+                }
             }
             
-            drawRangeWithGaps(thumbGapEnd, size.width, chapterGaps, activeColor.copy(alpha = 0.3f))
-            if (thumbGapStart > 0) drawRangeWithGaps(0f, thumbGapStart, chapterGaps, activeColor)
+            // 1. Draw entire track (Unplayed) at 30% alpha of your custom color
+            drawRangeWithGaps(0f, size.width, chapterGaps, activeColor.copy(alpha = 0.3f))
+            
+            // 2. Overwrite the played portion with 100% of your custom color
+            if (playedPx > 0) {
+                drawRangeWithGaps(0f, playedPx, chapterGaps, activeColor)
+            }
 
             if (loopStart != null || loopEnd != null) {
                 val loopColor = Color(0xFFFFB300)
@@ -367,27 +309,27 @@ fun LiquidSeekbar(
             }
         }
         
-        // LAYER 3: The Combined Glass Thumb!
-        // Perfectly bends the light from the video (Layer 1) AND the track (Layer 2).
         Box(
             modifier = Modifier
                 .offset { androidx.compose.ui.unit.IntOffset((playedPx - (thumbWidth.toPx() / 2)).roundToInt(), 0) }
                 .width(thumbWidth)
                 .height(thumbHeight)
                 .drawBackdrop(
-                    backdrop = combinedBackdrop,
-                    shape = { thumbShape },
+                    backdrop = trackBackdrop,
+                    shape = { CircleShape }, // Perfectly rounded pill!
                     effects = {
                         vibrancy()
-                        blur(if (isScrubbing) 4f.dp.toPx() else 8f.dp.toPx())
+                        // Blur fades away as you press it
+                        blur(8f.dp.toPx() * (1f - pressProgress))
+                        // Lens grows from 0 to maximum as you press it
                         lens(
-                            if (isScrubbing) 14f.dp.toPx() else 10f.dp.toPx(),
-                            if (isScrubbing) 28f.dp.toPx() else 14f.dp.toPx()
+                            14f.dp.toPx() * pressProgress,
+                            24f.dp.toPx() * pressProgress
                         )
                     },
                     onDrawSurface = {
-                        drawRect(activeColor, blendMode = BlendMode.Hue)
-                        drawRect(activeColor.copy(alpha = 0.75f))
+                        // THE SECRET: Starts pure white, melts into transparent glass!
+                        drawRect(Color.White.copy(alpha = 1f - pressProgress))
                     }
                 )
         )
@@ -395,7 +337,7 @@ fun LiquidSeekbar(
 }
 
 // =========================================================================
-// ORIGINAL MPVEX SEEKBARS (SAFE FALLBACKS)
+// ORIGINAL MPVEX SEEKBARS
 // =========================================================================
 
 @Composable
