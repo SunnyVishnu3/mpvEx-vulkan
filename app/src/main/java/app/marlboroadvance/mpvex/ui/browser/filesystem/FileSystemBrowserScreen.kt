@@ -1024,7 +1024,6 @@ fun FileSystemBrowserScreen(path: String? = null) {
       },
     )
   }
-}
 
 /**
  * Recursively searches for files matching the query in a directory and its subdirectories
