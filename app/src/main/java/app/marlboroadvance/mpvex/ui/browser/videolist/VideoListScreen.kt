@@ -369,10 +369,12 @@ data class VideoListScreen(
           modifier = Modifier.padding(padding),
           showFloatingBottomBar = showFloatingBottomBar,
         )
+      }
         
         // Floating Material 3 Button Group overlay with animation
         // Play Store gating is intentionally bypassed here.
         FloatingBottomBar(
+          backdrop = floatingBarBackdrop,
           visible = showFloatingBottomBar,
           showCopy = true,
           showMove = true,
