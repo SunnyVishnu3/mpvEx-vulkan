@@ -402,7 +402,7 @@ data class VideoListScreen(
             },
             onRenameClick = { renameDialogOpen.value = true },
             onDeleteClick = { deleteDialogOpen.value = true },
-            onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true }
+            onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
             showRename = selectionManager.isSingleSelection
           )
         }
