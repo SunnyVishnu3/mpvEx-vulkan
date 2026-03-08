@@ -533,7 +533,6 @@ data class VideoListScreen(
       )
     }
   }
-}
 
 @Composable
 private fun VideoListContent(
