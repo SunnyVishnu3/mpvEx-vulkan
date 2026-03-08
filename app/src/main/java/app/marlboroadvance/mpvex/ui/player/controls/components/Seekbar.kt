@@ -324,10 +324,8 @@ fun SeekbarWithTimers(
     )
   }
 }
-
 // =========================================================================
 // NEW: STANDALONE LIQUID SEEKBAR COMPONENT
-// Built specifically for Kyant 2.0.0-alpha03 combined backdrops
 // =========================================================================
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -372,25 +370,21 @@ fun LiquidSeekbar(
         }
     }
     
-    val baseTrackHeight = 16.dp // Thick base for liquid
+    val baseTrackHeight = 16.dp 
     val trackHeightDp = baseTrackHeight * heightFraction
     val thumbWidth = 6.dp
     val thumbHeight = 16.dp
     val thumbShape = RoundedCornerShape(percent = 50)
 
-    // THE KYANT 2.0.0-ALPHA03 GLASS ENGINE 
-    val parentBackdrop = rememberLayerBackdrop { drawContent() }
+    // THE FIX: We only capture the track. No recursive parent backdrops!
     val trackBackdrop = rememberLayerBackdrop { drawContent() }
-    val combinedBackdrop = rememberCombinedBackdrop(parentBackdrop, trackBackdrop)
 
     Slider(
         value = position,
         onValueChange = onSeek,
         onValueChangeFinished = onSeekFinished,
         valueRange = 0f..duration.coerceAtLeast(0.1f),
-        modifier = modifier
-            .fillMaxWidth()
-            .layerBackdrop(parentBackdrop),
+        modifier = modifier.fillMaxWidth(), // Removed the crashing parentBackdrop modifier
         interactionSource = interactionSource,
         track = { sliderState ->
             val disabledAlpha = 0.3f
@@ -399,7 +393,7 @@ fun LiquidSeekbar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(trackHeightDp)
-                    .layerBackdrop(trackBackdrop)
+                    .layerBackdrop(trackBackdrop) // Capture the track layer for the thumb to refract
             ) {
                 val min = sliderState.valueRange.start
                 val max = sliderState.valueRange.endInclusive
@@ -530,7 +524,7 @@ fun LiquidSeekbar(
                     .width(thumbWidth)
                     .height(thumbHeight)
                     .drawBackdrop(
-                        backdrop = combinedBackdrop,
+                        backdrop = trackBackdrop, // Refracts the colored track cleanly
                         shape = { thumbShape },
                         effects = {
                             vibrancy()
@@ -546,6 +540,8 @@ fun LiquidSeekbar(
         }
     )
 }
+
+
 
 // =========================================================================
 // ORIGINAL MPVEX SEEKBARS (Untouched, used as fallback when Liquid is OFF)
