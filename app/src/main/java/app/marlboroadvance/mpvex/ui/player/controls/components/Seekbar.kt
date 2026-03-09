@@ -322,9 +322,7 @@ fun LiquidSeekbar(
                         // 3 & 4. Static Refraction + Depth Effect (With a slight lens boost when pressed!)
                         lens(
                             10f.dp.toPx()  * pressProgress,
-                            14f.dp.toPx()  * pressProgress,
-                            isChromaticAberrationEnabled = true,
-                            isDepthEffectEnabled = true
+                            14f.dp.toPx()  * pressProgress
                         )
                     },
                     onDrawSurface = {
