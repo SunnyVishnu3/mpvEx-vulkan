@@ -233,7 +233,7 @@ fun SeekbarWithTimers(
 fun LiquidSeekbar(
     position: Float,
     duration: Float,
-    chapters: ImmutableList<Segment>,
+    chapters: List<Segment>, // Assuming Segment is your data class
     isScrubbing: Boolean = false,
     loopStart: Float? = null,
     loopEnd: Float? = null,
@@ -242,18 +242,17 @@ fun LiquidSeekbar(
 ) {
     val activeColor = if (liquidColor.isSpecified) liquidColor else MaterialTheme.colorScheme.primary
     
-    // Retained the pressProgress variable in case you want to animate the width/height later
     val pressProgress by animateFloatAsState(
-        targetValue = if (isScrubbing) 0f else 0f,
+        targetValue = if (isScrubbing) 1f else 0f, // Changed to 1f when scrubbing to trigger effects
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
         label = "pressProgress"
     )
 
-    // 2. Make the thumb size 56.dp, 32.dp (this naturally forms a pill with CircleShape)
-    val thumbWidth = androidx.compose.ui.unit.lerp(56.dp, pressProgress)
+    val thumbWidth = androidx.compose.ui.unit.lerp(32.dp, 56.dp, pressProgress)
     val thumbHeight = 32.dp
     
-    val trackBackdrop = rememberLayerBackdrop { drawContent() }
+    // 1. Correct Backdrop initialization (No lambda in brackets)
+    val backdrop = rememberLayerBackdrop()
 
     androidx.compose.foundation.layout.BoxWithConstraints(
         modifier = modifier
@@ -268,9 +267,10 @@ fun LiquidSeekbar(
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp) // Perfect Kyant track thickness
-                .clip(CircleShape) // Perfectly round track edges
-                .layerBackdrop(trackBackdrop) // Feed track colors to the glass thumb
+                .height(8.dp)
+                .clip(CircleShape)
+                // 2. Set this Canvas as the source for 'backdrop'
+                .layerBackdrop(backdrop) 
         ) {
             val chapterGapHalf = 1.dp.toPx()
             val chapterGaps = chapters
@@ -294,44 +294,46 @@ fun LiquidSeekbar(
                 }
             }
             
-            // 1. Draw entire track (Unplayed) at 30% alpha of your custom color
+            // Draw Unplayed Track
             drawRangeWithGaps(0f, size.width, chapterGaps, activeColor.copy(alpha = 0.3f))
             
-            // 2. Overwrite the played portion with 100% of your custom color
+            // Draw Played Track
             if (playedPx > 0) {
                 drawRangeWithGaps(0f, playedPx, chapterGaps, activeColor)
             }
 
+            // Loop Markers
             if (loopStart != null || loopEnd != null) {
                 val loopColor = Color(0xFFFFB300)
                 val markerWidth = 2.dp.toPx()
-                if (loopStart != null) drawLine(color = loopColor, start = Offset((loopStart / duration).coerceIn(0f, 1f) * size.width, 0f), end = Offset((loopStart / duration).coerceIn(0f, 1f) * size.width, size.height), strokeWidth = markerWidth)
-                if (loopEnd != null) drawLine(color = loopColor, start = Offset((loopEnd / duration).coerceIn(0f, 1f) * size.width, 0f), end = Offset((loopEnd / duration).coerceIn(0f, 1f) * size.width, size.height), strokeWidth = markerWidth)
-                if (loopStart != null && loopEnd != null) drawRect(color = loopColor.copy(alpha = 0.3f), topLeft = Offset((minOf(loopStart, loopEnd) / duration).coerceIn(0f, 1f) * size.width, 0f), size = Size((maxOf(loopStart, loopEnd) / duration).coerceIn(0f, 1f) * size.width - (minOf(loopStart, loopEnd) / duration).coerceIn(0f, 1f) * size.width, size.height))
+                if (loopStart != null) {
+                    val x = (loopStart / duration).coerceIn(0f, 1f) * size.width
+                    drawLine(color = loopColor, start = Offset(x, 0f), end = Offset(x, size.height), strokeWidth = markerWidth)
+                }
+                if (loopEnd != null) {
+                    val x = (loopEnd / duration).coerceIn(0f, 1f) * size.width
+                    drawLine(color = loopColor, start = Offset(x, 0f), end = Offset(x, size.height), strokeWidth = markerWidth)
+                }
             }
         }
         
         Box(
             modifier = Modifier
-                .offset { androidx.compose.ui.unit.IntOffset((playedPx - (thumbWidth.toPx() / 2)).roundToInt(), 0) }
-                .width(thumbWidth)
-                .height(thumbHeight)
+                .offset { IntOffset((playedPx - (thumbWidth.toPx() / 2)).roundToInt(), 0) }
+                .size(width = thumbWidth, height = thumbHeight)
                 .drawBackdrop(
-                    backdrop = rememberCombinedBackdrop(backdrop, trackBackdrop),
-                    shape = { CircleShape }, // Perfectly rounded pill!
+                    // 3. Use the defined backdrop variable
+                    backdrop = backdrop,
+                    shape = { CircleShape },
                     effects = {
                         vibrancy()
-                         // Blur fades away as you press it
-                        blur(8f.dp.toPx() * (0f - pressProgress))
-                        // 3 & 4. Lens effects exactly as requested
-                        lens(
-                            30f.dp.toPx() * pressProgress,
-                            20f.dp.toPx() * pressProgress
-                        )
+                        // 4. Corrected effects logic for alpha03
+                        blur(8.dp.toPx() * (1f - pressProgress))
+                        lens(30.dp.toPx() * pressProgress) 
                     },
                     onDrawSurface = {
-                        // 5. Glass opacity: 0 (Pure transparent glass)
-                        drawRect(Color.White.copy(alpha = 1f - pressProgress))
+                        // Glass appearance
+                        drawRect(Color.White.copy(alpha = 0.1f * (1f - pressProgress)))
                     }
                 )
         )
