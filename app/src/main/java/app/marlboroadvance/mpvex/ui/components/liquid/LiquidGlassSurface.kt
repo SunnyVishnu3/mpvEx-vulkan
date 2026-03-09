@@ -16,20 +16,19 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
-// --- KYANT BACKDROP 2.0.0-ALPHA03 IMPORTS ---
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-// --------------------------------------------
 
-// --- PREFERENCES IMPORT ---
 import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
+import app.marlboroadvance.mpvex.preferences.LiquidTarget
 
 @Composable
 fun LiquidGlassSurface(
     backdrop: Backdrop,
+    target: LiquidTarget = LiquidTarget.NAV, // Targets the Nav bar by default
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(24.dp), 
     defaultTintColor: Color = Color.White, 
@@ -38,32 +37,24 @@ fun LiquidGlassSurface(
     val context = LocalContext.current
     val liquidPrefs = remember { LiquidUIPreferences(context) }
     
-    // --- LIVE SETTINGS STREAM ---
-    // The glass will automatically morph whenever these values change!
-    val blurRadius by liquidPrefs.liquidBlurRadiusFlow.collectAsState(initial = 0f)
-    val refractionHeight by liquidPrefs.liquidRefractionHeightFlow.collectAsState(initial = 40f)
-    val refractionAmount by liquidPrefs.liquidRefractionAmountFlow.collectAsState(initial = 23f)
-    val chromaticAberration by liquidPrefs.liquidChromaticAberrationFlow.collectAsState(initial = false)
-    val depthEffect by liquidPrefs.liquidDepthEffectFlow.collectAsState(initial = true)
-    val vibrancyEnabled by liquidPrefs.liquidVibrancyEnabledFlow.collectAsState(initial = true)
-    val tintAlpha by liquidPrefs.liquidTintAlphaFlow.collectAsState(initial = 0.15f)
+    // SAFE STATE COLLECTIONS: Only updates when the target actually changes
+    val blurRadius by remember(target) { liquidPrefs.blurRadiusFlow(target) }.collectAsState(initial = 0f)
+    val refractionHeight by remember(target) { liquidPrefs.refractionHeightFlow(target) }.collectAsState(initial = 40f)
+    val refractionAmount by remember(target) { liquidPrefs.refractionAmountFlow(target) }.collectAsState(initial = 23f)
+    val chromaticAberration by remember(target) { liquidPrefs.chromaticAberrationFlow(target) }.collectAsState(initial = false)
+    val depthEffect by remember(target) { liquidPrefs.depthEffectFlow(target) }.collectAsState(initial = true)
+    val vibrancyEnabled by remember(target) { liquidPrefs.vibrancyEnabledFlow(target) }.collectAsState(initial = true)
+    val tintAlpha by remember(target) { liquidPrefs.tintAlphaFlow(target) }.collectAsState(initial = 0.15f)
 
     if (Build.VERSION.SDK_INT >= 33) { 
-        // ANDROID 13+: Reactive Lens Engine
         Box(
             modifier = modifier
                 .drawBackdrop(
                     backdrop = backdrop,
                     shape = { shape },
                     effects = {
-                        if (vibrancyEnabled) {
-                            vibrancy()
-                        }
-                        
-                        // Only apply blur if it's greater than 0 to save GPU power
-                        if (blurRadius > 0f) {
-                            blur(blurRadius.dp.toPx())
-                        }
+                        if (vibrancyEnabled) vibrancy()
+                        if (blurRadius > 0f) blur(blurRadius.dp.toPx())
                         
                         lens(
                             refractionHeight = refractionHeight.dp.toPx(),
@@ -72,23 +63,15 @@ fun LiquidGlassSurface(
                             chromaticAberration = chromaticAberration
                         )
                     },
-                    onDrawSurface = {
-                        // Apply the exact opacity you picked in the settings slider
-                        drawRect(defaultTintColor.copy(alpha = tintAlpha))
-                    }
+                    onDrawSurface = { drawRect(defaultTintColor.copy(alpha = tintAlpha)) }
                 )
-        ) {
-            content()
-        }
+        ) { content() }
     } else { 
-        // ANDROID 12 AND BELOW: The "Flat Liquid Sheet" Fallback
         Box(
             modifier = modifier
                 .background(defaultTintColor.copy(alpha = tintAlpha), shape)
                 .border(1.dp, Color.White.copy(alpha = 0.2f), shape) 
                 .clip(shape)
-        ) {
-            content()
-        }
+        ) { content() }
     }
 }
