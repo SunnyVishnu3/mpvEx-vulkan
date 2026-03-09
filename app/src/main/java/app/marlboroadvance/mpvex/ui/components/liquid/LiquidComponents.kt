@@ -45,6 +45,7 @@ fun TransparentLiquidButton(
         backdrop = backdrop,
         shape = shape,
         modifier = modifier
+        target = target, // Connects to the lens engine!
             .clip(shape)
             .combinedClickable(
                 interactionSource = interactionSource,
