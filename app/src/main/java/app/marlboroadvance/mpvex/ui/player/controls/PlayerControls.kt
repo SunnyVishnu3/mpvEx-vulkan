@@ -169,9 +169,6 @@ fun PlayerControls(
   // The engine that captures the screen for the blur/lens effects
   val backdrop = rememberLayerBackdrop { drawContent() }
 
-  // Turn on the broadcast tower!
-  androidx.compose.runtime.CompositionLocalProvider(
-      app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop provides (if (liquidUIEnabled) backdrop else null)
   ) {
       Box(modifier = modifier.fillMaxSize()) {
         if (controlsShown) {
@@ -283,15 +280,18 @@ fun PlayerControls(
   GestureHandler(
     viewModel = viewModel,
     interactionSource = interactionSource,
-  )
+  ) {
 
   DoubleTapToSeekOvals(doubleTapSeekAmount, seekText, showDoubleTapOvals, showSeekTime, showSeekTime, interactionSource)
 
-  CompositionLocalProvider(
+    CompositionLocalProvider(
     LocalRippleConfiguration provides playerRippleConfiguration,
     LocalPlayerButtonsClickEvent provides { resetControlsTimestamp = System.currentTimeMillis() },
     LocalContentColor provides Color.White,
-  ) {
+    // THE CLEAN BROADCAST TOWER!
+    app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop provides (if (liquidUIEnabled) backdrop else null),
+  ) 
+
     CompositionLocalProvider(
       LocalLayoutDirection provides LayoutDirection.Ltr,
     ) {
@@ -1417,10 +1417,11 @@ fun PlayerControls(
     PlayerPanels(
       panelShown = panel,
       onDismissRequest = { onOpenPanel(Panels.None) },
-    )
+      )
+    }
   }
 }
-
+  
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun LiquidCustomButton(
