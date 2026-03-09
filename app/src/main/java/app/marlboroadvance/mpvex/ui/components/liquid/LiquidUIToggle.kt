@@ -11,10 +11,10 @@ import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,18 +26,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
 import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
 import kotlin.math.roundToInt
 
@@ -57,68 +56,63 @@ fun LiquidToggle(
         return
     }
 
-    val trackWidthDp = 52.dp
-    val baseThumbSizeDp = 28.dp
+    // 1.0.6 Exact Dimensions
+    val trackWidthDp = 64.dp
+    val trackHeightDp = 28.dp
+    val thumbBaseWidthDp = 40.dp
+    val thumbBaseHeightDp = 24.dp
     val paddingDp = 2.dp
     
-    val trackWidthPx = with(LocalDensity.current) { trackWidthDp.toPx() }
-    val thumbSizePx = with(LocalDensity.current) { baseThumbSizeDp.toPx() }
-    val paddingPx = with(LocalDensity.current) { paddingDp.toPx() }
-    val maxDragPx = trackWidthPx - thumbSizePx - (paddingPx * 2)
+    val density = LocalDensity.current
+    val dragWidthPx = with(density) { (trackWidthDp - thumbBaseWidthDp - (paddingDp * 2)).toPx() }
 
-    var dragOffset by remember { mutableFloatStateOf(if (checked) maxDragPx else 0f) }
+    var dragFraction by remember { mutableFloatStateOf(if (checked) 1f else 0f) }
     var isDragging by remember { mutableStateOf(false) }
 
     LaunchedEffect(checked) {
-        if (!isDragging) dragOffset = if (checked) maxDragPx else 0f
+        if (!isDragging) dragFraction = if (checked) 1f else 0f
     }
 
     val draggableState = rememberDraggableState { delta ->
-        dragOffset = (dragOffset + delta).coerceIn(0f, maxDragPx)
+        dragFraction = (dragFraction + (delta / dragWidthPx)).coerceIn(0f, 1f)
     }
 
-    val animatedOffset by animateFloatAsState(
-        targetValue = if (isDragging) dragOffset else (if (checked) maxDragPx else 0f),
-        animationSpec = spring(dampingRatio = 0.65f, stiffness = 400f),
-        label = "thumb_offset"
+    // The Sliding Physics
+    val animatedFraction by animateFloatAsState(
+        targetValue = if (isDragging) dragFraction else (if (checked) 1f else 0f),
+        animationSpec = spring(dampingRatio = 0.5f, stiffness = 400f),
+        label = "thumb_fraction"
     )
 
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
+    // The Squishy Press Physics
+    val pressProgress by animateFloatAsState(
+        targetValue = if (isPressed || isDragging) 1f else 0f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
+        label = "press_progress"
+    )
+
+    // Thumb physically SWELLS/EXPANDS when you press it (like a magnifying glass)
     val thumbWidth by animateDpAsState(
-        targetValue = if (isPressed || isDragging) 34.dp else baseThumbSizeDp,
+        targetValue = androidx.compose.ui.unit.lerp(thumbBaseWidthDp, 52.dp, pressProgress),
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
         label = "thumb_width"
     )
-
-    val progress = (animatedOffset / maxDragPx).coerceIn(0f, 1f)
-    val dynamicTint = lerp(
-        start = uncheckedColor,
-        stop = checkedColor,
-        fraction = progress
+    
+    val thumbHeight by animateDpAsState(
+        targetValue = androidx.compose.ui.unit.lerp(thumbBaseHeightDp, 32.dp, pressProgress),
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
+        label = "thumb_height"
     )
 
-    val backdrop = rememberLayerBackdrop { drawContent() }
+    val dynamicTint = lerp(uncheckedColor, checkedColor, animatedFraction)
+    val trackBackdrop = rememberLayerBackdrop { drawContent() }
 
     Box(
         modifier = modifier
-            .size(width = trackWidthDp, height = 32.dp)
-            .drawBackdrop(
-                backdrop = backdrop,
-                shape = { RoundedCornerShape(percent = 50) },
-                effects = {
-                    vibrancy()
-                    blur(2f.dp.toPx())
-                    lens(12f.dp.toPx(), 24f.dp.toPx())
-                },
-                onDrawSurface = { 
-                    if (dynamicTint.isSpecified) {
-                        drawRect(dynamicTint, blendMode = BlendMode.Hue)
-                        drawRect(dynamicTint.copy(alpha = 0.75f))
-                    }
-                }
-            )
+            .size(width = trackWidthDp, height = trackHeightDp)
             .clickable(
                 enabled = enabled,
                 onClick = { onCheckedChange(!checked) },
@@ -129,21 +123,58 @@ fun LiquidToggle(
                 state = draggableState,
                 orientation = Orientation.Horizontal,
                 enabled = enabled,
-                onDragStarted = { isDragging = true },
+                onDragStarted = { 
+                    isDragging = true 
+                    dragFraction = if (checked) 1f else 0f
+                },
                 onDragStopped = { 
                     isDragging = false
-                    val targetChecked = dragOffset > (maxDragPx / 2)
+                    val targetChecked = dragFraction > 0.5f
                     onCheckedChange(targetChecked)
                 }
             ),
         contentAlignment = Alignment.CenterStart
     ) {
+        // THE TRACK (Feeds colors to the glass)
         Box(
             modifier = Modifier
-                .padding(start = paddingDp)
-                .offset { IntOffset(animatedOffset.roundToInt(), 0) }
-                .size(width = thumbWidth, height = baseThumbSizeDp)
-                .background(color = thumbColor, shape = RoundedCornerShape(percent = 50))
+                .fillMaxSize()
+                .clip(CircleShape)
+                .background(dynamicTint)
+                .layerBackdrop(trackBackdrop)
+        )
+
+        // THE LIQUID GLASS THUMB
+        val paddingPx = with(density) { paddingDp.toPx() }
+        val thumbOffsetPx = paddingPx + (dragWidthPx * animatedFraction)
+
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(thumbOffsetPx.roundToInt(), 0) }
+                .size(width = thumbWidth, height = thumbHeight)
+                .drawBackdrop(
+                    backdrop = trackBackdrop,
+                    shape = { CircleShape },
+                    effects = {
+                        val currentBlur = 8f.dp.toPx() * (1f - pressProgress)
+                        val currentHeight = 5f.dp.toPx() + (5f.dp.toPx() * pressProgress)
+                        val currentAmount = 10f.dp.toPx() + (4f.dp.toPx() * pressProgress)
+                        
+                        if (currentBlur > 0f) {
+                            blur(currentBlur)
+                        }
+                        
+                        lens(
+                            refractionHeight = currentHeight,
+                            refractionAmount = currentAmount,
+                            chromaticAberration = true
+                        )
+                    },
+                    onDrawSurface = { 
+                        // Melts into pure transparent glass when pressed!
+                        drawRect(thumbColor.copy(alpha = 1f - pressProgress))
+                    }
+                )
         )
     }
 }
