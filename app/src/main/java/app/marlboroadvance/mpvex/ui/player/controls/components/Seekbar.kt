@@ -329,7 +329,9 @@ fun LiquidSeekbar(
                         vibrancy()
                         // 4. Corrected effects logic for alpha03
                         blur(8.dp.toPx() * (1f - pressProgress))
-                        lens(30.dp.toPx() * pressProgress) 
+                        lens(
+                             refractionHeight = 30f.dp.toPx(),
+                             refractionAmount = 20f.dp.toPx(),
                     },
                     onDrawSurface = {
                         // Glass appearance
