@@ -12,17 +12,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.drawBackdrop
-import app.marlboroadvance.mpvex.ui.theme.LiquidUIEffects
 import app.marlboroadvance.mpvex.preferences.LiquidTarget
 
 /**
  * UPGRADED: Reusable Transparent Liquid Button
- * Now supports Long-Presses and Dynamic Target Settings!
+ * Now wired directly to the 'Buttons' Tab in your Settings!
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -30,20 +27,16 @@ fun TransparentLiquidButton(
     modifier: Modifier = Modifier,
     backdrop: Backdrop?,
     shape: Shape = CircleShape,
-    target: LiquidTarget = LiquidTarget.BUTTON, // Listens to your new Buttons Tab!
+    target: LiquidTarget = LiquidTarget.BUTTON, // Listens to the Buttons Settings!
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
-    // If liquid UI is disabled or backdrop is missing, show standard clickable box
     if (backdrop == null) {
-        Box(
+        androidx.compose.foundation.layout.Box(
             modifier = modifier
                 .clip(shape)
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongClick
-                ),
+                .combinedClickable(onClick = onClick, onLongClick = onLongClick),
             contentAlignment = Alignment.Center
         ) { content() }
         return
@@ -51,10 +44,9 @@ fun TransparentLiquidButton(
 
     val interactionSource = remember { MutableInteractionSource() }
 
-    // Wraps our master glass engine with long-press physics!
     LiquidGlassSurface(
         backdrop = backdrop,
-        target = target,
+        target = target, // Connects to the lens engine!
         shape = shape,
         modifier = modifier
             .clip(shape)
@@ -65,25 +57,26 @@ fun TransparentLiquidButton(
                 onLongClick = onLongClick
             )
     ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier.fillMaxSize(), 
+            contentAlignment = Alignment.Center
+        ) {
             content()
         }
     }
 }
 
-
 /**
- * Reusable Liquid Glass Card 
- * Perfect for the Browser Screen and video list items
+ * UPGRADED: Reusable Liquid Glass Card 
+ * Now wired directly to the 'Dialogs' Tab in your Settings!
  */
 @Composable
 fun LiquidGlassCard(
     modifier: Modifier = Modifier,
-    backdrop: com.kyant.backdrop.Backdrop?,
+    backdrop: Backdrop?,
     onClick: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
-    // If liquid UI is off, just draw a transparent box so the inner card works normally
     if (backdrop == null) {
         androidx.compose.foundation.layout.Box(modifier = modifier) { 
             content() 
@@ -91,15 +84,11 @@ fun LiquidGlassCard(
         return
     }
 
-    // If liquid UI is on, apply the effects engine to a transparent box
-    androidx.compose.foundation.layout.Box(
+    LiquidGlassSurface(
+        backdrop = backdrop,
+        target = LiquidTarget.DIALOG, // Connects to the Dialogs Settings!
+        shape = RoundedCornerShape(12.dp),
         modifier = modifier
-            .drawBackdrop(
-                backdrop = backdrop,
-                shape = { RoundedCornerShape(12.dp) },
-                effects = LiquidUIEffects.glassCardEffects(enableBlur = true),
-                onDrawSurface = { drawRect(LiquidUIEffects.glassSurfaceColor) }
-            )
     ) {
         content()
     }
