@@ -326,8 +326,7 @@ fun LiquidSeekbar(
                         )
                     },
                     onDrawSurface = {
-                        // 5. Opacity 0
-                        drawRect(Color.Transparent)
+                        drawRect(Color.White.copy(alpha = 1f - pressProgress))
                     }
                 )
         )
