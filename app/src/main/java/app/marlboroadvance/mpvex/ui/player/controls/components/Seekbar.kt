@@ -323,7 +323,7 @@ fun LiquidSeekbar(
                         lens(
                             10f.dp.toPx()  * pressProgress,
                             14f.dp.toPx()  * pressProgress,
-                            chromaticAberration = true,
+                            isChromaticAberrationEnabled = true,
                             isDepthEffectEnabled = true
                         )
                     },
