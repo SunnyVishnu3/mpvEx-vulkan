@@ -321,9 +321,9 @@ fun LiquidSeekbar(
                         
                         // 3 & 4. Static Refraction + Depth Effect (With a slight lens boost when pressed!)
                         lens(
-                            refractionHeight = 10f.dp.toPx() * pressProgress,
-                            refractionAmount = 14f.dp.toPx() * pressProgress,
-                            chromaticAberration = true
+                          val currentHeight = 10f.dp.toPx() + (10f.dp.toPx() * pressProgress),
+                          val currentAmount = 10f.dp.toPx() + (5f.dp.toPx() * pressProgress),
+                            chromaticAberration = false,
                             depthEffect = true
                         )
                     },
