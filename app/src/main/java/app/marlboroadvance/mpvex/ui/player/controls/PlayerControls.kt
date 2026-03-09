@@ -169,10 +169,6 @@ fun PlayerControls(
   // The engine that captures the screen for the blur/lens effects
   val backdrop = rememberLayerBackdrop { drawContent() }
 
-  ) {
-      Box(modifier = modifier.fillMaxSize()) {
-        if (controlsShown) {
-  }
   val hideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
   val playerPreferences = koinInject<PlayerPreferences>()
   val audioPreferences = koinInject<AudioPreferences>()
@@ -277,21 +273,20 @@ fun PlayerControls(
     label = "controls_transparent_overlay",
   )
 
-  GestureHandler(
+    GestureHandler(
     viewModel = viewModel,
     interactionSource = interactionSource,
-  ) {
+  )
 
   DoubleTapToSeekOvals(doubleTapSeekAmount, seekText, showDoubleTapOvals, showSeekTime, showSeekTime, interactionSource)
 
-    CompositionLocalProvider(
+  CompositionLocalProvider(
     LocalRippleConfiguration provides playerRippleConfiguration,
     LocalPlayerButtonsClickEvent provides { resetControlsTimestamp = System.currentTimeMillis() },
     LocalContentColor provides Color.White,
     // THE CLEAN BROADCAST TOWER!
     app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop provides (if (liquidUIEnabled) backdrop else null),
-  ) 
-
+  ) {
     CompositionLocalProvider(
       LocalLayoutDirection provides LayoutDirection.Ltr,
     ) {
@@ -1420,7 +1415,6 @@ fun PlayerControls(
       )
     }
   }
-}
   
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
