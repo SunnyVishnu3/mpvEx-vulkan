@@ -227,165 +227,114 @@ fun SeekbarWithTimers(
 }
 
 // =========================================================================
-// NEW: LIQUID SEEKBAR (Kyant Lens & Fade Mechanics)
+// UPGRADED LIQUID SEEKBAR (Kyant 2.0.0-alpha03 + Squishy Physics!)
 // =========================================================================
 @Composable
-fun LiquidSlider(
-    value: () -> Float,
-    onValueChange: (Float) -> Unit,
-    valueRange: ClosedFloatingPointRange<Float>,
-    visibilityThreshold: Float,
-    backdrop: Backdrop,
-    modifier: Modifier = Modifier
+fun LiquidSeekbar(
+    position: Float,
+    duration: Float,
+    chapters: ImmutableList<Segment>,
+    isScrubbing: Boolean = false,
+    loopStart: Float? = null,
+    loopEnd: Float? = null,
+    liquidColor: Color = Color.Unspecified,
+    modifier: Modifier = Modifier,
 ) {
     val activeColor = if (liquidColor.isSpecified) liquidColor else MaterialTheme.colorScheme.primary
     
-        val trackBackdrop = rememberLayerBackdrop()
+    // The Bouncy Physics Engine!
+    val pressProgress by animateFloatAsState(
+        targetValue = if (isScrubbing) 1f else 0f,
+        animationSpec = spring(dampingRatio = 0.5f, stiffness = 400f),
+        label = "pressProgress"
+    )
 
-    BoxWithConstraints(
-        modifier.fillMaxWidth(),
+    // Thumb smoothly squishes and widens when you drag it, just like the one you found!
+    val thumbWidth = androidx.compose.ui.unit.lerp(56.dp, 68.dp, pressProgress)
+    val thumbHeight = androidx.compose.ui.unit.lerp(32.dp, 24.dp, pressProgress)
+    
+    val trackBackdrop = rememberLayerBackdrop { drawContent() }
+
+    androidx.compose.foundation.layout.BoxWithConstraints(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(48.dp),
         contentAlignment = Alignment.CenterStart
     ) {
-        val trackWidth = constraints.maxWidth
-
-        val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
-        val animationScope = rememberCoroutineScope()
-        var didDrag by remember { mutableStateOf(false) }
-        val dampedDragAnimation = remember(animationScope) {
-            DampedDragAnimation(
-                animationScope = animationScope,
-                initialValue = value(),
-                valueRange = valueRange,
-                visibilityThreshold = visibilityThreshold,
-                initialScale = 1f,
-                pressedScale = 1.5f,
-                onDragStarted = {},
-                onDragStopped = {
-                    if (didDrag) {
-                        onValueChange(targetValue)
+        val trackWidthPx = constraints.maxWidth.toFloat()
+        val progress = if (duration > 0f) (position / duration).coerceIn(0f, 1f) else 0f
+        val playedPx = trackWidthPx * progress
+        
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp) 
+                .clip(CircleShape) 
+                .layerBackdrop(trackBackdrop) 
+        ) {
+            val chapterGapHalf = 1.dp.toPx()
+            val chapterGaps = chapters
+                .map { (it.start / duration).coerceIn(0f, 1f) * size.width }
+                .filter { it > 0f && it < size.width }
+                .map { x -> (x - chapterGapHalf) to (x + chapterGapHalf) }
+            
+            fun drawRangeWithGaps(rangeStart: Float, rangeEnd: Float, gaps: List<Pair<Float, Float>>, color: Color) {
+                if (rangeEnd <= rangeStart) return
+                val relevantGaps = gaps.filter { (gStart, gEnd) -> gEnd > rangeStart && gStart < rangeEnd }.sortedBy { it.first }
+                var currentPos = rangeStart
+                for ((gStart, gEnd) in relevantGaps) {
+                    val segmentEnd = gStart.coerceAtMost(rangeEnd)
+                    if (segmentEnd > currentPos) {
+                        drawRect(color, topLeft = Offset(currentPos, 0f), size = Size(segmentEnd - currentPos, size.height))
                     }
-                },
-                onDrag = { _, dragAmount ->
-                    if (!didDrag) {
-                        didDrag = dragAmount.x != 0f
-                    }
-                    val delta = (valueRange.endInclusive - valueRange.start) * (dragAmount.x / trackWidth)
-                    onValueChange(
-                        if (isLtr) (targetValue + delta).coerceIn(valueRange)
-                        else (targetValue - delta).coerceIn(valueRange)
-                    )
+                    currentPos = gEnd.coerceAtLeast(currentPos)
                 }
-            )
-        }
-        LaunchedEffect(dampedDragAnimation) {
-            snapshotFlow { value() }
-                .collectLatest { value ->
-                    if (dampedDragAnimation.targetValue != value) {
-                        dampedDragAnimation.updateValue(value)
-                    }
+                if (currentPos < rangeEnd) {
+                    drawRect(color, topLeft = Offset(currentPos, 0f), size = Size(rangeEnd - currentPos, size.height))
                 }
+            }
+            
+            drawRangeWithGaps(0f, size.width, chapterGaps, activeColor.copy(alpha = 0.3f))
+            if (playedPx > 0) {
+                drawRangeWithGaps(0f, playedPx, chapterGaps, activeColor)
+            }
+
+            if (loopStart != null || loopEnd != null) {
+                val loopColor = Color(0xFFFFB300)
+                val markerWidth = 2.dp.toPx()
+                if (loopStart != null) drawLine(color = loopColor, start = Offset((loopStart / duration).coerceIn(0f, 1f) * size.width, 0f), end = Offset((loopStart / duration).coerceIn(0f, 1f) * size.width, size.height), strokeWidth = markerWidth)
+                if (loopEnd != null) drawLine(color = loopColor, start = Offset((loopEnd / duration).coerceIn(0f, 1f) * size.width, 0f), end = Offset((loopEnd / duration).coerceIn(0f, 1f) * size.width, size.height), strokeWidth = markerWidth)
+                if (loopStart != null && loopEnd != null) drawRect(color = loopColor.copy(alpha = 0.3f), topLeft = Offset((minOf(loopStart, loopEnd) / duration).coerceIn(0f, 1f) * size.width, 0f), size = Size((maxOf(loopStart, loopEnd) / duration).coerceIn(0f, 1f) * size.width - (minOf(loopStart, loopEnd) / duration).coerceIn(0f, 1f) * size.width, size.height))
+            }
         }
-
-        Box(Modifier.layerBackdrop(trackBackdrop)) {
-            Box(
-                Modifier
-                    .clip(Capsule())
-                    .pointerInput(animationScope) {
-                        detectTapGestures { position ->
-                            val delta = (valueRange.endInclusive - valueRange.start) * (position.x / trackWidth)
-                            val targetValue =
-                                (if (isLtr) valueRange.start + delta
-                                else valueRange.endInclusive - delta)
-                                    .coerceIn(valueRange)
-                            dampedDragAnimation.animateToValue(targetValue)
-                            onValueChange(targetValue)
-                        }
-                    }
-                    .height(6f.dp)
-                    .fillMaxWidth()
-            )
-
-            Box(
-                Modifier
-                    .clip(Capsule())
-                    .height(6f.dp)
-                    .layout { measurable, constraints ->
-                        val placeable = measurable.measure(constraints)
-                        val width = (constraints.maxWidth * dampedDragAnimation.progress).fastRoundToInt()
-                        layout(width, placeable.height) {
-                            placeable.place(0, 0)
-                        }
-                    }
-            )
-        }
-
+        
         Box(
-            Modifier
-                .graphicsLayer {
-                    translationX =
-                        (-size.width / 2f + trackWidth * dampedDragAnimation.progress)
-                            .fastCoerceIn(-size.width / 4f, trackWidth - size.width * 3f / 4f) * if (isLtr) 1f else -1f
-                }
-                .then(dampedDragAnimation.modifier)
+            modifier = Modifier
+                .offset { androidx.compose.ui.unit.IntOffset((playedPx - (thumbWidth.toPx() / 2)).roundToInt(), 0) }
+                .width(thumbWidth)
+                .height(thumbHeight)
                 .drawBackdrop(
-                    backdrop = rememberCombinedBackdrop(
-                        backdrop,
-                        rememberBackdrop(trackBackdrop) { drawBackdrop ->
-                            val progress = dampedDragAnimation.pressProgress
-                            val scaleX = lerp(2f / 3f, 1f, progress)
-                            val scaleY = lerp(0f, 1f, progress)
-                            scale(scaleX, scaleY) {
-                                drawBackdrop()
-                            }
-                        }
-                    ),
-                    shape = { Capsule() },
+                    backdrop = trackBackdrop,
+                    shape = { CircleShape },
                     effects = {
-                        val progress = dampedDragAnimation.pressProgress
-                        blur(8f.dp.toPx() * (1f - progress))
+                        vibrancy()
+                        
+                        // 3 & 4. Static Refraction + Depth Effect (With a slight lens boost when pressed!)
                         lens(
-                            10f.dp.toPx() * progress,
-                            14f.dp.toPx() * progress,
+                            refractionHeight = 10f.dp.toPx() * pressProgress,
+                            refractionAmount = 14f.dp.toPx() * pressProgress,
                             chromaticAberration = true
+                            depthEffect = true
                         )
-                    },
-                    highlight = {
-                        val progress = dampedDragAnimation.pressProgress
-                        Highlight.Ambient.copy(
-                            width = Highlight.Ambient.width / 1.5f,
-                            blurRadius = Highlight.Ambient.blurRadius / 1.5f,
-                            alpha = progress
-                        )
-                    },
-                    shadow = {
-                        Shadow(
-                            radius = 4f.dp,
-                            color = Color.Black.copy(alpha = 0.05f)
-                        )
-                    },
-                    innerShadow = {
-                        val progress = dampedDragAnimation.pressProgress
-                        InnerShadow(
-                            radius = 4f.dp * progress,
-                            alpha = progress
-                        )
-                    },
-                    layerBlock = {
-                        scaleX = dampedDragAnimation.scaleX
-                        scaleY = dampedDragAnimation.scaleY
-                        val velocity = dampedDragAnimation.velocity / 10f
-                        scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
-                        scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
                     },
                     onDrawSurface = {
-                        val progress = dampedDragAnimation.pressProgress
-                        drawRect(Color.White.copy(alpha = 1f - progress))
+                        // 5. Opacity 0
+                        drawRect(Color.Transparent)
                     }
                 )
-                .size(40f.dp, 24f.dp)
-         )
-     }
- }
+        )
+    }
+}
 
 
 
