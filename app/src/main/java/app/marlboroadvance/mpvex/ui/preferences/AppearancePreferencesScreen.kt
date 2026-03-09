@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +22,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -43,6 +45,7 @@ import app.marlboroadvance.mpvex.preferences.AppearancePreferences
 import app.marlboroadvance.mpvex.preferences.BrowserPreferences
 import app.marlboroadvance.mpvex.preferences.GesturePreferences
 import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
+import app.marlboroadvance.mpvex.preferences.LiquidTarget
 import app.marlboroadvance.mpvex.preferences.MultiChoiceSegmentedButton
 import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import app.marlboroadvance.mpvex.presentation.Screen
@@ -83,17 +86,21 @@ object AppearancePreferencesScreen : Screen {
             DarkMode.System -> systemDarkTheme
         }
 
-        // --- LIQUID GLASS STATE COLLECTIONS ---
         val isLiquidUIEnabled by liquidPreferences.liquidUIEnabledFlow.collectAsState(initial = false)
         val toggleColor by liquidPreferences.liquidToggleColorFlow.collectAsState(initial = 0xFF4CAF50)
         val sliderColor by liquidPreferences.liquidSliderColorFlow.collectAsState(initial = 0xFF2196F3)
-        val blurRadius by liquidPreferences.liquidBlurRadiusFlow.collectAsState(initial = 0f)
-        val refractionHeight by liquidPreferences.liquidRefractionHeightFlow.collectAsState(initial = 40f)
-        val refractionAmount by liquidPreferences.liquidRefractionAmountFlow.collectAsState(initial = 23f)
-        val tintAlpha by liquidPreferences.liquidTintAlphaFlow.collectAsState(initial = 0.15f)
-        val chromaticAberration by liquidPreferences.liquidChromaticAberrationFlow.collectAsState(initial = false)
-        val depthEffect by liquidPreferences.liquidDepthEffectFlow.collectAsState(initial = true)
-        val vibrancyEnabled by liquidPreferences.liquidVibrancyEnabledFlow.collectAsState(initial = true)
+
+        // --- THE ACTIVE TARGET STATE ---
+        var selectedTarget by remember { mutableStateOf(LiquidTarget.NAV) }
+
+        // --- SAFE DYNAMIC DATA LOADING (Wrapped in remember blocks) ---
+        val blurRadius by remember(selectedTarget) { liquidPreferences.blurRadiusFlow(selectedTarget) }.collectAsState(initial = 0f)
+        val refractionHeight by remember(selectedTarget) { liquidPreferences.refractionHeightFlow(selectedTarget) }.collectAsState(initial = 40f)
+        val refractionAmount by remember(selectedTarget) { liquidPreferences.refractionAmountFlow(selectedTarget) }.collectAsState(initial = 23f)
+        val tintAlpha by remember(selectedTarget) { liquidPreferences.tintAlphaFlow(selectedTarget) }.collectAsState(initial = 0.15f)
+        val chromaticAberration by remember(selectedTarget) { liquidPreferences.chromaticAberrationFlow(selectedTarget) }.collectAsState(initial = false)
+        val depthEffect by remember(selectedTarget) { liquidPreferences.depthEffectFlow(selectedTarget) }.collectAsState(initial = true)
+        val vibrancyEnabled by remember(selectedTarget) { liquidPreferences.vibrancyEnabledFlow(selectedTarget) }.collectAsState(initial = true)
 
         Scaffold(
             topBar = {
@@ -141,7 +148,6 @@ object AppearancePreferencesScreen : Screen {
 
                             PreferenceDivider()
 
-                            // --- LIQUID GLASS UI MASTER TOGGLE ---
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -181,7 +187,6 @@ object AppearancePreferencesScreen : Screen {
                                                 parseColorInput(newValue)?.let { colorLong -> scope.launch { liquidPreferences.setToggleColor(colorLong) } }
                                             },
                                             label = { Text("Toggle Color") },
-                                            placeholder = { Text("e.g. #FF5733") },
                                             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                                             singleLine = true,
                                             leadingIcon = { Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(toggleColor))) }
@@ -195,7 +200,6 @@ object AppearancePreferencesScreen : Screen {
                                                 parseColorInput(newValue)?.let { colorLong -> scope.launch { liquidPreferences.setSliderColor(colorLong) } }
                                             },
                                             label = { Text("Slider Color") },
-                                            placeholder = { Text("e.g. #00FF00") },
                                             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                                             singleLine = true,
                                             leadingIcon = { Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color(sliderColor))) }
@@ -204,14 +208,35 @@ object AppearancePreferencesScreen : Screen {
 
                                     PreferenceDivider()
                                     
-                                    // --- KYANT BACKDROP LIVE SLIDERS ---
-                                    Text("Backdrop Engine Tuning", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                                    // --- THE NEW PREMIUM TARGET SELECTOR ---
+                                    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text("Select UI Layer to Tune:", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(bottom = 8.dp))
+                                        Row(
+                                            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape).padding(4.dp),
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            LiquidTarget.values().forEach { target ->
+                                                val isSelected = selectedTarget == target
+                                                Surface(
+                                                    modifier = Modifier.clickable { selectedTarget = target }.padding(horizontal = 4.dp),
+                                                    shape = CircleShape,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                ) {
+                                                    Text(text = target.title, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // --- THE SLIDERS ---
+                                    Text("${selectedTarget.title} Tuning", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
 
                                     SliderPreference(
                                         value = blurRadius,
-                                        onValueChange = { v -> scope.launch { liquidPreferences.setBlurRadius(v) } },
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setBlurRadius(selectedTarget, v) } },
                                         sliderValue = blurRadius,
-                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setBlurRadius(v) } },
+                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setBlurRadius(selectedTarget, v) } },
                                         title = { Text("Blur Radius") },
                                         valueRange = 0f..64f,
                                         summary = { Text("${blurRadius.roundToInt()} px", color = MaterialTheme.colorScheme.outline) }
@@ -219,9 +244,9 @@ object AppearancePreferencesScreen : Screen {
 
                                     SliderPreference(
                                         value = refractionHeight,
-                                        onValueChange = { v -> scope.launch { liquidPreferences.setRefractionHeight(v) } },
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setRefractionHeight(selectedTarget, v) } },
                                         sliderValue = refractionHeight,
-                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setRefractionHeight(v) } },
+                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setRefractionHeight(selectedTarget, v) } },
                                         title = { Text("Refraction Height") },
                                         valueRange = 0f..100f,
                                         summary = { Text("${refractionHeight.roundToInt()} dp", color = MaterialTheme.colorScheme.outline) }
@@ -229,9 +254,9 @@ object AppearancePreferencesScreen : Screen {
 
                                     SliderPreference(
                                         value = refractionAmount,
-                                        onValueChange = { v -> scope.launch { liquidPreferences.setRefractionAmount(v) } },
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setRefractionAmount(selectedTarget, v) } },
                                         sliderValue = refractionAmount,
-                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setRefractionAmount(v) } },
+                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setRefractionAmount(selectedTarget, v) } },
                                         title = { Text("Refraction Amount") },
                                         valueRange = 0f..100f,
                                         summary = { Text("${refractionAmount.roundToInt()} dp", color = MaterialTheme.colorScheme.outline) }
@@ -239,9 +264,9 @@ object AppearancePreferencesScreen : Screen {
 
                                     SliderPreference(
                                         value = tintAlpha,
-                                        onValueChange = { v -> scope.launch { liquidPreferences.setTintAlpha(v) } },
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setTintAlpha(selectedTarget, v) } },
                                         sliderValue = tintAlpha,
-                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setTintAlpha(v) } },
+                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setTintAlpha(selectedTarget, v) } },
                                         title = { Text("Glass Opacity (Tint)") },
                                         valueRange = 0.0f..1.0f,
                                         summary = { Text("${(tintAlpha * 100).roundToInt()}%", color = MaterialTheme.colorScheme.outline) }
@@ -249,24 +274,23 @@ object AppearancePreferencesScreen : Screen {
 
                                     PreferenceDivider()
 
-                                    // --- KYANT BACKDROP LIVE SWITCHES ---
                                     LiquidSwitchPreference(
                                         value = depthEffect,
-                                        onValueChange = { v -> scope.launch { liquidPreferences.setDepthEffect(v) } },
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setDepthEffect(selectedTarget, v) } },
                                         title = { Text("Depth Effect") },
                                         summary = { Text("Enables 3D lens depth calculation", color = MaterialTheme.colorScheme.outline) }
                                     )
 
                                     LiquidSwitchPreference(
                                         value = chromaticAberration,
-                                        onValueChange = { v -> scope.launch { liquidPreferences.setChromaticAberration(v) } },
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setChromaticAberration(selectedTarget, v) } },
                                         title = { Text("Chromatic Aberration") },
                                         summary = { Text("Enables RGB color-split on glass edges", color = MaterialTheme.colorScheme.outline) }
                                     )
 
                                     LiquidSwitchPreference(
                                         value = vibrancyEnabled,
-                                        onValueChange = { v -> scope.launch { liquidPreferences.setVibrancyEnabled(v) } },
+                                        onValueChange = { v -> scope.launch { liquidPreferences.setVibrancyEnabled(selectedTarget, v) } },
                                         title = { Text("Vibrancy") },
                                         summary = { Text("Multiplies background saturation by 1.5x", color = MaterialTheme.colorScheme.outline) }
                                     )
@@ -274,8 +298,7 @@ object AppearancePreferencesScreen : Screen {
                             }
 
                             PreferenceDivider()
-                            // -------------------------------------
-
+                            
                             LiquidSwitchPreference(
                                 value = amoledMode,
                                 onValueChange = { newValue -> preferences.amoledMode.set(newValue) },
