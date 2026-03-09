@@ -12,22 +12,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import app.marlboroadvance.mpvex.preferences.LiquidTarget
 
-/**
- * UPGRADED: Reusable Transparent Liquid Button
- * Now wired directly to the 'Buttons' Tab in your Settings!
- */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TransparentLiquidButton(
     modifier: Modifier = Modifier,
     backdrop: Backdrop?,
     shape: Shape = CircleShape,
-    target: LiquidTarget = LiquidTarget.BUTTON, // Listens to the Buttons Settings!
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
@@ -44,9 +39,9 @@ fun TransparentLiquidButton(
 
     val interactionSource = remember { MutableInteractionSource() }
 
+    // Calls the engine directly—it automatically reads your live DataStore flows!
     LiquidGlassSurface(
         backdrop = backdrop,
-        target = target, // Connects to the lens engine!
         shape = shape,
         modifier = modifier
             .clip(shape)
@@ -66,28 +61,21 @@ fun TransparentLiquidButton(
     }
 }
 
-/**
- * UPGRADED: Reusable Liquid Glass Card 
- * Now wired directly to the 'Dialogs' Tab in your Settings!
- */
 @Composable
 fun LiquidGlassCard(
     modifier: Modifier = Modifier,
     backdrop: Backdrop?,
-    onClick: () -> Unit = {},
+    shape: Shape = RoundedCornerShape(12.dp),
     content: @Composable () -> Unit
 ) {
     if (backdrop == null) {
-        androidx.compose.foundation.layout.Box(modifier = modifier) { 
-            content() 
-        }
+        androidx.compose.foundation.layout.Box(modifier = modifier) { content() }
         return
     }
 
     LiquidGlassSurface(
         backdrop = backdrop,
-        target = LiquidTarget.DIALOG, // Connects to the Dialogs Settings!
-        shape = RoundedCornerShape(12.dp),
+        shape = shape,
         modifier = modifier
     ) {
         content()
