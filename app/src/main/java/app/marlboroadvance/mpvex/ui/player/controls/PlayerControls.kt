@@ -1501,3 +1501,61 @@ fun PlayerControls(
     )
   }
 }
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+fun LiquidCustomButton(
+    button: app.marlboroadvance.mpvex.preferences.PlayerButton,
+    liquidUIEnabled: Boolean,
+    backdrop: com.kyant.backdrop.Backdrop,
+    viewModel: app.marlboroadvance.mpvex.ui.player.PlayerViewModel,
+    haptic: androidx.compose.ui.hapticfeedback.HapticFeedback,
+    onInteract: () -> Unit
+) {
+    if (liquidUIEnabled) {
+        app.marlboroadvance.mpvex.ui.components.liquid.TransparentLiquidButton(
+            backdrop = backdrop,
+            onClick = {
+                onInteract()
+                viewModel.callCustomButton(button.id)
+            },
+            onLongClick = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                onInteract()
+                viewModel.callCustomButtonLongPress(button.id)
+            }
+        ) {
+            androidx.compose.material3.Text(
+                text = button.label,
+                modifier = androidx.compose.ui.Modifier.padding(horizontal = 16.dp, vertical = 8.dp).androidx.compose.foundation.basicMarquee(),
+                style = androidx.compose.material3.MaterialTheme.typography.labelLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                maxLines = 1,
+                softWrap = false,
+                color = androidx.compose.ui.graphics.Color.White
+            )
+        }
+    } else {
+        val interactionSource = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+        androidx.compose.material3.Surface(
+            shape = androidx.compose.foundation.shape.CircleShape,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+            contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onSecondaryContainer,
+            border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.material3.MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
+            modifier = androidx.compose.ui.Modifier.clip(androidx.compose.foundation.shape.CircleShape).combinedClickable(
+                interactionSource = interactionSource,
+                indication = androidx.compose.material3.ripple(),
+                onClick = { onInteract(); viewModel.callCustomButton(button.id) },
+                onLongClick = { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove); onInteract(); viewModel.callCustomButtonLongPress(button.id) }
+            )
+        ) {
+            androidx.compose.material3.Text(
+                text = button.label,
+                modifier = androidx.compose.ui.Modifier.padding(horizontal = 12.dp, vertical = 6.dp).androidx.compose.foundation.basicMarquee(),
+                style = androidx.compose.material3.MaterialTheme.typography.labelLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                maxLines = 1,
+                softWrap = false
+            )
+        }
+    }
+}
+
