@@ -1,57 +1,76 @@
 package app.marlboroadvance.mpvex.ui.components.liquid
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import app.marlboroadvance.mpvex.ui.theme.LiquidUIEffects
-import com.kyant.backdrop.drawBackdrop
+import app.marlboroadvance.mpvex.preferences.LiquidTarget
 
 /**
- * Reusable Transparent Liquid Button
- * Perfect for Play/Pause/Seek controls over the video player
+ * UPGRADED: Reusable Transparent Liquid Button
+ * Now supports Long-Presses and Dynamic Target Settings!
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TransparentLiquidButton(
     modifier: Modifier = Modifier,
     backdrop: Backdrop?,
+    shape: Shape = CircleShape,
+    target: LiquidTarget = LiquidTarget.BUTTON, // Listens to your new Buttons Tab!
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
-    // If liquid UI is disabled or backdrop is missing, show standard button
+    // If liquid UI is disabled or backdrop is missing, show standard clickable box
     if (backdrop == null) {
-        IconButton(onClick = onClick, modifier = modifier) { content() }
+        Box(
+            modifier = modifier
+                .clip(shape)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick
+                ),
+            contentAlignment = Alignment.Center
+        ) { content() }
         return
     }
 
-    Surface(
+    val interactionSource = remember { MutableInteractionSource() }
+
+    // Wraps our master glass engine with long-press physics!
+    LiquidGlassSurface(
+        backdrop = backdrop,
+        target = target,
+        shape = shape,
         modifier = modifier
-            .drawBackdrop(
-                backdrop = backdrop,
-                shape = { CircleShape },
-                // Calls the lambda from your fixed LiquidUIEffects.kt
-                effects = LiquidUIEffects.glassButtonEffects(), 
-                // Using an ultra-light overlay to ensure it remains a truly transparent liquid button
-                onDrawSurface = { drawRect(Color.White.copy(alpha = 0.1f)) }
-            ),
-        shape = CircleShape,
-        // Critical: The Surface itself must be transparent so the backdrop shows through
-        color = Color.Transparent 
+            .clip(shape)
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = ripple(),
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
     ) {
-        IconButton(onClick = onClick) { 
-            content() 
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            content()
         }
     }
 }
+
 
 /**
  * Reusable Liquid Glass Card 
