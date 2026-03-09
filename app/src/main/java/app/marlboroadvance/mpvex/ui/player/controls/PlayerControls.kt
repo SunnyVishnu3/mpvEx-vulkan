@@ -167,8 +167,14 @@ fun PlayerControls(
   val liquidUIEnabled by liquidUIPreferences.liquidUIEnabledFlow.collectAsState(initial = false) 
   
   // The engine that captures the screen for the blur/lens effects
-  val backdrop = rememberLayerBackdrop {
-      drawContent()
+  val backdrop = rememberLayerBackdrop { drawContent() }
+
+  // Turn on the broadcast tower!
+  androidx.compose.runtime.CompositionLocalProvider(
+      app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop provides (if (liquidUIEnabled) backdrop else null)
+  ) {
+      Box(modifier = modifier.fillMaxSize()) {
+        if (controlsShown) {
   }
   val hideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
   val playerPreferences = koinInject<PlayerPreferences>()
