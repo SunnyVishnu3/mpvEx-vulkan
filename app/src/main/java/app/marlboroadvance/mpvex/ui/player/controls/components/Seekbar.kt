@@ -333,6 +333,7 @@ fun LiquidSeekbar(
                         lens(
                              refractionHeight = 30f.dp.toPx(), * pressProgress
                              refractionAmount = 20f.dp.toPx(), * pressProgress
+                          )
                     },
                     onDrawSurface = {
                         // Glass appearance
