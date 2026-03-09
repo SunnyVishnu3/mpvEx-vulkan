@@ -230,119 +230,163 @@ fun SeekbarWithTimers(
 // NEW: LIQUID SEEKBAR (Kyant Lens & Fade Mechanics)
 // =========================================================================
 @Composable
-fun LiquidSeekbar(
-    position: Float,
-    duration: Float,
-    chapters: List<Segment>, // Assuming Segment is your data class
-    isScrubbing: Boolean = false,
-    loopStart: Float? = null,
-    loopEnd: Float? = null,
-    liquidColor: Color = Color.Unspecified,
-    modifier: Modifier = Modifier,
+fun LiquidSlider(
+    value: () -> Float,
+    onValueChange: (Float) -> Unit,
+    valueRange: ClosedFloatingPointRange<Float>,
+    visibilityThreshold: Float,
+    backdrop: Backdrop,
+    modifier: Modifier = Modifier
 ) {
     val activeColor = if (liquidColor.isSpecified) liquidColor else MaterialTheme.colorScheme.primary
     
-    val pressProgress by animateFloatAsState(
-        targetValue = if (isScrubbing) 1f else 0f, // Changed to 1f when scrubbing to trigger effects
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
-        label = "pressProgress"
-    )
+        val trackBackdrop = rememberLayerBackdrop()
 
-    val thumbWidth = androidx.compose.ui.unit.lerp(32.dp, 56.dp, pressProgress)
-    val thumbHeight = 32.dp
-    
-    // 1. Correct Backdrop initialization (No lambda in brackets)
-    val backdrop = rememberLayerBackdrop()
-
-    androidx.compose.foundation.layout.BoxWithConstraints(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(32.dp),
+    BoxWithConstraints(
+        modifier.fillMaxWidth(),
         contentAlignment = Alignment.CenterStart
     ) {
-        val trackWidthPx = constraints.maxWidth.toFloat()
-        val progress = if (duration > 0f) (position / duration).coerceIn(0f, 1f) else 0f
-        val playedPx = trackWidthPx * progress
-        
-        Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(CircleShape)
-                // 2. Set this Canvas as the source for 'backdrop'
-                .layerBackdrop(backdrop) 
-        ) {
-            val chapterGapHalf = 1.dp.toPx()
-            val chapterGaps = chapters
-                .map { (it.start / duration).coerceIn(0f, 1f) * size.width }
-                .filter { it > 0f && it < size.width }
-                .map { x -> (x - chapterGapHalf) to (x + chapterGapHalf) }
-            
-            fun drawRangeWithGaps(rangeStart: Float, rangeEnd: Float, gaps: List<Pair<Float, Float>>, color: Color) {
-                if (rangeEnd <= rangeStart) return
-                val relevantGaps = gaps.filter { (gStart, gEnd) -> gEnd > rangeStart && gStart < rangeEnd }.sortedBy { it.first }
-                var currentPos = rangeStart
-                for ((gStart, gEnd) in relevantGaps) {
-                    val segmentEnd = gStart.coerceAtMost(rangeEnd)
-                    if (segmentEnd > currentPos) {
-                        drawRect(color, topLeft = Offset(currentPos, 0f), size = Size(segmentEnd - currentPos, size.height))
-                    }
-                    currentPos = gEnd.coerceAtLeast(currentPos)
-                }
-                if (currentPos < rangeEnd) {
-                    drawRect(color, topLeft = Offset(currentPos, 0f), size = Size(rangeEnd - currentPos, size.height))
-                }
-            }
-            
-            // Draw Unplayed Track
-            drawRangeWithGaps(0f, size.width, chapterGaps, activeColor.copy(alpha = 0.3f))
-            
-            // Draw Played Track
-            if (playedPx > 0) {
-                drawRangeWithGaps(0f, playedPx, chapterGaps, activeColor)
-            }
+        val trackWidth = constraints.maxWidth
 
-            // Loop Markers
-            if (loopStart != null || loopEnd != null) {
-                val loopColor = Color(0xFFFFB300)
-                val markerWidth = 2.dp.toPx()
-                if (loopStart != null) {
-                    val x = (loopStart / duration).coerceIn(0f, 1f) * size.width
-                    drawLine(color = loopColor, start = Offset(x, 0f), end = Offset(x, size.height), strokeWidth = markerWidth)
+        val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
+        val animationScope = rememberCoroutineScope()
+        var didDrag by remember { mutableStateOf(false) }
+        val dampedDragAnimation = remember(animationScope) {
+            DampedDragAnimation(
+                animationScope = animationScope,
+                initialValue = value(),
+                valueRange = valueRange,
+                visibilityThreshold = visibilityThreshold,
+                initialScale = 1f,
+                pressedScale = 1.5f,
+                onDragStarted = {},
+                onDragStopped = {
+                    if (didDrag) {
+                        onValueChange(targetValue)
+                    }
+                },
+                onDrag = { _, dragAmount ->
+                    if (!didDrag) {
+                        didDrag = dragAmount.x != 0f
+                    }
+                    val delta = (valueRange.endInclusive - valueRange.start) * (dragAmount.x / trackWidth)
+                    onValueChange(
+                        if (isLtr) (targetValue + delta).coerceIn(valueRange)
+                        else (targetValue - delta).coerceIn(valueRange)
+                    )
                 }
-                if (loopEnd != null) {
-                    val x = (loopEnd / duration).coerceIn(0f, 1f) * size.width
-                    drawLine(color = loopColor, start = Offset(x, 0f), end = Offset(x, size.height), strokeWidth = markerWidth)
-                }
-            }
+            )
         }
-        
+        LaunchedEffect(dampedDragAnimation) {
+            snapshotFlow { value() }
+                .collectLatest { value ->
+                    if (dampedDragAnimation.targetValue != value) {
+                        dampedDragAnimation.updateValue(value)
+                    }
+                }
+        }
+
+        Box(Modifier.layerBackdrop(trackBackdrop)) {
+            Box(
+                Modifier
+                    .clip(Capsule())
+                    .pointerInput(animationScope) {
+                        detectTapGestures { position ->
+                            val delta = (valueRange.endInclusive - valueRange.start) * (position.x / trackWidth)
+                            val targetValue =
+                                (if (isLtr) valueRange.start + delta
+                                else valueRange.endInclusive - delta)
+                                    .coerceIn(valueRange)
+                            dampedDragAnimation.animateToValue(targetValue)
+                            onValueChange(targetValue)
+                        }
+                    }
+                    .height(6f.dp)
+                    .fillMaxWidth()
+            )
+
+            Box(
+                Modifier
+                    .clip(Capsule())
+                    .height(6f.dp)
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        val width = (constraints.maxWidth * dampedDragAnimation.progress).fastRoundToInt()
+                        layout(width, placeable.height) {
+                            placeable.place(0, 0)
+                        }
+                    }
+            )
+        }
+
         Box(
-            modifier = Modifier
-                .offset { androidx.compose.ui.unit.IntOffset((playedPx - (thumbWidth.toPx() / 2)).roundToInt(), 0) }
-                .width(thumbWidth)
-                .height(thumbHeight)
+            Modifier
+                .graphicsLayer {
+                    translationX =
+                        (-size.width / 2f + trackWidth * dampedDragAnimation.progress)
+                            .fastCoerceIn(-size.width / 4f, trackWidth - size.width * 3f / 4f) * if (isLtr) 1f else -1f
+                }
+                .then(dampedDragAnimation.modifier)
                 .drawBackdrop(
-                    // 3. Use the defined backdrop variable
-                    backdrop = backdrop,
-                    shape = { CircleShape },
+                    backdrop = rememberCombinedBackdrop(
+                        backdrop,
+                        rememberBackdrop(trackBackdrop) { drawBackdrop ->
+                            val progress = dampedDragAnimation.pressProgress
+                            val scaleX = lerp(2f / 3f, 1f, progress)
+                            val scaleY = lerp(0f, 1f, progress)
+                            scale(scaleX, scaleY) {
+                                drawBackdrop()
+                            }
+                        }
+                    ),
+                    shape = { Capsule() },
                     effects = {
-                        vibrancy()
-                        // 4. Corrected effects logic for alpha03
-                        blur(8.dp.toPx() * (1f - pressProgress))
+                        val progress = dampedDragAnimation.pressProgress
+                        blur(8f.dp.toPx() * (1f - progress))
                         lens(
-                             refractionHeight = 30f.dp.toPx() * pressProgress,
-                             refractionAmount = 20f.dp.toPx() * pressProgress,
-                          )
+                            10f.dp.toPx() * progress,
+                            14f.dp.toPx() * progress,
+                            chromaticAberration = true
+                        )
+                    },
+                    highlight = {
+                        val progress = dampedDragAnimation.pressProgress
+                        Highlight.Ambient.copy(
+                            width = Highlight.Ambient.width / 1.5f,
+                            blurRadius = Highlight.Ambient.blurRadius / 1.5f,
+                            alpha = progress
+                        )
+                    },
+                    shadow = {
+                        Shadow(
+                            radius = 4f.dp,
+                            color = Color.Black.copy(alpha = 0.05f)
+                        )
+                    },
+                    innerShadow = {
+                        val progress = dampedDragAnimation.pressProgress
+                        InnerShadow(
+                            radius = 4f.dp * progress,
+                            alpha = progress
+                        )
+                    },
+                    layerBlock = {
+                        scaleX = dampedDragAnimation.scaleX
+                        scaleY = dampedDragAnimation.scaleY
+                        val velocity = dampedDragAnimation.velocity / 10f
+                        scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
+                        scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
                     },
                     onDrawSurface = {
-                        // Glass appearance
-                        drawRect(Color.White.copy(alpha = 0.1f * (1f - pressProgress)))
+                        val progress = dampedDragAnimation.pressProgress
+                        drawRect(Color.White.copy(alpha = 1f - progress))
                     }
                 )
-        )
-    }
-}
+                .size(40f.dp, 24f.dp)
+         )
+     }
+ }
+
 
 
 // =========================================================================
