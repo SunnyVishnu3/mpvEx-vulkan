@@ -29,6 +29,7 @@ class LiquidUIPreferences(context: Context) {
         // Legacy Keys to prevent crashes in other screens
         val LIQUID_BLUR_ENABLED = booleanPreferencesKey("liquid_blur_enabled")
         val LIQUID_LENS_ENABLED = booleanPreferencesKey("liquid_lens_enabled")
+        val LIQUID_VIBRANCY_ENABLED_LEGACY = booleanPreferencesKey("liquid_vibrancy_enabled_legacy")
     }
 
     // Master Toggles
@@ -59,4 +60,15 @@ class LiquidUIPreferences(context: Context) {
     suspend fun setChromaticAberration(target: LiquidTarget, enabled: Boolean) { dataStore.edit { it[booleanPreferencesKey("${target.id}_chromatic")] = enabled } }
     suspend fun setDepthEffect(target: LiquidTarget, enabled: Boolean) { dataStore.edit { it[booleanPreferencesKey("${target.id}_depth")] = enabled } }
     suspend fun setVibrancyEnabled(target: LiquidTarget, enabled: Boolean) { dataStore.edit { it[booleanPreferencesKey("${target.id}_vibrancy")] = enabled } }
+
+    // --- LEGACY FALLBACKS (Keeps LiquidUISettingsScreen.kt from crashing!) ---
+    val liquidBlurEnabledFlow: Flow<Boolean> = dataStore.data.map { it[LIQUID_BLUR_ENABLED] ?: true }
+    val liquidLensEnabledFlow: Flow<Boolean> = dataStore.data.map { it[LIQUID_LENS_ENABLED] ?: true }
+    val liquidVibrancyEnabledFlow: Flow<Boolean> = dataStore.data.map { it[LIQUID_VIBRANCY_ENABLED_LEGACY] ?: true }
+
+    suspend fun setBlurEnabled(enabled: Boolean) { dataStore.edit { it[LIQUID_BLUR_ENABLED] = enabled } }
+    suspend fun setLensEnabled(enabled: Boolean) { dataStore.edit { it[LIQUID_LENS_ENABLED] = enabled } }
+    
+    // This perfectly satisfies the old screen while leaving the new engine untouched!
+    suspend fun setVibrancyEnabled(enabled: Boolean) { dataStore.edit { it[LIQUID_VIBRANCY_ENABLED_LEGACY] = enabled } }
 }
