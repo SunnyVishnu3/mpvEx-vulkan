@@ -27,7 +27,6 @@ fun TransparentLiquidButton(
     backdrop: Backdrop?,
     shape: Shape = CircleShape,
     onClick: () -> Unit,
-    target: LiquidTarget = LiquidTarget.BUTTON,
     onLongClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
@@ -48,7 +47,6 @@ fun TransparentLiquidButton(
         backdrop = backdrop,
         shape = shape,
         modifier = modifier
-        target = target, // Connects to the lens engine!
             .clip(shape)
             .combinedClickable(
                 interactionSource = interactionSource,
