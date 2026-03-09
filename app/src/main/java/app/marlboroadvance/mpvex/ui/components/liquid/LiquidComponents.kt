@@ -24,6 +24,7 @@ fun TransparentLiquidButton(
     backdrop: Backdrop?,
     shape: Shape = CircleShape,
     onClick: () -> Unit,
+    target: LiquidTarget = LiquidTarget.BUTTON,
     onLongClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
