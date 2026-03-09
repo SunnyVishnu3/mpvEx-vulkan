@@ -319,8 +319,9 @@ fun LiquidSeekbar(
         
         Box(
             modifier = Modifier
-                .offset { IntOffset((playedPx - (thumbWidth.toPx() / 2)).roundToInt(), 0) }
-                .size(width = thumbWidth, height = thumbHeight)
+                .offset { androidx.compose.ui.unit.IntOffset((playedPx - (thumbWidth.toPx() / 2)).roundToInt(), 0) }
+                .width(thumbWidth)
+                .height(thumbHeight)
                 .drawBackdrop(
                     // 3. Use the defined backdrop variable
                     backdrop = backdrop,
@@ -330,8 +331,8 @@ fun LiquidSeekbar(
                         // 4. Corrected effects logic for alpha03
                         blur(8.dp.toPx() * (1f - pressProgress))
                         lens(
-                             refractionHeight = 30f.dp.toPx(),
-                             refractionAmount = 20f.dp.toPx(),
+                             refractionHeight = 30f.dp.toPx(), *pressProgress
+                             refractionAmount = 20f.dp.toPx(), *pressProgress
                     },
                     onDrawSurface = {
                         // Glass appearance
