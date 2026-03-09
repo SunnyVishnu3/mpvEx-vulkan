@@ -16,6 +16,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
+// Broadcasts the glass camera to any button that wants it!
+val LocalLiquidBackdrop = androidx.compose.runtime.staticCompositionLocalOf<com.kyant.backdrop.Backdrop?> { null }
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
