@@ -22,6 +22,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.toArgb
@@ -51,7 +52,8 @@ import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 
 // --- NEW LIQUID IMPORTS ---
-import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop
 
 /**
@@ -97,14 +99,14 @@ class MainActivity : ComponentActivity() {
       }
 
       MpvexTheme {
-        Surface {
-          // THE MAGIC SAUCE: We turn the Liquid Camera on at the root of the app!
-          Backdrop { backdrop ->
-            CompositionLocalProvider(
-              LocalLiquidBackdrop provides backdrop
-            ) {
-              Navigator()
-            }
+        // THE MAGIC SAUCE: We initialize the Liquid Camera properly!
+        val backdrop = rememberLayerBackdrop()
+        
+        Surface(modifier = Modifier.layerBackdrop(backdrop)) {
+          CompositionLocalProvider(
+            LocalLiquidBackdrop provides backdrop
+          ) {
+            Navigator()
           }
         }
       }
