@@ -229,7 +229,8 @@ fun RenderPlayerButton(
             backdrop = backdrop, modifier = Modifier.height(buttonSize), shape = CircleShape,
             onClick = { clickEvent(); onOpenSheet(Sheets.Decoders) }
           ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)) {
+            // SHRUNK: horizontal padding is now 8.dp to make it a compact badge!
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 8.dp, vertical = MaterialTheme.spacing.small)) {
               Text(decoder.title, maxLines = 1, color = Color.White, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
             }
           }
@@ -244,7 +245,8 @@ fun RenderPlayerButton(
             onClick = { clickEvent(); onOpenSheet(Sheets.Decoders) }
           )
         ) {
-          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)) {
+          // SHRUNK: horizontal padding is now 8.dp here too!
+          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 8.dp, vertical = MaterialTheme.spacing.small)) {
             Text(text = decoder.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
           }
         }
