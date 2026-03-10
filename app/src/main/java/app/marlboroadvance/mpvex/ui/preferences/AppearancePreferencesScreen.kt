@@ -62,6 +62,9 @@ import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+
 
 @Serializable
 object AppearancePreferencesScreen : Screen {
@@ -208,11 +211,16 @@ object AppearancePreferencesScreen : Screen {
 
                                     PreferenceDivider()
                                     
-                                    // --- THE NEW PREMIUM TARGET SELECTOR ---
+                                                                        // --- THE NEW PREMIUM TARGET SELECTOR ---
                                     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text("Select UI Layer to Tune:", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(bottom = 8.dp))
+                                        
+                                        // The Row is now safely scrollable so it won't break its layout!
                                         Row(
-                                            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape).padding(4.dp),
+                                            modifier = Modifier
+                                                .horizontalScroll(rememberScrollState()) 
+                                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
+                                                .padding(4.dp),
                                             horizontalArrangement = Arrangement.Center
                                         ) {
                                             LiquidTarget.values().forEach { target ->
@@ -223,11 +231,18 @@ object AppearancePreferencesScreen : Screen {
                                                     color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                                                     contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                                                 ) {
-                                                    Text(text = target.title, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                                                    // maxLines = 1 completely prevents the "wrapping" bug
+                                                    Text(
+                                                        text = target.title, 
+                                                        maxLines = 1, 
+                                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), 
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                                    )
                                                 }
                                             }
                                         }
                                     }
+
 
                                     // --- THE SLIDERS ---
                                     Text("${selectedTarget.title} Tuning", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
