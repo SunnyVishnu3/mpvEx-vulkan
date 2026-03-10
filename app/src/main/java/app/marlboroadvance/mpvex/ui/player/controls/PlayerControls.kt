@@ -1,5 +1,9 @@
 package app.marlboroadvance.mpvex.ui.player.controls
 
+import androidx.compose.ui.platform.LocalContext
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
+import app.marlboroadvance.mpvex.ui.components.liquid.TransparentLiquidButton
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -157,6 +161,14 @@ fun PlayerControls(
 ) {
   val spacing = MaterialTheme.spacing
   val appearancePreferences = koinInject<AppearancePreferences>()
+  val context = LocalContext.current
+  val liquidUIPreferences = remember { LiquidUIPreferences(context) }
+  // Wired directly to the DataStore, defaults to false until toggled
+  val liquidUIEnabled by liquidUIPreferences.liquidUIEnabledFlow.collectAsState(initial = false) 
+  
+  // The engine that captures the screen for the blur/lens effects
+  val backdrop = rememberLayerBackdrop { drawContent() }
+
   val hideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
   val playerPreferences = koinInject<PlayerPreferences>()
   val audioPreferences = koinInject<AudioPreferences>()
@@ -261,7 +273,7 @@ fun PlayerControls(
     label = "controls_transparent_overlay",
   )
 
-  GestureHandler(
+    GestureHandler(
     viewModel = viewModel,
     interactionSource = interactionSource,
   )
@@ -272,6 +284,8 @@ fun PlayerControls(
     LocalRippleConfiguration provides playerRippleConfiguration,
     LocalPlayerButtonsClickEvent provides { resetControlsTimestamp = System.currentTimeMillis() },
     LocalContentColor provides Color.White,
+    // THE CLEAN BROADCAST TOWER!
+    app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop provides (if (liquidUIEnabled) backdrop else null),
   ) {
     CompositionLocalProvider(
       LocalLayoutDirection provides LayoutDirection.Ltr,
@@ -616,37 +630,8 @@ fun PlayerControls(
                     .horizontalScroll(rememberScrollState())
             ) {
                 customButtons.filter { it.isLeft }.forEach { button ->
-                    val buttonInteractionSource = remember { MutableInteractionSource() }
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .combinedClickable(
-                                interactionSource = buttonInteractionSource,
-                                indication = ripple(),
-                                onClick = {
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButton(button.id)
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButtonLongPress(button.id)
-                                }
-                            )
-                    ) {
-                        Text(
-                            text = button.label,
-                            modifier = Modifier
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                                .basicMarquee(),
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                            softWrap = false
-                        )
+                    LiquidCustomButton(button, liquidUIEnabled, backdrop, viewModel, haptic) { 
+                        resetControlsTimestamp = System.currentTimeMillis() 
                     }
                 }
             }
@@ -673,37 +658,8 @@ fun PlayerControls(
                     .horizontalScroll(rememberScrollState(), reverseScrolling = true)
             ) {
                 customButtons.filter { !it.isLeft }.forEach { button ->
-                    val buttonInteractionSource = remember { MutableInteractionSource() }
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .combinedClickable(
-                                interactionSource = buttonInteractionSource,
-                                indication = ripple(),
-                                onClick = {
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButton(button.id)
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButtonLongPress(button.id)
-                                }
-                            )
-                    ) {
-                        Text(
-                            text = button.label,
-                            modifier = Modifier
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                                .basicMarquee(),
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                            softWrap = false
-                        )
+                    LiquidCustomButton(button, liquidUIEnabled, backdrop, viewModel, haptic) { 
+                        resetControlsTimestamp = System.currentTimeMillis() 
                     }
                 }
             }
@@ -729,37 +685,8 @@ fun PlayerControls(
                     .horizontalScroll(rememberScrollState())
             ) {
                 customButtons.forEach { button ->
-                    val buttonInteractionSource = remember { MutableInteractionSource() }
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .combinedClickable(
-                                interactionSource = buttonInteractionSource,
-                                indication = ripple(),
-                                onClick = {
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButton(button.id)
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButtonLongPress(button.id)
-                                }
-                            )
-                    ) {
-                        Text(
-                            text = button.label,
-                            modifier = Modifier
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
-                                .basicMarquee(),
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                            softWrap = false
-                        )
+                    LiquidCustomButton(button, liquidUIEnabled, backdrop, viewModel, haptic) { 
+                        resetControlsTimestamp = System.currentTimeMillis() 
                     }
                 }
             }
@@ -810,74 +737,247 @@ fun PlayerControls(
               )
             }
 
-            else -> {
-              val buttonShadow =
-                Brush.radialGradient(
-                  0.0f to Color.Black.copy(alpha = 0.3f),
-                  0.7f to Color.Transparent,
-                  1.0f to Color.Transparent,
-                )
-
-              if (playlistMode && viewModel.hasPlaylistSupport()) {
-                androidx.compose.foundation.layout.Row(
-                  horizontalArrangement = Arrangement.spacedBy(24.dp),
-                  verticalAlignment = Alignment.CenterVertically,
-                ) {
-                  Surface(
-                    modifier =
-                      Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .clickable(
-                          enabled = viewModel.hasPrevious(),
-                          onClick = {
-                            resetControlsTimestamp = System.currentTimeMillis()
-                            if (viewModel.hasPrevious()) viewModel.playPrevious()
-                          },
-                        )
-                        .then(
-                          if (hideBackground) {
-                            Modifier.background(brush = buttonShadow, shape = CircleShape)
-                          } else {
-                            Modifier
-                          },
-                        ),
-                    shape = CircleShape,
-                    color =
-                      if (!hideBackground) {
-                        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
-                      } else {
-                        Color.Transparent
-                      },
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                    tonalElevation = 0.dp,
-                    shadowElevation = 0.dp,
-                    border =
-                      if (!hideBackground) {
-                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                      } else {
-                        null
-                      },
+         else -> {
+              if (liquidUIEnabled) {
+                // --- LIQUID GLASS UI ---
+                if (playlistMode && viewModel.hasPlaylistSupport()) {
+                  androidx.compose.foundation.layout.Row(
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                   ) {
-                    Icon(
-                      imageVector = Icons.Default.SkipPrevious,
-                      contentDescription = "Previous",
-                      tint =
-                        if (viewModel.hasPrevious()) {
-                          if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface
-                        } else {
-                          if (hideBackground) {
-                            controlColor.copy(alpha = 0.38f)
-                          } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                          }
-                        },
-                      modifier = Modifier
-                        .fillMaxSize()
-                        .padding(MaterialTheme.spacing.small),
+                    TransparentLiquidButton(
+                      modifier = Modifier.size(56.dp),
+                      backdrop = backdrop,
+                      onClick = {
+                        resetControlsTimestamp = System.currentTimeMillis()
+                        if (viewModel.hasPrevious()) viewModel.playPrevious()
+                      }
+                    ) {
+                      Icon(
+                        imageVector = Icons.Default.SkipPrevious,
+                        contentDescription = "Previous",
+                        tint = if (viewModel.hasPrevious()) Color.White else Color.White.copy(alpha = 0.38f),
+                        modifier = Modifier.fillMaxSize().padding(MaterialTheme.spacing.small)
+                      )
+                    }
+
+                    TransparentLiquidButton(
+                      modifier = Modifier.size(64.dp),
+                      backdrop = backdrop,
+                      onClick = {
+                        resetControlsTimestamp = System.currentTimeMillis()
+                        viewModel.pauseUnpause()
+                      }
+                    ) {
+                      Image(
+                        painter = rememberAnimatedVectorPainter(icon, paused == false),
+                        modifier = Modifier.fillMaxSize().padding(MaterialTheme.spacing.medium),
+                        contentDescription = "Play/Pause",
+                        colorFilter = ColorFilter.tint(Color.White)
+                      )
+                    }
+
+                    TransparentLiquidButton(
+                      modifier = Modifier.size(56.dp),
+                      backdrop = backdrop,
+                      onClick = {
+                        resetControlsTimestamp = System.currentTimeMillis()
+                        if (viewModel.hasNext()) viewModel.playNext()
+                      }
+                    ) {
+                      Icon(
+                        imageVector = Icons.Default.SkipNext,
+                        contentDescription = "Next",
+                        tint = if (viewModel.hasNext()) Color.White else Color.White.copy(alpha = 0.38f),
+                        modifier = Modifier.fillMaxSize().padding(MaterialTheme.spacing.small)
+                      )
+                    }
+                  }
+                } else {
+                  TransparentLiquidButton(
+                    modifier = Modifier.size(64.dp),
+                    backdrop = backdrop,
+                    onClick = {
+                      resetControlsTimestamp = System.currentTimeMillis()
+                      viewModel.pauseUnpause()
+                    }
+                  ) {
+                    Image(
+                      painter = rememberAnimatedVectorPainter(icon, paused == false),
+                      modifier = Modifier.fillMaxSize().padding(MaterialTheme.spacing.medium),
+                      contentDescription = "Play/Pause",
+                      colorFilter = ColorFilter.tint(Color.White)
                     )
                   }
+                }
+              } else {
+                // --- STANDARD FALLBACK UI (EXACTLY AS IT WAS) ---
+                val buttonShadow =
+                  Brush.radialGradient(
+                    0.0f to Color.Black.copy(alpha = 0.3f),
+                    0.7f to Color.Transparent,
+                    1.0f to Color.Transparent,
+                  )
 
+                if (playlistMode && viewModel.hasPlaylistSupport()) {
+                  androidx.compose.foundation.layout.Row(
+                    horizontalArrangement = Arrangement.spacedBy(24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                  ) {
+                    Surface(
+                      modifier =
+                        Modifier
+                          .size(56.dp)
+                          .clip(CircleShape)
+                          .clickable(
+                            enabled = viewModel.hasPrevious(),
+                            onClick = {
+                              resetControlsTimestamp = System.currentTimeMillis()
+                              if (viewModel.hasPrevious()) viewModel.playPrevious()
+                            },
+                          )
+                          .then(
+                            if (hideBackground) {
+                              Modifier.background(brush = buttonShadow, shape = CircleShape)
+                            } else {
+                              Modifier
+                            },
+                          ),
+                      shape = CircleShape,
+                      color =
+                        if (!hideBackground) {
+                          MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
+                        } else {
+                          Color.Transparent
+                        },
+                      contentColor = MaterialTheme.colorScheme.onSurface,
+                      tonalElevation = 0.dp,
+                      shadowElevation = 0.dp,
+                      border =
+                        if (!hideBackground) {
+                          BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                        } else {
+                          null
+                        },
+                    ) {
+                      Icon(
+                        imageVector = Icons.Default.SkipPrevious,
+                        contentDescription = "Previous",
+                        tint =
+                          if (viewModel.hasPrevious()) {
+                            if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface
+                          } else {
+                            if (hideBackground) {
+                              controlColor.copy(alpha = 0.38f)
+                            } else {
+                              MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            }
+                          },
+                        modifier = Modifier
+                          .fillMaxSize()
+                          .padding(MaterialTheme.spacing.small),
+                      )
+                    }
+
+                    Surface(
+                      modifier =
+                        Modifier
+                          .size(64.dp)
+                          .clip(CircleShape)
+                          .clickable(interaction, ripple(), onClick = {
+                            resetControlsTimestamp = System.currentTimeMillis()
+                            viewModel.pauseUnpause()
+                          })
+                          .then(
+                            if (hideBackground) {
+                              Modifier.background(brush = buttonShadow, shape = CircleShape)
+                            } else {
+                              Modifier
+                            },
+                          ),
+                      shape = CircleShape,
+                      color =
+                        if (!hideBackground) {
+                          MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
+                        } else {
+                          Color.Transparent
+                        },
+                      contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+                      tonalElevation = 0.dp,
+                      shadowElevation = 0.dp,
+                      border =
+                        if (!hideBackground) {
+                          BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                        } else {
+                          null
+                        },
+                    ) {
+                      Image(
+                        painter = rememberAnimatedVectorPainter(icon, paused == false),
+                        modifier = Modifier
+                          .fillMaxSize()
+                          .padding(MaterialTheme.spacing.medium),
+                        contentDescription = null,
+                        colorFilter = ColorFilter.tint(LocalContentColor.current),
+                      )
+                    }
+
+                    Surface(
+                      modifier =
+                        Modifier
+                          .size(56.dp)
+                          .clip(CircleShape)
+                          .clickable(
+                            enabled = viewModel.hasNext(),
+                            onClick = {
+                              resetControlsTimestamp = System.currentTimeMillis()
+                              if (viewModel.hasNext()) viewModel.playNext()
+                            },
+                          )
+                          .then(
+                            if (hideBackground) {
+                              Modifier.background(brush = buttonShadow, shape = CircleShape)
+                            } else {
+                              Modifier
+                            },
+                          ),
+                      shape = CircleShape,
+                      color =
+                        if (!hideBackground) {
+                          MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
+                        } else {
+                          Color.Transparent
+                        },
+                      contentColor = MaterialTheme.colorScheme.onSurface,
+                      tonalElevation = 0.dp,
+                      shadowElevation = 0.dp,
+                      border =
+                        if (!hideBackground) {
+                          BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                        } else {
+                          null
+                        },
+                    ) {
+                      Icon(
+                        imageVector = Icons.Default.SkipNext,
+                        contentDescription = "Next",
+                        tint =
+                          if (viewModel.hasNext()) {
+                            if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface
+                          } else {
+                            if (hideBackground) {
+                              controlColor.copy(alpha = 0.38f)
+                            } else {
+                              MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            }
+                          },
+                        modifier = Modifier
+                          .fillMaxSize()
+                          .padding(MaterialTheme.spacing.small),
+                      )
+                    }
+                  }
+                } else {
                   Surface(
                     modifier =
                       Modifier
@@ -918,111 +1018,13 @@ fun PlayerControls(
                         .padding(MaterialTheme.spacing.medium),
                       contentDescription = null,
                       colorFilter = ColorFilter.tint(LocalContentColor.current),
-                    )
-                  }
-
-                  Surface(
-                    modifier =
-                      Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .clickable(
-                          enabled = viewModel.hasNext(),
-                          onClick = {
-                            resetControlsTimestamp = System.currentTimeMillis()
-                            if (viewModel.hasNext()) viewModel.playNext()
-                          },
-                        )
-                        .then(
-                          if (hideBackground) {
-                            Modifier.background(brush = buttonShadow, shape = CircleShape)
-                          } else {
-                            Modifier
-                          },
-                        ),
-                    shape = CircleShape,
-                    color =
-                      if (!hideBackground) {
-                        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
-                      } else {
-                        Color.Transparent
-                      },
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                    tonalElevation = 0.dp,
-                    shadowElevation = 0.dp,
-                    border =
-                      if (!hideBackground) {
-                        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                      } else {
-                        null
-                      },
-                  ) {
-                    Icon(
-                      imageVector = Icons.Default.SkipNext,
-                      contentDescription = "Next",
-                      tint =
-                        if (viewModel.hasNext()) {
-                          if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface
-                        } else {
-                          if (hideBackground) {
-                            controlColor.copy(alpha = 0.38f)
-                          } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                          }
-                        },
-                      modifier = Modifier
-                        .fillMaxSize()
-                        .padding(MaterialTheme.spacing.small),
-                    )
-                  }
-                }
-              } else {
-                Surface(
-                  modifier =
-                    Modifier
-                      .size(64.dp)
-                      .clip(CircleShape)
-                      .clickable(interaction, ripple(), onClick = {
-                        resetControlsTimestamp = System.currentTimeMillis()
-                        viewModel.pauseUnpause()
-                      })
-                      .then(
-                        if (hideBackground) {
-                          Modifier.background(brush = buttonShadow, shape = CircleShape)
-                        } else {
-                          Modifier
-                        },
-                      ),
-                  shape = CircleShape,
-                  color =
-                    if (!hideBackground) {
-                      MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
-                    } else {
-                      Color.Transparent
-                    },
-                  contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
-                  tonalElevation = 0.dp,
-                  shadowElevation = 0.dp,
-                  border =
-                    if (!hideBackground) {
-                      BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                    } else {
-                      null
-                    },
-                ) {
-                  Image(
-                    painter = rememberAnimatedVectorPainter(icon, paused == false),
-                    modifier = Modifier
-                      .fillMaxSize()
-                      .padding(MaterialTheme.spacing.medium),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(LocalContentColor.current),
                   )
                 }
               }
             }
           }
         }
+      }   
 
         AnimatedVisibility(
           visible = controlsShown && !areControlsLocked,
@@ -1410,6 +1412,65 @@ fun PlayerControls(
     PlayerPanels(
       panelShown = panel,
       onDismissRequest = { onOpenPanel(Panels.None) },
-    )
+      )
+    }
   }
+  
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+fun LiquidCustomButton(
+    button: PlayerViewModel.CustomButtonState, // FIXED: Correctly matching your ViewModel's button state!
+    liquidUIEnabled: Boolean,
+    backdrop: com.kyant.backdrop.Backdrop,
+    viewModel: PlayerViewModel,
+    haptic: androidx.compose.ui.hapticfeedback.HapticFeedback,
+    onInteract: () -> Unit
+) {
+    if (liquidUIEnabled) {
+        TransparentLiquidButton(
+            backdrop = backdrop,
+            onClick = {
+                onInteract()
+                viewModel.callCustomButton(button.id)
+            },
+            onLongClick = {
+                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                onInteract()
+                viewModel.callCustomButtonLongPress(button.id)
+            }
+        ) {
+            Text(
+                text = button.label,
+                // FIXED: Cleaned up the modifier syntax!
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).basicMarquee(), 
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                maxLines = 1,
+                softWrap = false,
+                color = Color.White
+            )
+        }
+    } else {
+        val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
+            modifier = Modifier.clip(CircleShape).combinedClickable(
+                interactionSource = interactionSource,
+                indication = ripple(),
+                onClick = { onInteract(); viewModel.callCustomButton(button.id) },
+                onLongClick = { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove); onInteract(); viewModel.callCustomButtonLongPress(button.id) }
+            )
+        ) {
+            Text(
+                text = button.label,
+                // FIXED: Cleaned up the modifier syntax!
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp).basicMarquee(),
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                maxLines = 1,
+                softWrap = false
+            )
+        }
+    }
 }

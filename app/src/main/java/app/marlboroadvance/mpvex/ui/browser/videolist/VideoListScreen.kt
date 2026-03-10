@@ -23,6 +23,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -85,7 +88,7 @@ import app.marlboroadvance.mpvex.presentation.Screen
 import app.marlboroadvance.mpvex.presentation.components.pullrefresh.PullRefreshBox
 import app.marlboroadvance.mpvex.BuildConfig
 import app.marlboroadvance.mpvex.ui.browser.cards.VideoCard
-import app.marlboroadvance.mpvex.ui.browser.components.BrowserBottomBar
+import app.marlboroadvance.mpvex.ui.browser.components.FloatingBottomBar
 import app.marlboroadvance.mpvex.ui.browser.components.BrowserTopBar
 import app.marlboroadvance.mpvex.ui.browser.dialogs.AddToPlaylistDialog
 import app.marlboroadvance.mpvex.ui.browser.dialogs.DeleteConfirmationDialog
@@ -224,6 +227,8 @@ data class VideoListScreen(
     var showFloatingBottomBar by remember { mutableStateOf(false) }
     val animationDuration = 300
 
+    val floatingBarBackdrop = rememberLayerBackdrop { drawContent() }
+
     // Handle selection mode changes with animation
     LaunchedEffect(selectionManager.isInSelectionMode) {
       if (selectionManager.isInSelectionMode) {
@@ -254,7 +259,8 @@ data class VideoListScreen(
       }
     }
 
-    Scaffold(
+  Scaffold(
+    containerColor = Color.Transparent,
       topBar = {
         BrowserTopBar(
           title = displayFolderName,
@@ -337,8 +343,9 @@ data class VideoListScreen(
       val autoScrollToLastPlayed by browserPreferences.autoScrollToLastPlayed.collectAsState()
       
       Box(modifier = Modifier.fillMaxSize()) {
-        VideoListContent(
-          folderId = bucketId,
+        Box(modifier = Modifier.fillMaxSize().layerBackdrop(floatingBarBackdrop)) {
+          VideoListContent(
+            folderId = bucketId,
           videosWithInfo = sortedVideosWithInfo,
           isLoading = isLoading && videos.isEmpty(),
           isRefreshing = isRefreshing,
@@ -362,43 +369,38 @@ data class VideoListScreen(
           modifier = Modifier.padding(padding),
           showFloatingBottomBar = showFloatingBottomBar,
         )
+      }
         
         // Floating Material 3 Button Group overlay with animation
         // Play Store gating is intentionally bypassed here.
-        AnimatedVisibility(
+        FloatingBottomBar(
+          backdrop = floatingBarBackdrop,
           visible = showFloatingBottomBar,
-          enter = slideInVertically(
-            animationSpec = tween(durationMillis = animationDuration),
-            initialOffsetY = { fullHeight -> fullHeight }
-          ),
-          exit = slideOutVertically(
-            animationSpec = tween(durationMillis = animationDuration),
-            targetOffsetY = { fullHeight -> fullHeight }
-          ),
+          showCopy = true,
+          showMove = true,
+          showRename = selectionManager.isSingleSelection,
+          showDelete = true,
+          showAddToPlaylist = true,
+          onCopyClick = {
+            operationType.value = CopyPasteOps.OperationType.Copy
+            if (CopyPasteOps.canUseDirectFileOperations()) {
+              folderPickerOpen.value = true
+            } else {
+              treePickerLauncher.launch(null)
+            }
+          },
+          onMoveClick = {
+            operationType.value = CopyPasteOps.OperationType.Move
+            if (CopyPasteOps.canUseDirectFileOperations()) {
+              folderPickerOpen.value = true
+            } else {
+              treePickerLauncher.launch(null)
+            }
+          },
+          onRenameClick = { renameDialogOpen.value = true },
+          onDeleteClick = { deleteDialogOpen.value = true },
+          onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
           modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-          BrowserBottomBar(
-            isSelectionMode = true,
-            onCopyClick = {
-              operationType.value = CopyPasteOps.OperationType.Copy
-              if (CopyPasteOps.canUseDirectFileOperations()) {
-                folderPickerOpen.value = true
-              } else {
-                treePickerLauncher.launch(null)
-              }
-            },
-            onMoveClick = {
-              operationType.value = CopyPasteOps.OperationType.Move
-              if (CopyPasteOps.canUseDirectFileOperations()) {
-                folderPickerOpen.value = true
-              } else {
-                treePickerLauncher.launch(null)
-              }
-            },
-            onRenameClick = { renameDialogOpen.value = true },
-            onDeleteClick = { deleteDialogOpen.value = true },
-            onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
-            showRename = selectionManager.isSingleSelection
           )
         }
       }
@@ -540,7 +542,6 @@ data class VideoListScreen(
       )
     }
   }
-}
 
 @Composable
 private fun VideoListContent(

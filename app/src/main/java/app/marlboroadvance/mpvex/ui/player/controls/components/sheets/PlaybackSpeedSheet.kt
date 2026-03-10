@@ -58,7 +58,7 @@ import app.marlboroadvance.mpvex.presentation.components.SliderItem
 import app.marlboroadvance.mpvex.ui.theme.spacing
 import `is`.xyz.mpv.MPVLib
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
-import me.zhanghai.compose.preference.SwitchPreference
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidSwitchPreference as SwitchPreference
 import org.koin.compose.koinInject
 import app.marlboroadvance.mpvex.presentation.components.RepeatingIconButton
 import kotlin.math.pow

@@ -1,5 +1,8 @@
 package app.marlboroadvance.mpvex.ui.browser.filesystem
 
+import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidGlassCard
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import android.content.Context
 import android.content.Intent
 import android.util.Log
@@ -23,6 +26,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.AccountTree
@@ -92,7 +98,7 @@ import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import app.marlboroadvance.mpvex.presentation.components.pullrefresh.PullRefreshBox
 import app.marlboroadvance.mpvex.ui.browser.cards.FolderCard
 import app.marlboroadvance.mpvex.ui.browser.cards.VideoCard
-import app.marlboroadvance.mpvex.ui.browser.components.BrowserBottomBar
+import app.marlboroadvance.mpvex.ui.browser.components.FloatingBottomBar
 import app.marlboroadvance.mpvex.ui.browser.components.BrowserTopBar
 import app.marlboroadvance.mpvex.ui.browser.dialogs.AddToPlaylistDialog
 import app.marlboroadvance.mpvex.ui.browser.dialogs.DeleteConfirmationDialog
@@ -484,11 +490,16 @@ fun FileSystemBrowserScreen(path: String? = null) {
     onExpandedChange = { isFabExpanded.value = it },
   )
 
+    val floatingBarBackdrop = rememberLayerBackdrop { drawContent() }
+
   // Main content
   Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
+      modifier = Modifier.layerBackdrop(floatingBarBackdrop),
+      containerColor = Color.Transparent,
       topBar = {
         if (isSearching) {
+
           // Search mode - show search bar instead of top bar
           SearchBar(
             inputField = {
@@ -878,43 +889,36 @@ fun FileSystemBrowserScreen(path: String? = null) {
 
     // Independent Floating Bottom Bar - positioned at absolute bottom
     // Play Store gating is intentionally bypassed here.
-    AnimatedVisibility(
+    FloatingBottomBar(
+      backdrop = floatingBarBackdrop,
       visible = showFloatingBottomBar,
-      enter = slideInVertically(
-        animationSpec = tween(durationMillis = animationDuration),
-        initialOffsetY = { fullHeight -> fullHeight }
-      ),
-      exit = slideOutVertically(
-        animationSpec = tween(durationMillis = animationDuration),
-        targetOffsetY = { fullHeight -> fullHeight }
-      ),
+      showCopy = true,
+      showMove = true,
+      showRename = videoSelectionManager.isSingleSelection,
+      showDelete = true,
+      showAddToPlaylist = true,
+      onCopyClick = {
+        operationType.value = CopyPasteOps.OperationType.Copy
+        if (CopyPasteOps.canUseDirectFileOperations()) {
+          folderPickerOpen.value = true
+        } else {
+          treePickerLauncher.launch(null)
+        }
+      },
+      onMoveClick = {
+        operationType.value = CopyPasteOps.OperationType.Move
+        if (CopyPasteOps.canUseDirectFileOperations()) {
+          folderPickerOpen.value = true
+        } else {
+          treePickerLauncher.launch(null)
+        }
+      },
+      onRenameClick = { renameDialogOpen.value = true },
+      onDeleteClick = { deleteDialogOpen.value = true },
+      onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
       modifier = Modifier.align(Alignment.BottomCenter)
-    ) {
-      BrowserBottomBar(
-        isSelectionMode = true,
-        onCopyClick = {
-          operationType.value = CopyPasteOps.OperationType.Copy
-          if (CopyPasteOps.canUseDirectFileOperations()) {
-            folderPickerOpen.value = true
-          } else {
-            treePickerLauncher.launch(null)
-          }
-        },
-        onMoveClick = {
-          operationType.value = CopyPasteOps.OperationType.Move
-          if (CopyPasteOps.canUseDirectFileOperations()) {
-            folderPickerOpen.value = true
-          } else {
-            treePickerLauncher.launch(null)
-          }
-        },
-        onRenameClick = { renameDialogOpen.value = true },
-        onDeleteClick = { deleteDialogOpen.value = true },
-        onAddToPlaylistClick = { addToPlaylistDialogOpen.value = true },
-        showRename = videoSelectionManager.isSingleSelection,
-        modifier = Modifier.padding(bottom = 0.dp) // Zero bottom padding - absolute bottom
-      )
-    }
+     )
+   }
 
     // Dialogs
     PlayLinkSheet(
@@ -1029,7 +1033,6 @@ fun FileSystemBrowserScreen(path: String? = null) {
       },
     )
   }
-}
 
 /**
  * Recursively searches for files matching the query in a directory and its subdirectories
@@ -1165,6 +1168,14 @@ private fun FileSystemBrowserContent(
   isInSelectionMode: Boolean = false,
 ) {
   val gesturePreferences = koinInject<GesturePreferences>()
+  val context = LocalContext.current
+  val liquidPreferences = remember { LiquidUIPreferences(context) }
+  val liquidUIEnabled by liquidPreferences.liquidUIEnabledFlow.collectAsState(initial = false)
+  
+  // The engine that captures the screen behind the cards
+  val backdrop = rememberLayerBackdrop {
+      drawContent()
+  }
   val browserPreferences = koinInject<BrowserPreferences>()
   val thumbnailRepository = koinInject<app.marlboroadvance.mpvex.domain.thumbnail.ThumbnailRepository>()
   val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
@@ -1303,19 +1314,24 @@ private fun FileSystemBrowserContent(
                 lastModified = folder.lastModified / 1000,
               )
 
-              FolderCard(
-                folder = folderModel,
-                isSelected = folderSelectionManager.isSelected(folder),
-                isRecentlyPlayed = false,
-                onClick = { onFolderClick(folder) },
-                onLongClick = { onFolderLongClick(folder) },
-                onThumbClick = if (tapThumbnailToSelect) {
-                  { onFolderLongClick(folder) }
-                } else {
-                  { onFolderClick(folder) }
-                },
-                isGridMode = false,
-              )
+              LiquidGlassCard(
+                backdrop = if (liquidUIEnabled) backdrop else null,
+                modifier = Modifier.padding(vertical = 4.dp)
+              ) {
+                FolderCard(
+                  folder = folderModel,
+                  isSelected = folderSelectionManager.isSelected(folder),
+                  isRecentlyPlayed = false,
+                  onClick = { onFolderClick(folder) },
+                  onLongClick = { onFolderLongClick(folder) },
+                  onThumbClick = if (tapThumbnailToSelect) {
+                    { onFolderLongClick(folder) }
+                  } else {
+                    { onFolderClick(folder) }
+                  },
+                  isGridMode = false,
+                )
+              }
             }
 
             // Videos second
@@ -1323,26 +1339,31 @@ private fun FileSystemBrowserContent(
               items = items.filterIsInstance<FileSystemItem.VideoFile>(),
               key = { "${it.video.id}_${it.video.path}" },
             ) { videoFile ->
-              VideoCard(
-                video = videoFile.video,
-                progressPercentage = videoFilesWithPlayback[videoFile.video.id],
-                isRecentlyPlayed = false,
-                isSelected = videoSelectionManager.isSelected(videoFile.video),
-                onClick = { onVideoClick(videoFile.video) },
-                onLongClick = { onVideoLongClick(videoFile.video) },
-                onThumbClick = if (tapThumbnailToSelect) {
-                  { onVideoLongClick(videoFile.video) }
-                } else {
-                  { onVideoClick(videoFile.video) }
-                },
-                isGridMode = false,
-                showSubtitleIndicator = showSubtitleIndicator,
-                overrideShowSizeChip = null,
-                overrideShowResolutionChip = null,
-                useFolderNameStyle = false,
-              )
+              LiquidGlassCard(
+                backdrop = if (liquidUIEnabled) backdrop else null,
+                modifier = Modifier.padding(vertical = 4.dp)
+              ) {
+                VideoCard(
+                  video = videoFile.video,
+                  progressPercentage = videoFilesWithPlayback[videoFile.video.id],
+                  isRecentlyPlayed = false,
+                  isSelected = videoSelectionManager.isSelected(videoFile.video),
+                  onClick = { onVideoClick(videoFile.video) },
+                  onLongClick = { onVideoLongClick(videoFile.video) },
+                  onThumbClick = if (tapThumbnailToSelect) {
+                    { onVideoLongClick(videoFile.video) }
+                  } else {
+                    { onVideoClick(videoFile.video) }
+                  },
+                  isGridMode = false,
+                  showSubtitleIndicator = showSubtitleIndicator,
+                  overrideShowSizeChip = null,
+                  overrideShowResolutionChip = null,
+                  useFolderNameStyle = false,
+                )
+              }
             }
-          }
+          }     
           
           // Scrollbar with bottom padding to avoid overlap with navigation
           Box(
@@ -1384,6 +1405,10 @@ private fun FileSystemSearchContent(
   val gesturePreferences = koinInject<GesturePreferences>()
   val browserPreferences = koinInject<BrowserPreferences>()
   val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
+  val context = LocalContext.current
+  val liquidPreferences = remember { LiquidUIPreferences(context) }
+  val liquidUIEnabled by liquidPreferences.liquidUIEnabledFlow.collectAsState(initial = false)
+  val backdrop = rememberLayerBackdrop { drawContent() }
 
   // Track scroll for FAB visibility in search mode with proper scroll direction detection
   val previousIndex = remember { mutableIntStateOf(0) }
@@ -1485,15 +1510,20 @@ private fun FileSystemSearchContent(
                 lastModified = folder.lastModified / 1000,
               )
 
-              FolderCard(
-                folder = folderModel,
-                isSelected = false,
-                isRecentlyPlayed = false,
-                onClick = { onFolderClick(folder) },
-                onLongClick = { },
-                onThumbClick = { onFolderClick(folder) },
-                isGridMode = false,
-              )
+              LiquidGlassCard(
+                backdrop = if (liquidUIEnabled) backdrop else null,
+                modifier = Modifier.padding(vertical = 4.dp)
+              ) {
+                FolderCard(
+                  folder = folderModel,
+                  isSelected = false,
+                  isRecentlyPlayed = false,
+                  onClick = { onFolderClick(folder) },
+                  onLongClick = { },
+                  onThumbClick = { onFolderClick(folder) },
+                  isGridMode = false,
+                )
+              }
             }
             
             // Videos second
@@ -1501,22 +1531,27 @@ private fun FileSystemSearchContent(
               items = videos,
               key = { "search_video_${it.video.id}_${it.video.path}_${it.hashCode()}" },
             ) { videoFile ->
-              VideoCard(
-                video = videoFile.video,
-                progressPercentage = videoFilesWithPlayback[videoFile.video.id],
-                isRecentlyPlayed = false,
-                isSelected = false,
-                onClick = { onVideoClick(videoFile.video) },
-                onLongClick = { },
-                onThumbClick = { onVideoClick(videoFile.video) },
-                isGridMode = false,
-                showSubtitleIndicator = showSubtitleIndicator,
-                overrideShowSizeChip = null,
-                overrideShowResolutionChip = null,
-                useFolderNameStyle = false,
-              )
+              LiquidGlassCard(
+                backdrop = if (liquidUIEnabled) backdrop else null,
+                modifier = Modifier.padding(vertical = 4.dp)
+              ) {
+                VideoCard(
+                  video = videoFile.video,
+                  progressPercentage = videoFilesWithPlayback[videoFile.video.id],
+                  isRecentlyPlayed = false,
+                  isSelected = false,
+                  onClick = { onVideoClick(videoFile.video) },
+                  onLongClick = { },
+                  onThumbClick = { onVideoClick(videoFile.video) },
+                  isGridMode = false,
+                  showSubtitleIndicator = showSubtitleIndicator,
+                  overrideShowSizeChip = null,
+                  overrideShowResolutionChip = null,
+                  useFolderNameStyle = false,
+                )
+              }
             }
-          }
+          } 
           
           // Scrollbar with bottom padding to avoid overlap with navigation
           Box(

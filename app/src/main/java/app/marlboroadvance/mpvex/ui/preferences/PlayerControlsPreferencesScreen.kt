@@ -54,7 +54,7 @@ import app.marlboroadvance.mpvex.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
-import me.zhanghai.compose.preference.SwitchPreference
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidSwitchPreference as SwitchPreference
 import app.marlboroadvance.mpvex.ui.preferences.components.PlayerButtonChip
 import org.koin.compose.koinInject
 
