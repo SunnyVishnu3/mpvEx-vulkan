@@ -50,6 +50,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 
+// --- NEW LIQUID IMPORTS ---
+import com.kyant.backdrop.Backdrop
+import app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop
+
 /**
  * Main entry point for the application
  */
@@ -57,10 +61,8 @@ class MainActivity : ComponentActivity() {
   private val appearancePreferences by inject<AppearancePreferences>()
   private val networkRepository by inject<NetworkRepository>()
   
-  // Create a coroutine scope tied to the activity lifecycle
   private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-  // Register the ActivityResultLauncher at class level
   private val mediaAccessLauncher = registerForActivityResult(
     ActivityResultContracts.StartIntentSenderForResult()
   ) { result ->
@@ -72,11 +74,9 @@ class MainActivity : ComponentActivity() {
     
     PermissionUtils.setMediaAccessLauncher(mediaAccessLauncher)
 
-    // Register proxy lifecycle observer for network streaming
     lifecycle.addObserver(app.marlboroadvance.mpvex.ui.browser.networkstreaming.proxy.ProxyLifecycleObserver())
 
     setContent {
-      // Set up theme and edge-to-edge display
       val dark by appearancePreferences.darkMode.collectAsState()
       val isSystemInDarkTheme = isSystemInDarkTheme()
       val isDarkMode = dark == DarkMode.Dark || (dark == DarkMode.System && isSystemInDarkTheme)
@@ -87,14 +87,20 @@ class MainActivity : ComponentActivity() {
         ) { isDarkMode },
       )
 
-      // Auto-connect to saved network connections
       LaunchedEffect(Unit) {
         autoConnectToNetworks()
       }
 
       MpvexTheme {
         Surface {
-          Navigator()
+          // THE MAGIC SAUCE: We turn the Liquid Camera on at the root of the app!
+          Backdrop { backdrop ->
+            CompositionLocalProvider(
+              LocalLiquidBackdrop provides backdrop
+            ) {
+              Navigator()
+            }
+          }
         }
       }
     }
@@ -108,14 +114,9 @@ class MainActivity : ComponentActivity() {
     }
   }
 
-  /**
-   * Auto-connect to network connections that are marked for auto-connection
-   */
   private suspend fun autoConnectToNetworks() {
-    // Delay auto-connect to let UI settle first
     kotlinx.coroutines.delay(500)
     
-    // Use coroutineScope for properly structured concurrency
     withContext(Dispatchers.IO) {
       try {
         val autoConnectConnections = networkRepository.getAutoConnectConnections()
@@ -137,15 +138,12 @@ class MainActivity : ComponentActivity() {
         }
       } catch (e: Exception) {
         withContext(Dispatchers.Main) {
-          Log.e("MainActivity", "Error during auto-connect", e)
+         Log.e("MainActivity", "Error during auto-connect", e)
         }
       }
     }
   }
 
-  /**
-   * Navigator that handles screen transitions and provides shared states
-   */
   @Composable
   fun Navigator() {
     val backstack = rememberNavBackStack(MainScreen)
@@ -156,7 +154,6 @@ class MainActivity : ComponentActivity() {
     val context = LocalContext.current
     val currentVersion = BuildConfig.VERSION_NAME.replace("-dev", "")
 
-    // Conditionally initialize update feature based on build config
     val updateViewModel: UpdateViewModel? = if (BuildConfig.ENABLE_UPDATE_FEATURE) {
       viewModel(context as ComponentActivity)
     } else {
@@ -166,7 +163,6 @@ class MainActivity : ComponentActivity() {
     val isDownloading by (updateViewModel?.isDownloading ?: MutableStateFlow(false)).collectAsState()
     val downloadProgress by (updateViewModel?.downloadProgress ?: MutableStateFlow(0f)).collectAsState()
 
-    // Provide both LocalBackStack and the LazyList/Grid states to all screens
     CompositionLocalProvider(
       LocalBackStack provides typedBackstack
     ) {
@@ -186,35 +182,34 @@ class MainActivity : ComponentActivity() {
         transitionSpec = {
           (
             fadeIn(animationSpec = tween(220)) +
-              slideIn(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
+             slideIn(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
           ) togetherWith (
               fadeOut(animationSpec = tween(220)) +
                 slideOut(animationSpec = tween(220)) { IntOffset(-it.width / 2, 0) }
           )
         },
         predictivePopTransitionSpec = {
-          (
+         (
             fadeIn(animationSpec = tween(220)) +
               scaleIn(
                 animationSpec = tween(220, delayMillis = 30),
                 initialScale = .9f,
                 TransformOrigin(-1f, .5f),
-              )
+               )
           ) togetherWith (
               fadeOut(animationSpec = tween(220)) +
                 scaleOut(
                   animationSpec = tween(220, delayMillis = 30),
                   targetScale = .9f,
-                  TransformOrigin(-1f, .5f),
+                   TransformOrigin(-1f, .5f),
                 )
           )
         },
       )
 
-      // Display Update Dialog when appropriate (only if update feature is enabled)
       if (BuildConfig.ENABLE_UPDATE_FEATURE && updateViewModel != null) {
         when (updateState) {
-          is UpdateViewModel.UpdateState.Available -> {
+           is UpdateViewModel.UpdateState.Available -> {
             val release = (updateState as UpdateViewModel.UpdateState.Available).release
             UpdateDialog(
               release = release,
@@ -227,7 +222,7 @@ class MainActivity : ComponentActivity() {
               onIgnore = { updateViewModel.ignoreVersion(release.tagName.removePrefix("v")) }
             )
           }
-          is UpdateViewModel.UpdateState.ReadyToInstall -> {
+           is UpdateViewModel.UpdateState.ReadyToInstall -> {
             val release = (updateState as UpdateViewModel.UpdateState.ReadyToInstall).release
             UpdateDialog(
               release = release,
@@ -240,7 +235,7 @@ class MainActivity : ComponentActivity() {
               onIgnore = { updateViewModel.ignoreVersion(release.tagName.removePrefix("v")) }
             )
           }
-          else -> {}
+           else -> {}
         }
       }
     }
