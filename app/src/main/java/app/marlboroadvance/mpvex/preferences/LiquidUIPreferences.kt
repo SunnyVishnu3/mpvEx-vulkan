@@ -15,8 +15,8 @@ private val Context.liquidUIDataStore by preferencesDataStore(name = "liquid_ui_
 enum class LiquidTarget(val id: String, val title: String) {
     NAV("nav", "Navigation"),
     BUTTON("btn", "Buttons"),
-    DIALOG("dlg", "Dialogs")
-    CARD("card")
+    DIALOG("dlg", "Dialogs"),
+    CARD("card", "Browser Cards")
 }
 
 class LiquidUIPreferences(context: Context) {
