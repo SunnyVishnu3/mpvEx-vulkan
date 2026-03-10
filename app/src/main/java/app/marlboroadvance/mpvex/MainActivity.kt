@@ -22,7 +22,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.toArgb
@@ -63,10 +62,8 @@ class MainActivity : ComponentActivity() {
   private val appearancePreferences by inject<AppearancePreferences>()
   private val networkRepository by inject<NetworkRepository>()
   
-  // Create a coroutine scope tied to the activity lifecycle
   private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-  // Register the ActivityResultLauncher at class level
   private val mediaAccessLauncher = registerForActivityResult(
     ActivityResultContracts.StartIntentSenderForResult()
   ) { result ->
@@ -78,11 +75,9 @@ class MainActivity : ComponentActivity() {
     
     PermissionUtils.setMediaAccessLauncher(mediaAccessLauncher)
 
-    // Register proxy lifecycle observer for network streaming
     lifecycle.addObserver(app.marlboroadvance.mpvex.ui.browser.networkstreaming.proxy.ProxyLifecycleObserver())
 
     setContent {
-      // Set up theme and edge-to-edge display
       val dark by appearancePreferences.darkMode.collectAsState()
       val isSystemInDarkTheme = isSystemInDarkTheme()
       val isDarkMode = dark == DarkMode.Dark || (dark == DarkMode.System && isSystemInDarkTheme)
@@ -93,16 +88,15 @@ class MainActivity : ComponentActivity() {
         ) { isDarkMode },
       )
 
-      // Auto-connect to saved network connections
       LaunchedEffect(Unit) {
         autoConnectToNetworks()
       }
 
       MpvexTheme {
-        // THE MAGIC SAUCE: We turn the camera on, but let the dialogs handle the drawing!
+        // Correct initialization of the backdrop engine
         val backdrop = rememberLayerBackdrop()
         
-        Surface { // Modifier completely removed! 
+        Surface {
           CompositionLocalProvider(
             LocalLiquidBackdrop provides backdrop
           ) {
@@ -112,7 +106,6 @@ class MainActivity : ComponentActivity() {
       }
     }
   }
-}
 
   override fun onDestroy() {
     try {
@@ -122,14 +115,9 @@ class MainActivity : ComponentActivity() {
     }
   }
 
-  /**
-   * Auto-connect to network connections that are marked for auto-connection
-   */
   private suspend fun autoConnectToNetworks() {
-    // Delay auto-connect to let UI settle first
     kotlinx.coroutines.delay(500)
     
-    // Use coroutineScope for properly structured concurrency
     withContext(Dispatchers.IO) {
       try {
         val autoConnectConnections = networkRepository.getAutoConnectConnections()
@@ -157,9 +145,6 @@ class MainActivity : ComponentActivity() {
     }
   }
 
-  /**
-   * Navigator that handles screen transitions and provides shared states
-   */
   @Composable
   fun Navigator() {
     val backstack = rememberNavBackStack(MainScreen)
@@ -170,7 +155,6 @@ class MainActivity : ComponentActivity() {
     val context = LocalContext.current
     val currentVersion = BuildConfig.VERSION_NAME.replace("-dev", "")
 
-    // Conditionally initialize update feature based on build config
     val updateViewModel: UpdateViewModel? = if (BuildConfig.ENABLE_UPDATE_FEATURE) {
       viewModel(context as ComponentActivity)
     } else {
@@ -180,7 +164,6 @@ class MainActivity : ComponentActivity() {
     val isDownloading by (updateViewModel?.isDownloading ?: MutableStateFlow(false)).collectAsState()
     val downloadProgress by (updateViewModel?.downloadProgress ?: MutableStateFlow(0f)).collectAsState()
 
-    // Provide both LocalBackStack and the LazyList/Grid states to all screens
     CompositionLocalProvider(
       LocalBackStack provides typedBackstack
     ) {
@@ -225,7 +208,6 @@ class MainActivity : ComponentActivity() {
         },
       )
 
-      // Display Update Dialog when appropriate (only if update feature is enabled)
       if (BuildConfig.ENABLE_UPDATE_FEATURE && updateViewModel != null) {
         when (updateState) {
            is UpdateViewModel.UpdateState.Available -> {
