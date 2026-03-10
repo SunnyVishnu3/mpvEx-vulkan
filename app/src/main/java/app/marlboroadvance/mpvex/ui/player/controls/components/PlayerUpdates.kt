@@ -144,12 +144,7 @@ fun DoubleTapSeekPlayerUpdate(
   modifier: Modifier = Modifier,
 ) {
   val backdrop = LocalLiquidBackdrop.current
-  val directionText = if (isRight) {
-    stringResource(R.string.player_double_tap_seek_forward)
-  } else {
-    stringResource(R.string.player_double_tap_seek_rewind)
-  }
-
+  val directionText = if (isRight) "Forward" else "Rewind"
   PlayerUpdate(modifier.animateContentSize()) {
     Row(
       verticalAlignment = Alignment.CenterVertically,
@@ -164,12 +159,12 @@ fun DoubleTapSeekPlayerUpdate(
               .clip(CircleShape)
               .background(if (backdrop != null) Color.White.copy(alpha = 0.2f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
               .padding(4.dp)
-              .Modifier.rotate(180f),
+              .rotate(180f),
         )
       }
 
       Text(
-        text = seekText ?: "$directionText $seekAmount ${stringResource(R.string.player_double_tap_seek_seconds)}",
+        text = seekText ?: "$directionText $seekAmount seconds",
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
