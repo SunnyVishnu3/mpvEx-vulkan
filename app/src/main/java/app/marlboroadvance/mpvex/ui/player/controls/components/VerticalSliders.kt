@@ -31,12 +31,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.marlboroadvance.mpvex.R
 import app.marlboroadvance.mpvex.ui.theme.spacing
 import kotlin.math.roundToInt
+
+// --- NEW LIQUID IMPORTS ---
+import app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidGlassSurface
+import app.marlboroadvance.mpvex.preferences.LiquidTarget
 
 fun percentage(
   value: Float,
@@ -57,32 +63,35 @@ fun VerticalSlider(
   overflowRange: ClosedFloatingPointRange<Float>? = null,
 ) {
   val coercedValue = value.coerceIn(range)
-  Box(
-    modifier =
-      modifier
-        .height(120.dp)
-        .aspectRatio(0.2f)
-        .clip(RoundedCornerShape(16.dp))
-        .background(MaterialTheme.colorScheme.background)
-        .border(
-          width = 1.dp,
-          color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-          shape = RoundedCornerShape(16.dp),
-        ),
-    contentAlignment = Alignment.BottomCenter,
-  ) {
+  val backdrop = LocalLiquidBackdrop.current
+
+  val baseModifier = modifier
+    .height(120.dp)
+    .aspectRatio(0.2f)
+    .clip(RoundedCornerShape(16.dp))
+
+  val finalModifier = if (backdrop != null) {
+    baseModifier.background(Color.White.copy(alpha = 0.2f))
+  } else {
+    baseModifier
+      .background(MaterialTheme.colorScheme.background)
+      .border(
+        width = 1.dp,
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+        shape = RoundedCornerShape(16.dp),
+      )
+  }
+
+  Box(modifier = finalModifier, contentAlignment = Alignment.BottomCenter) {
     val targetHeight by animateFloatAsState(percentage(coercedValue, range), label = "vsliderheight")
     Box(
       Modifier
         .fillMaxWidth()
         .fillMaxHeight(targetHeight)
-        .background(MaterialTheme.colorScheme.tertiary),
+        .background(if (backdrop != null) Color.White else MaterialTheme.colorScheme.tertiary),
     )
     if (overflowRange != null && overflowValue != null) {
-      val overflowHeight by animateFloatAsState(
-        percentage(overflowValue, overflowRange),
-        label = "vslideroverflowheight",
-      )
+      val overflowHeight by animateFloatAsState(percentage(overflowValue, overflowRange), label = "vslideroverflowheight")
       Box(
         Modifier
           .fillMaxWidth()
@@ -102,32 +111,35 @@ fun VerticalSlider(
   overflowRange: ClosedRange<Int>? = null,
 ) {
   val coercedValue = value.coerceIn(range)
-  Box(
-    modifier =
-      modifier
-        .height(120.dp)
-        .aspectRatio(0.2f)
-        .clip(RoundedCornerShape(16.dp))
-        .background(MaterialTheme.colorScheme.background)
-        .border(
-          width = 1.dp,
-          color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-          shape = RoundedCornerShape(16.dp),
-        ),
-    contentAlignment = Alignment.BottomCenter,
-  ) {
+  val backdrop = LocalLiquidBackdrop.current
+
+  val baseModifier = modifier
+    .height(120.dp)
+    .aspectRatio(0.2f)
+    .clip(RoundedCornerShape(16.dp))
+
+  val finalModifier = if (backdrop != null) {
+    baseModifier.background(Color.White.copy(alpha = 0.2f))
+  } else {
+    baseModifier
+      .background(MaterialTheme.colorScheme.background)
+      .border(
+        width = 1.dp,
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+        shape = RoundedCornerShape(16.dp),
+      )
+  }
+
+  Box(modifier = finalModifier, contentAlignment = Alignment.BottomCenter) {
     val targetHeight by animateFloatAsState(percentage(coercedValue, range), label = "vsliderheight")
     Box(
       Modifier
         .fillMaxWidth()
         .fillMaxHeight(targetHeight)
-        .background(MaterialTheme.colorScheme.tertiary),
+        .background(if (backdrop != null) Color.White else MaterialTheme.colorScheme.tertiary),
     )
     if (overflowRange != null && overflowValue != null) {
-      val overflowHeight by animateFloatAsState(
-        percentage(overflowValue, overflowRange),
-        label = "vslideroverflowheight",
-      )
+      val overflowHeight by animateFloatAsState(percentage(overflowValue, overflowRange), label = "vslideroverflowheight")
       Box(
         Modifier
           .fillMaxWidth()
@@ -145,37 +157,61 @@ fun BrightnessSlider(
   modifier: Modifier = Modifier,
 ) {
   val coercedBrightness = brightness.coerceIn(range)
-  Surface(
-    modifier = modifier,
-    shape = RoundedCornerShape(20.dp),
-    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
-    contentColor = MaterialTheme.colorScheme.onSurface,
-    tonalElevation = 0.dp,
-    shadowElevation = 0.dp,
-    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-  ) {
-    Column(
-      modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
+  val backdrop = LocalLiquidBackdrop.current
+
+  if (backdrop != null) {
+    LiquidGlassSurface(
+      backdrop = backdrop,
+      target = LiquidTarget.BUTTON, // Connects to the Buttons Settings tab!
+      shape = RoundedCornerShape(20.dp),
+      modifier = modifier
     ) {
-      Text(
-        (coercedBrightness * 100).toInt().toString(),
-        style = MaterialTheme.typography.bodySmall,
-      )
-      VerticalSlider(
-        coercedBrightness,
-        range,
-      )
-      Icon(
-        when (percentage(coercedBrightness, range)) {
-          in 0f..0.3f -> Icons.Default.BrightnessLow
-          in 0.3f..0.6f -> Icons.Default.BrightnessMedium
-          in 0.6f..1f -> Icons.Default.BrightnessHigh
-          else -> Icons.Default.BrightnessMedium
-        },
-        contentDescription = null,
-      )
+      Column(
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
+      ) {
+        Text((coercedBrightness * 100).toInt().toString(), style = MaterialTheme.typography.bodySmall, color = Color.White)
+        VerticalSlider(coercedBrightness, range)
+        Icon(
+          when (percentage(coercedBrightness, range)) {
+            in 0f..0.3f -> Icons.Default.BrightnessLow
+            in 0.3f..0.6f -> Icons.Default.BrightnessMedium
+            in 0.6f..1f -> Icons.Default.BrightnessHigh
+            else -> Icons.Default.BrightnessMedium
+          },
+          contentDescription = null,
+          tint = Color.White
+        )
+      }
+    }
+  } else {
+    Surface(
+      modifier = modifier,
+      shape = RoundedCornerShape(20.dp),
+      color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+      contentColor = MaterialTheme.colorScheme.onSurface,
+      tonalElevation = 0.dp,
+      shadowElevation = 0.dp,
+      border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+    ) {
+      Column(
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
+      ) {
+        Text((coercedBrightness * 100).toInt().toString(), style = MaterialTheme.typography.bodySmall)
+        VerticalSlider(coercedBrightness, range)
+        Icon(
+          when (percentage(coercedBrightness, range)) {
+            in 0f..0.3f -> Icons.Default.BrightnessLow
+            in 0.3f..0.6f -> Icons.Default.BrightnessMedium
+            in 0.6f..1f -> Icons.Default.BrightnessHigh
+            else -> Icons.Default.BrightnessMedium
+          },
+          contentDescription = null,
+        )
+      }
     }
   }
 }
@@ -190,42 +226,84 @@ fun VolumeSlider(
   displayAsPercentage: Boolean = false,
 ) {
   val percentage = (percentage(volume, range) * 100).roundToInt()
-  Surface(
-    modifier = modifier,
-    shape = RoundedCornerShape(20.dp),
-    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
-    contentColor = MaterialTheme.colorScheme.onSurface,
-    tonalElevation = 0.dp,
-    shadowElevation = 0.dp,
-    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-  ) {
-    Column(
-      modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
+  val backdrop = LocalLiquidBackdrop.current
+
+  if (backdrop != null) {
+    LiquidGlassSurface(
+      backdrop = backdrop,
+      target = LiquidTarget.BUTTON, // Connects to the Buttons Settings tab!
+      shape = RoundedCornerShape(20.dp),
+      modifier = modifier
     ) {
-      val boostVolume = mpvVolume - 100
-      Text(
-        getVolumeSliderText(volume, mpvVolume, boostVolume, percentage, displayAsPercentage),
-        style = MaterialTheme.typography.bodySmall,
-        textAlign = TextAlign.Center,
-      )
-      VerticalSlider(
-        if (displayAsPercentage) percentage else volume,
-        if (displayAsPercentage) 0..100 else range,
-        overflowValue = boostVolume,
-        overflowRange = boostRange,
-      )
-      Icon(
-        when (percentage) {
-          0 -> Icons.AutoMirrored.Default.VolumeOff
-          in 0..30 -> Icons.AutoMirrored.Default.VolumeMute
-          in 30..60 -> Icons.AutoMirrored.Default.VolumeDown
-          in 60..100 -> Icons.AutoMirrored.Default.VolumeUp
-          else -> Icons.AutoMirrored.Default.VolumeOff
-        },
-        contentDescription = null,
-      )
+      Column(
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
+      ) {
+        val boostVolume = mpvVolume - 100
+        Text(
+          getVolumeSliderText(volume, mpvVolume, boostVolume, percentage, displayAsPercentage),
+          style = MaterialTheme.typography.bodySmall,
+          textAlign = TextAlign.Center,
+          color = Color.White
+        )
+        VerticalSlider(
+          if (displayAsPercentage) percentage else volume,
+          if (displayAsPercentage) 0..100 else range,
+          overflowValue = boostVolume,
+          overflowRange = boostRange,
+        )
+        Icon(
+          when (percentage) {
+            0 -> Icons.AutoMirrored.Default.VolumeOff
+            in 0..30 -> Icons.AutoMirrored.Default.VolumeMute
+            in 30..60 -> Icons.AutoMirrored.Default.VolumeDown
+            in 60..100 -> Icons.AutoMirrored.Default.VolumeUp
+            else -> Icons.AutoMirrored.Default.VolumeOff
+          },
+          contentDescription = null,
+          tint = Color.White
+        )
+      }
+    }
+  } else {
+    Surface(
+      modifier = modifier,
+      shape = RoundedCornerShape(20.dp),
+      color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+      contentColor = MaterialTheme.colorScheme.onSurface,
+      tonalElevation = 0.dp,
+      shadowElevation = 0.dp,
+      border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+    ) {
+      Column(
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
+      ) {
+        val boostVolume = mpvVolume - 100
+        Text(
+          getVolumeSliderText(volume, mpvVolume, boostVolume, percentage, displayAsPercentage),
+          style = MaterialTheme.typography.bodySmall,
+          textAlign = TextAlign.Center,
+        )
+        VerticalSlider(
+          if (displayAsPercentage) percentage else volume,
+          if (displayAsPercentage) 0..100 else range,
+          overflowValue = boostVolume,
+          overflowRange = boostRange,
+        )
+        Icon(
+          when (percentage) {
+            0 -> Icons.AutoMirrored.Default.VolumeOff
+            in 0..30 -> Icons.AutoMirrored.Default.VolumeMute
+            in 30..60 -> Icons.AutoMirrored.Default.VolumeDown
+            in 60..100 -> Icons.AutoMirrored.Default.VolumeUp
+            else -> Icons.AutoMirrored.Default.VolumeOff
+          },
+          contentDescription = null,
+        )
+      }
     }
   }
 }
