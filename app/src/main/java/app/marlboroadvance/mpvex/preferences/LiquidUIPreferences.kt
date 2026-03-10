@@ -12,11 +12,12 @@ import kotlinx.coroutines.flow.map
 private val Context.liquidUIDataStore by preferencesDataStore(name = "liquid_ui_prefs")
 
 // --- THE TARGET ENUM ---
+// Adding CARD here automatically generates the entire UI tab in AppearancePreferencesScreen!
 enum class LiquidTarget(val id: String, val title: String) {
     NAV("nav", "Navigation"),
     BUTTON("btn", "Buttons"),
     DIALOG("dlg", "Dialogs"),
-    CARD("card", "Browser Cards")
+    CARD("card", "Browser Cards") 
 }
 
 class LiquidUIPreferences(context: Context) {
