@@ -99,10 +99,10 @@ class MainActivity : ComponentActivity() {
       }
 
       MpvexTheme {
-        // THE MAGIC SAUCE: We initialize the Liquid Camera properly!
+        // THE MAGIC SAUCE: We turn the camera on, but let the dialogs handle the drawing!
         val backdrop = rememberLayerBackdrop()
         
-        Surface(modifier = Modifier.layerBackdrop(backdrop)) {
+        Surface { // Modifier completely removed! 
           CompositionLocalProvider(
             LocalLiquidBackdrop provides backdrop
           ) {
@@ -112,6 +112,7 @@ class MainActivity : ComponentActivity() {
       }
     }
   }
+}
 
   override fun onDestroy() {
     try {
