@@ -126,7 +126,6 @@ fun RenderPlayerButton(
     PlayerButton.VIDEO_TITLE -> {
       val playlistModeEnabled = viewModel.hasPlaylistSupport()
       val titleInteractionSource = remember { MutableInteractionSource() }
-
       if (backdrop != null && !hideBackground) {
         TransparentLiquidButton(
           backdrop = backdrop,
@@ -230,7 +229,7 @@ fun RenderPlayerButton(
             backdrop = backdrop, modifier = Modifier.height(buttonSize), shape = CircleShape,
             onClick = { clickEvent(); onOpenSheet(Sheets.Decoders) }
           ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.small)) {
               Text(decoder.title, maxLines = 1, color = Color.White, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
             }
           }
