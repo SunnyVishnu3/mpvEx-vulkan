@@ -16,6 +16,7 @@ enum class LiquidTarget(val id: String, val title: String) {
     NAV("nav", "Navigation"),
     BUTTON("btn", "Buttons"),
     DIALOG("dlg", "Dialogs")
+    CARD("card")
 }
 
 class LiquidUIPreferences(context: Context) {
