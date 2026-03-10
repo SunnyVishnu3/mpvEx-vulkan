@@ -136,7 +136,7 @@ fun RenderPlayerButton(
         ) {
           Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)
+            modifier = Modifier.padding(horizontal = MaterialTheme.spacing.extraSmall, vertical = MaterialTheme.spacing.small)
           ) {
             Text(
               mediaTitle ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -203,6 +203,7 @@ fun RenderPlayerButton(
             shape = CircleShape,
             color = if (hideBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
             contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+            tonalElevation = 0.dp, shadowElevation = 0.dp,
             border = if (hideBackground) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
             modifier = Modifier.height(buttonSize).clip(CircleShape).clickable(
               interactionSource = remember { MutableInteractionSource() }, indication = ripple(bounded = true),
@@ -229,8 +230,7 @@ fun RenderPlayerButton(
             backdrop = backdrop, modifier = Modifier.height(buttonSize), shape = CircleShape,
             onClick = { clickEvent(); onOpenSheet(Sheets.Decoders) }
           ) {
-            // SHRUNK: horizontal padding is now 8.dp to make it a compact badge!
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 8.dp, vertical = MaterialTheme.spacing.small)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)) {
               Text(decoder.title, maxLines = 1, color = Color.White, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
             }
           }
@@ -239,14 +239,14 @@ fun RenderPlayerButton(
           shape = CircleShape,
           color = if (hideBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
           contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+          tonalElevation = 0.dp, shadowElevation = 0.dp,
           border = if (hideBackground) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
           modifier = Modifier.height(buttonSize).clip(CircleShape).clickable(
             interactionSource = remember { MutableInteractionSource() }, indication = ripple(bounded = true),
             onClick = { clickEvent(); onOpenSheet(Sheets.Decoders) }
           )
         ) {
-          // SHRUNK: horizontal padding is now 8.dp here too!
-          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 8.dp, vertical = MaterialTheme.spacing.small)) {
+          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)) {
             Text(text = decoder.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
           }
         }
@@ -361,7 +361,8 @@ fun RenderPlayerButton(
     PlayerButton.MORE_OPTIONS -> { ControlsButton(Icons.Default.MoreVert, onClick = { onOpenSheet(Sheets.More) }, onLongClick = { onOpenPanel(Panels.VideoFilters) }, color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(buttonSize)) }
 
     PlayerButton.CURRENT_CHAPTER -> {
-      if (!isPortrait) {
+      if (isPortrait) {
+      } else {
         AnimatedVisibility(chapters.getOrNull(currentChapter ?: 0) != null, enter = fadeIn(), exit = fadeOut()) {
           chapters.getOrNull(currentChapter ?: 0)?.let { chapter -> CurrentChapter(chapter = chapter, onClick = { onOpenSheet(Sheets.Chapters) }) }
         }
@@ -464,11 +465,11 @@ fun RenderPlayerButton(
 
     PlayerButton.AMBIENT_MODE -> {
         val isAmbientEnabled by viewModel.isAmbientEnabled.collectAsState()
+        
         if (backdrop != null && !hideBackground) {
           TransparentLiquidButton(
             backdrop = backdrop, modifier = Modifier.size(buttonSize),
-            onClick = { clickEvent(); viewModel.toggleAmbientMode() },
-            onLongClick = { clickEvent(); onOpenSheet(Sheets.AmbientConfig) }
+            onClick = { clickEvent(); viewModel.toggleAmbientMode() }
           ) {
             Icon(imageVector = if (isAmbientEnabled) Icons.Filled.BlurOn else Icons.Outlined.BlurOn, contentDescription = "Ambience Mode", tint = if (isAmbientEnabled) MaterialTheme.colorScheme.primary else Color.White, modifier = Modifier.size(24.dp))
           }
@@ -478,13 +479,13 @@ fun RenderPlayerButton(
             shape = CircleShape, color = if (hideBackground) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
             contentColor = if (isAmbientEnabled) { MaterialTheme.colorScheme.primary } else { if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface },
             border = if (hideBackground) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-            modifier = Modifier.size(buttonSize).clip(CircleShape).combinedClickable(interactionSource = remember { MutableInteractionSource() }, indication = ripple(bounded = true), onClick = { clickEvent(); viewModel.toggleAmbientMode() }, onLongClick = { clickEvent(); onOpenSheet(Sheets.AmbientConfig) })
+            modifier = Modifier.size(buttonSize).clip(CircleShape).clickable(interactionSource = remember { MutableInteractionSource() }, indication = ripple(bounded = true), onClick = { clickEvent(); viewModel.toggleAmbientMode() })
           ) {
             Box(contentAlignment = Alignment.Center) { Icon(imageVector = if (isAmbientEnabled) Icons.Filled.BlurOn else Icons.Outlined.BlurOn, contentDescription = "Ambience Mode", tint = if (isAmbientEnabled) MaterialTheme.colorScheme.primary else (if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface), modifier = Modifier.size(24.dp)) }
           }
         }
     }
 
-    PlayerButton.NONE -> {}
+    PlayerButton.NONE -> { /* Do nothing */ }
   }
 }
