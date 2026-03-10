@@ -19,7 +19,8 @@ fun LiquidCard(
     colors: CardColors = CardDefaults.cardColors(),
     elevation: CardElevation = CardDefaults.cardElevation(),
     border: BorderStroke? = null,
-    target: LiquidTarget = LiquidTarget.DIALOG,
+    // The target is securely set to CARD so it listens to the new sliders!
+    target: LiquidTarget = LiquidTarget.CARD, 
     content: @Composable ColumnScope.() -> Unit
 ) {
     val backdrop = LocalLiquidBackdrop.current
