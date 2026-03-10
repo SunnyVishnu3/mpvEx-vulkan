@@ -30,22 +30,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-
 import kotlin.math.roundToInt
 
-/**
- * A draggable panel with an optional fixed header and scrollable content.
- * 
- * @param modifier Modifier for the panel
- * @param header Optional composable for the fixed header that stays constant during scroll
- * @param content The scrollable content of the panel
- */
+// --- NEW LIQUID IMPORTS ---
+import app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidGlassSurface
+import app.marlboroadvance.mpvex.preferences.LiquidTarget
+
 @Composable
 fun DraggablePanel(
     modifier: Modifier = Modifier,
@@ -65,33 +63,26 @@ fun DraggablePanel(
         val density = LocalDensity.current
         val parentWidthPx = with(density) { maxWidth.toPx() }
         
-        // Calculate bounds for horizontal drag
-        // Panel is aligned to CenterEnd (Right), so offset 0 is the default rightmost position.
         val freeSpace = (parentWidthPx - panelWidth).coerceAtLeast(0f)
         val maxOffset = 0f
         val minOffset = -freeSpace
-
-        // In portrait, cap panel height to 50% of available height
         val panelMaxHeight = if (isPortrait) maxHeight * 0.5f else maxHeight
 
         val colors = panelCardsColors()
-        Surface(
-            modifier = Modifier
-                .offset { IntOffset(offsetX.roundToInt(), 0) }
-                .onSizeChanged { panelWidth = it.width }
-                .widthIn(max = 380.dp)
-                .heightIn(max = panelMaxHeight),
-            shape = MaterialTheme.shapes.extraLarge,
-            color = colors.containerColor,
-            contentColor = colors.contentColor,
-            tonalElevation = 0.dp,
-        ) {
+        val backdrop = LocalLiquidBackdrop.current
+        
+        val panelModifier = Modifier
+            .offset { IntOffset(offsetX.roundToInt(), 0) }
+            .onSizeChanged { panelWidth = it.width }
+            .widthIn(max = 380.dp)
+            .heightIn(max = panelMaxHeight)
+
+        val panelContent: @Composable () -> Unit = {
             Column {
-                 // Drag Handle & Indicator
                  Box(
                      modifier = Modifier
                          .fillMaxWidth()
-                         .height(18.dp) // Good touch target size
+                         .height(18.dp) 
                          .pointerInput(maxOffset, minOffset) {
                              detectDragGestures { change, dragAmount ->
                                  change.consume()
@@ -106,23 +97,40 @@ fun DraggablePanel(
                              .width(32.dp)
                              .height(4.dp)
                              .background(
-                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                 color = if (backdrop != null) Color.White.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                                  shape = RoundedCornerShape(2.dp)
                              )
                      )
                  }
                 
-                // Fixed header (if provided) - stays constant
                 if (header != null) {
                     header()
                 }
                 
-                // Scrollable content
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState())
-                ) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     content()
                 }
+            }
+        }
+
+        if (backdrop != null) {
+            LiquidGlassSurface(
+                backdrop = backdrop,
+                target = LiquidTarget.DIALOG,
+                shape = MaterialTheme.shapes.extraLarge,
+                modifier = panelModifier
+            ) {
+                panelContent()
+            }
+        } else {
+            Surface(
+                modifier = panelModifier,
+                shape = MaterialTheme.shapes.extraLarge,
+                color = colors.containerColor,
+                contentColor = colors.contentColor,
+                tonalElevation = 0.dp,
+            ) {
+                panelContent()
             }
         }
     }
