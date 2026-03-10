@@ -50,6 +50,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 
+// --- NEW LIQUID IMPORTS ---
+import com.kyant.backdrop.Backdrop
+import app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop
+
 /**
  * Main entry point for the application
  */
@@ -94,7 +98,14 @@ class MainActivity : ComponentActivity() {
 
       MpvexTheme {
         Surface {
-          Navigator()
+          // THE MAGIC SAUCE: We turn the Liquid Camera on at the root of the app!
+          Backdrop { backdrop ->
+            CompositionLocalProvider(
+              LocalLiquidBackdrop provides backdrop
+            ) {
+              Navigator()
+            }
+          }
         }
       }
     }
@@ -137,7 +148,7 @@ class MainActivity : ComponentActivity() {
         }
       } catch (e: Exception) {
         withContext(Dispatchers.Main) {
-          Log.e("MainActivity", "Error during auto-connect", e)
+         Log.e("MainActivity", "Error during auto-connect", e)
         }
       }
     }
@@ -186,26 +197,26 @@ class MainActivity : ComponentActivity() {
         transitionSpec = {
           (
             fadeIn(animationSpec = tween(220)) +
-              slideIn(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
+             slideIn(animationSpec = tween(220)) { IntOffset(it.width / 2, 0) }
           ) togetherWith (
               fadeOut(animationSpec = tween(220)) +
                 slideOut(animationSpec = tween(220)) { IntOffset(-it.width / 2, 0) }
           )
         },
         predictivePopTransitionSpec = {
-          (
+         (
             fadeIn(animationSpec = tween(220)) +
               scaleIn(
                 animationSpec = tween(220, delayMillis = 30),
                 initialScale = .9f,
                 TransformOrigin(-1f, .5f),
-              )
+               )
           ) togetherWith (
               fadeOut(animationSpec = tween(220)) +
                 scaleOut(
                   animationSpec = tween(220, delayMillis = 30),
                   targetScale = .9f,
-                  TransformOrigin(-1f, .5f),
+                   TransformOrigin(-1f, .5f),
                 )
           )
         },
@@ -214,7 +225,7 @@ class MainActivity : ComponentActivity() {
       // Display Update Dialog when appropriate (only if update feature is enabled)
       if (BuildConfig.ENABLE_UPDATE_FEATURE && updateViewModel != null) {
         when (updateState) {
-          is UpdateViewModel.UpdateState.Available -> {
+           is UpdateViewModel.UpdateState.Available -> {
             val release = (updateState as UpdateViewModel.UpdateState.Available).release
             UpdateDialog(
               release = release,
@@ -227,7 +238,7 @@ class MainActivity : ComponentActivity() {
               onIgnore = { updateViewModel.ignoreVersion(release.tagName.removePrefix("v")) }
             )
           }
-          is UpdateViewModel.UpdateState.ReadyToInstall -> {
+           is UpdateViewModel.UpdateState.ReadyToInstall -> {
             val release = (updateState as UpdateViewModel.UpdateState.ReadyToInstall).release
             UpdateDialog(
               release = release,
@@ -240,7 +251,7 @@ class MainActivity : ComponentActivity() {
               onIgnore = { updateViewModel.ignoreVersion(release.tagName.removePrefix("v")) }
             )
           }
-          else -> {}
+           else -> {}
         }
       }
     }
