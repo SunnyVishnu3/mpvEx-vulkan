@@ -16,10 +16,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import app.marlboroadvance.mpvex.preferences.liquidTarget
+import app.marlboroadvance.mpvex.preferences.LiquidTarget
+
 // Broadcasts the glass camera to any button that wants it!
 val LocalLiquidBackdrop = androidx.compose.runtime.staticCompositionLocalOf<com.kyant.backdrop.Backdrop?> { null }
-
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -82,6 +82,7 @@ fun LiquidGlassCard(
     LiquidGlassSurface(
         backdrop = backdrop,
         shape = shape,
+        target = LiquidTarget.DIALOG,
         modifier = modifier
     ) {
         content()
