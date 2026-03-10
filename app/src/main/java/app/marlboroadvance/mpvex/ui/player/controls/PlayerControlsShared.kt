@@ -226,11 +226,14 @@ fun RenderPlayerButton(
     PlayerButton.DECODER -> {
       if (backdrop != null && !hideBackground) {
           TransparentLiquidButton(
-            backdrop = backdrop, modifier = Modifier.height(buttonSize), shape = CircleShape,
+            backdrop = backdrop, 
+            // FORCE the width to 56.dp so the Liquid Engine cannot stretch it!
+            modifier = Modifier.width(56.dp).height(buttonSize), 
+            shape = CircleShape,
             onClick = { clickEvent(); onOpenSheet(Sheets.Decoders) }
           ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.small)) {
-              Text(decoder.title, maxLines = 1, color = Color.White, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+              Text(decoder.title, maxLines = 1, color = Color.White, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             }
           }
       } else {
@@ -240,73 +243,19 @@ fun RenderPlayerButton(
           contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
           tonalElevation = 0.dp, shadowElevation = 0.dp,
           border = if (hideBackground) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-          modifier = Modifier.height(buttonSize).clip(CircleShape).clickable(
+          modifier = Modifier.width(56.dp).height(buttonSize).clip(CircleShape).clickable(
             interactionSource = remember { MutableInteractionSource() }, indication = ripple(bounded = true),
             onClick = { clickEvent(); onOpenSheet(Sheets.Decoders) }
           )
         ) {
-          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)) {
-            Text(text = decoder.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
+          Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Text(text = decoder.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
           }
         }
       }
     }
-
-    PlayerButton.SCREEN_ROTATION -> {
-      ControlsButton(icon = Icons.Default.ScreenRotation, onClick = viewModel::cycleScreenRotations, color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(buttonSize))
-    }
-
-    PlayerButton.FRAME_NAVIGATION -> {
-      val isExpanded by viewModel.isFrameNavigationExpanded.collectAsState()
-      val isSnapshotLoading by viewModel.isSnapshotLoading.collectAsState()
-      val context = LocalContext.current
-
-      AnimatedContent(
-        targetState = isExpanded,
-        transitionSpec = { (fadeIn(animationSpec = tween(200)) + expandHorizontally(animationSpec = tween(250))).togetherWith(fadeOut(animationSpec = tween(200)) + shrinkHorizontally(animationSpec = tween(250))).using(SizeTransform(clip = false)) },
-        label = "FrameNavExpandCollapse",
-      ) { expanded ->
-        if (expanded) {
-          if (backdrop != null && !hideBackground) {
-             LiquidGlassSurface(
-               backdrop = backdrop, target = LiquidTarget.BUTTON, shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.height(buttonSize)
-             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
-                   Box(modifier = Modifier.size(buttonSize - 4.dp).clip(CircleShape).clickable(onClick = { viewModel.frameStepBackward(); viewModel.resetFrameNavigationTimer() }), contentAlignment = Alignment.Center) { Icon(Icons.Default.FastRewind, contentDescription = "Previous Frame", tint = Color.White, modifier = Modifier.size(20.dp)) }
-                   if (isSnapshotLoading) {
-                       Box(modifier = Modifier.size(buttonSize - 4.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary) }
-                   } else {
-                       @OptIn(ExperimentalFoundationApi::class)
-                       Box(modifier = Modifier.size(buttonSize - 4.dp).clip(CircleShape).combinedClickable(onClick = { viewModel.takeSnapshot(context); viewModel.resetFrameNavigationTimer() }, onLongClick = { onOpenSheet(Sheets.FrameNavigation) }), contentAlignment = Alignment.Center) { Icon(Icons.Default.CameraAlt, contentDescription = "Take Screenshot", tint = Color.White, modifier = Modifier.size(20.dp)) }
-                   }
-                   Box(modifier = Modifier.size(buttonSize - 4.dp).clip(CircleShape).clickable(onClick = { viewModel.frameStepForward(); viewModel.resetFrameNavigationTimer() }), contentAlignment = Alignment.Center) { Icon(Icons.Default.FastForward, contentDescription = "Next Frame", tint = Color.White, modifier = Modifier.size(20.dp)) }
-                }
-             }
-          } else {
-            Surface(
-              shape = MaterialTheme.shapes.extraLarge,
-              color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
-              border = if (hideBackground) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-              modifier = Modifier.height(buttonSize)
-            ) {
-              Row(horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
-                Surface(shape = CircleShape, color = Color.Transparent, modifier = Modifier.size(buttonSize - 4.dp).clip(CircleShape).clickable(onClick = { viewModel.frameStepBackward(); viewModel.resetFrameNavigationTimer() })) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.FastRewind, contentDescription = "Previous Frame", tint = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp)) } }
-                if (isSnapshotLoading) {
-                  Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.size(buttonSize - 4.dp)) { Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) { CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = if (hideBackground) controlColor else MaterialTheme.colorScheme.primary) } }
-                } else {
-                  @OptIn(ExperimentalFoundationApi::class)
-                  Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)), modifier = Modifier.size(buttonSize - 4.dp).clip(CircleShape).combinedClickable(onClick = { viewModel.takeSnapshot(context); viewModel.resetFrameNavigationTimer() }, onLongClick = { onOpenSheet(Sheets.FrameNavigation) })) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.CameraAlt, contentDescription = "Take Screenshot", tint = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp)) } }
-                }
-                Surface(shape = CircleShape, color = Color.Transparent, modifier = Modifier.size(buttonSize - 4.dp).clip(CircleShape).clickable(onClick = { viewModel.frameStepForward(); viewModel.resetFrameNavigationTimer() })) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.FastForward, contentDescription = "Next Frame", tint = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp)) } }
-              }
-            }
-          }
-        } else {
-          ControlsButton(icon = Icons.Default.Camera, onClick = viewModel::toggleFrameNavigationExpanded, onLongClick = { onOpenSheet(Sheets.FrameNavigation) }, color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(buttonSize))
-        }
-      }
-    }
-
+  }
+}
     PlayerButton.VIDEO_ZOOM -> {
       if (kotlin.math.abs(currentZoom) >= 0.005f) {
         if (backdrop != null && !hideBackground) {
