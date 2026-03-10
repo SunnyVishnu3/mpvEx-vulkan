@@ -88,8 +88,10 @@ fun VerticalSlider(
       Modifier
         .fillMaxWidth()
         .fillMaxHeight(targetHeight)
-        .background(if (backdrop != null) Color.White else MaterialTheme.colorScheme.tertiary),
+        // Now it uses your dynamic primary theme color instead of hardcoded white!
+        .background(if (backdrop != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary),
     )
+
     if (overflowRange != null && overflowValue != null) {
       val overflowHeight by animateFloatAsState(percentage(overflowValue, overflowRange), label = "vslideroverflowheight")
       Box(
@@ -136,8 +138,10 @@ fun VerticalSlider(
       Modifier
         .fillMaxWidth()
         .fillMaxHeight(targetHeight)
-        .background(if (backdrop != null) Color.White else MaterialTheme.colorScheme.tertiary),
+        // Now it uses your dynamic primary theme color instead of hardcoded white!
+        .background(if (backdrop != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary),
     )
+    
     if (overflowRange != null && overflowValue != null) {
       val overflowHeight by animateFloatAsState(percentage(overflowValue, overflowRange), label = "vslideroverflowheight")
       Box(
