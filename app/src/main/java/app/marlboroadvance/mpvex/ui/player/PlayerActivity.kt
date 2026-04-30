@@ -1,4 +1,4 @@
-﻿package app.marlboroadvance.mpvex.ui.player
+package app.marlboroadvance.mpvex.ui.player
 
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -870,24 +870,10 @@ class PlayerActivity :
       Log.e(TAG, "Error copying MPV config and scripts", e)
     }
 
-    // ==========================================
-    // ADRENOTOOLS: INJECT CUSTOM TURNIP DRIVER HOOK
-    // ==========================================
-    val prefs = getSharedPreferences("gpu_driver_settings", Context.MODE_PRIVATE)
-    val customDriverDir = prefs.getString("custom_driver_dir", null)
-    
-    if (customDriverDir != null) {
-        // We let AdrenoTools dynamically check for the actual file inside the directory
-        val success = app.marlboroadvance.mpvex.system.AdrenoTools.hookCustomDriver(this@PlayerActivity, customDriverDir)
-        if (success) {
-            Log.i(TAG, "Successfully hooked custom Turnip driver from: $customDriverDir")
-        } else {
-            Log.e(TAG, "Failed to hook Turnip driver!")
-        }
-    }
-    // ==========================================
+    // Turnip driver is hooked in App.onCreate() — running it here would be too
+    // late, since various MPV/Surface code in this Activity may already have
+    // mapped the system libvulkan.so by now.
 
-    // NOW initialize MPV
     player.initialize(filesDir.path, cacheDir.path)
     mpvInitialized = true
     Log.d(TAG, "MPV initialized")
