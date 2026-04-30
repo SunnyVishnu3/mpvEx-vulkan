@@ -1,12 +1,15 @@
 package app.marlboroadvance.mpvex
 
 import android.app.Application
+import android.content.Context
+import android.util.Log
 import app.marlboroadvance.mpvex.database.repository.VideoMetadataCacheRepository
 import app.marlboroadvance.mpvex.di.DatabaseModule
 import app.marlboroadvance.mpvex.di.FileManagerModule
 import app.marlboroadvance.mpvex.di.PreferencesModule
 import app.marlboroadvance.mpvex.presentation.crash.CrashActivity
 import app.marlboroadvance.mpvex.presentation.crash.GlobalExceptionHandler
+import app.marlboroadvance.mpvex.system.AdrenoTools
 import app.marlboroadvance.mpvex.utils.media.MediaLibraryEvents
 import `is`.xyz.mpv.FastThumbnails
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +28,13 @@ class App : Application() {
 
   override fun onCreate() {
     super.onCreate()
+
+    // Hook the custom Turnip driver as early as possible — BEFORE anything in the
+    // process opens libvulkan.so. Once the system loader maps libvulkan.so the
+    // ICD selection is locked in and the bait-file namespace bypass cannot
+    // retarget it. Running this in App.onCreate guarantees it happens before
+    // any Activity or MPVLib static init touches Vulkan.
+    hookCustomVulkanDriverIfSelected()
 
     // Initialize Koin
     startKoin {
@@ -56,6 +66,19 @@ class App : Application() {
     }
   }
   
+  private fun hookCustomVulkanDriverIfSelected() {
+    val prefs = getSharedPreferences("gpu_driver_settings", Context.MODE_PRIVATE)
+    val customDriverDir = prefs.getString("custom_driver_dir", null)
+    if (customDriverDir == null) {
+      Log.i("App", "No custom GPU driver selected; using system Adreno driver")
+      return
+    }
+    runCatching {
+      val ok = AdrenoTools.hookCustomDriver(applicationContext, customDriverDir)
+      Log.i("App", "Early Turnip hook from $customDriverDir -> $ok")
+    }.onFailure { Log.e("App", "Turnip hook threw", it) }
+  }
+
   /**
    * Trigger a media scan on app launch to ensure MediaStore is up-to-date
    * This helps detect videos added by external apps while the app was closed
