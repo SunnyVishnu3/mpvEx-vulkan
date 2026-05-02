@@ -1,6 +1,7 @@
 package app.marlboroadvance.mpvex.ui.preferences
 
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Immutable
 import app.marlboroadvance.mpvex.R
 import app.marlboroadvance.mpvex.presentation.Screen
 
@@ -8,6 +9,10 @@ import app.marlboroadvance.mpvex.presentation.Screen
  * Represents a searchable preference item.
  * Used to index all preferences for the settings search feature.
  */
+// Perf: explicit @Immutable hint — `keywords` is built once and never
+// mutated, so it's safe to treat instances as stable for Compose. This
+// stops the search-results LazyColumn rows from recomposing unnecessarily.
+@Immutable
 data class SearchablePreference(
     @StringRes val titleRes: Int? = null,
     val title: String? = null,
