@@ -263,7 +263,13 @@ fun FilePickerDialog(
                 ) {
                   if (showStorageRoot) {
                     // Show storage volumes
-                    items(storageVolumes) { volume ->
+                    // Perf: stable key + contentType so item slots are reused
+                    // when the same volumes re-emit (avoids row recomposition).
+                    items(
+                      items = storageVolumes,
+                      key = { StorageVolumeUtils.getVolumePath(it) ?: it.toString() },
+                      contentType = { "storage_volume" },
+                    ) { volume ->
                       val volumePath = StorageVolumeUtils.getVolumePath(volume)
                       if (volumePath != null) {
                         StorageVolumeItem(
@@ -281,14 +287,25 @@ fun FilePickerDialog(
                     }
                   } else {
                     // Show folders
-                    items(folders) { folder ->
+                    // Perf: keys avoid full re-bind when list re-orders or
+                    // updates partially; contentType lets folders/files share
+                    // separate recycling pools.
+                    items(
+                      items = folders,
+                      key = { it.absolutePath },
+                      contentType = { "folder" },
+                    ) { folder ->
                       FolderItem(
                         folder = folder,
                         onClick = { selectedPath = folder.absolutePath },
                       )
                     }
                     // Show files
-                    items(files) { file ->
+                    items(
+                      items = files,
+                      key = { it.absolutePath },
+                      contentType = { "file" },
+                    ) { file ->
                         FileItem(
                             file = file,
                             onClick = { onFileSelected(file.absolutePath) }
