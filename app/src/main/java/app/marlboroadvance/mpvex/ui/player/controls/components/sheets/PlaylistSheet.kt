@@ -35,6 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -69,6 +70,9 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+// Perf: stability hint so list rows skip recomposition when same instance
+// is supplied (only the affected row recomposes when fields change).
+@Immutable
 data class PlaylistItem(
   val uri: Uri,
   val title: String,
@@ -376,7 +380,13 @@ fun PlaylistSheet(
             state = lazyListState,
             modifier = Modifier.fillMaxWidth()
           ) {
-            items(playlist) { item ->
+            // Perf: keys + contentType so Compose can recycle list rows
+            // when items change (only the touched row recomposes).
+            items(
+              items = playlist,
+              key = { "${it.index}_${it.uri}" },
+              contentType = { "playlist_list_item" },
+            ) { item ->
               PlaylistTrackListItem(
                 item = item,
                 context = context,
@@ -397,7 +407,12 @@ fun PlaylistSheet(
             ),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
           ) {
-            items(playlist) { item ->
+            // Perf: keys + contentType for grid item slot reuse.
+            items(
+              items = playlist,
+              key = { "${it.index}_${it.uri}" },
+              contentType = { "playlist_grid_item" },
+            ) { item ->
               PlaylistTrackGridItem(
                 item = item,
                 context = context,
