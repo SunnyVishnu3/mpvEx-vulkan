@@ -102,6 +102,7 @@ import app.marlboroadvance.mpvex.preferences.preference.deleteAndGet
 import app.marlboroadvance.mpvex.preferences.preference.plusAssign
 import app.marlboroadvance.mpvex.preferences.preference.minusAssign
 import app.marlboroadvance.mpvex.ui.player.Decoder.Companion.getDecoderFromValue
+import app.marlboroadvance.mpvex.ui.player.HardwareHudOverlay
 import app.marlboroadvance.mpvex.ui.player.Panels
 import app.marlboroadvance.mpvex.ui.player.PlayerActivity
 import app.marlboroadvance.mpvex.ui.player.PlayerUpdates
@@ -164,8 +165,8 @@ fun PlayerControls(
   val context = LocalContext.current
   val liquidUIPreferences = remember { LiquidUIPreferences(context) }
   // Wired directly to the DataStore, defaults to false until toggled
-  val liquidUIEnabled by liquidUIPreferences.liquidUIEnabledFlow.collectAsState(initial = false) 
-  
+  val liquidUIEnabled by liquidUIPreferences.liquidUIEnabledFlow.collectAsState(initial = false)
+
   // The engine that captures the screen for the blur/lens effects
   val backdrop = rememberLayerBackdrop { drawContent() }
 
@@ -630,8 +631,8 @@ fun PlayerControls(
                     .horizontalScroll(rememberScrollState())
             ) {
                 customButtons.filter { it.isLeft }.forEach { button ->
-                    LiquidCustomButton(button, liquidUIEnabled, backdrop, viewModel, haptic) { 
-                        resetControlsTimestamp = System.currentTimeMillis() 
+                    LiquidCustomButton(button, liquidUIEnabled, backdrop, viewModel, haptic) {
+                        resetControlsTimestamp = System.currentTimeMillis()
                     }
                 }
             }
@@ -658,8 +659,8 @@ fun PlayerControls(
                     .horizontalScroll(rememberScrollState(), reverseScrolling = true)
             ) {
                 customButtons.filter { !it.isLeft }.forEach { button ->
-                    LiquidCustomButton(button, liquidUIEnabled, backdrop, viewModel, haptic) { 
-                        resetControlsTimestamp = System.currentTimeMillis() 
+                    LiquidCustomButton(button, liquidUIEnabled, backdrop, viewModel, haptic) {
+                        resetControlsTimestamp = System.currentTimeMillis()
                     }
                 }
             }
@@ -685,8 +686,8 @@ fun PlayerControls(
                     .horizontalScroll(rememberScrollState())
             ) {
                 customButtons.forEach { button ->
-                    LiquidCustomButton(button, liquidUIEnabled, backdrop, viewModel, haptic) { 
-                        resetControlsTimestamp = System.currentTimeMillis() 
+                    LiquidCustomButton(button, liquidUIEnabled, backdrop, viewModel, haptic) {
+                        resetControlsTimestamp = System.currentTimeMillis()
                     }
                 }
             }
@@ -922,71 +923,18 @@ fun PlayerControls(
                       )
                     }
 
-                    Surface(
-                      modifier =
-                        Modifier
-                          .size(56.dp)
-                          .clip(CircleShape)
-                          .clickable(
-                            enabled = viewModel.hasNext(),
-                            onClick = {
-                              resetControlsTimestamp = System.currentTimeMillis()
-                              if (viewModel.hasNext()) viewModel.playNext()
-                            },
-                          )
-                          .then(
-                            if (hideBackground) {
-                              Modifier.background(brush = buttonShadow, shape = CircleShape)
-                            } else {
-                              Modifier
-                            },
-                          ),
-                      shape = CircleShape,
-                      color =
-                        if (!hideBackground) {
-                          MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
-                        } else {
-                          Color.Transparent
-                        },
-                      contentColor = MaterialTheme.colorScheme.onSurface,
-                      tonalElevation = 0.dp,
-                      shadowElevation = 0.dp,
-                      border =
-                        if (!hideBackground) {
-                          BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                        } else {
-                          null
-                        },
-                    ) {
-                      Icon(
-                        imageVector = Icons.Default.SkipNext,
-                        contentDescription = "Next",
-                        tint =
-                          if (viewModel.hasNext()) {
-                            if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface
-                          } else {
-                            if (hideBackground) {
-                              controlColor.copy(alpha = 0.38f)
-                            } else {
-                              MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                            }
-                          },
-                        modifier = Modifier
-                          .fillMaxSize()
-                          .padding(MaterialTheme.spacing.small),
-                      )
-                    }
-                  }
-                } else {
                   Surface(
                     modifier =
                       Modifier
-                        .size(64.dp)
+                        .size(56.dp)
                         .clip(CircleShape)
-                        .clickable(interaction, ripple(), onClick = {
-                          resetControlsTimestamp = System.currentTimeMillis()
-                          viewModel.pauseUnpause()
-                        })
+                        .clickable(
+                          enabled = viewModel.hasNext(),
+                          onClick = {
+                            resetControlsTimestamp = System.currentTimeMillis()
+                            if (viewModel.hasNext()) viewModel.playNext()
+                          },
+                        )
                         .then(
                           if (hideBackground) {
                             Modifier.background(brush = buttonShadow, shape = CircleShape)
@@ -1001,30 +949,83 @@ fun PlayerControls(
                       } else {
                         Color.Transparent
                       },
-                    contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
                     tonalElevation = 0.dp,
                     shadowElevation = 0.dp,
                     border =
-                      if (!hideBackground) {
+                       if (!hideBackground) {
                         BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                       } else {
                         null
                       },
                   ) {
-                    Image(
-                      painter = rememberAnimatedVectorPainter(icon, paused == false),
+                    Icon(
+                      imageVector = Icons.Default.SkipNext,
+                      contentDescription = "Next",
+                      tint =
+                        if (viewModel.hasNext()) {
+                          if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface
+                        } else {
+                          if (hideBackground) {
+                            controlColor.copy(alpha = 0.38f)
+                          } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                          }
+                        },
                       modifier = Modifier
                         .fillMaxSize()
-                        .padding(MaterialTheme.spacing.medium),
-                      contentDescription = null,
-                      colorFilter = ColorFilter.tint(LocalContentColor.current),
+                        .padding(MaterialTheme.spacing.small),
+                    )
+                  }
+                }
+              } else {
+                Surface(
+                  modifier =
+                    Modifier
+                      .size(64.dp)
+                      .clip(CircleShape)
+                      .clickable(interaction, ripple(), onClick = {
+                        resetControlsTimestamp = System.currentTimeMillis()
+                        viewModel.pauseUnpause()
+                      })
+                      .then(
+                        if (hideBackground) {
+                          Modifier.background(brush = buttonShadow, shape = CircleShape)
+                        } else {
+                          Modifier
+                        },
+                      ),
+                  shape = CircleShape,
+                  color =
+                    if (!hideBackground) {
+                      MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
+                    } else {
+                      Color.Transparent
+                    },
+                  contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+                  tonalElevation = 0.dp,
+                  shadowElevation = 0.dp,
+                  border =
+                    if (!hideBackground) {
+                      BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                    } else {
+                       null
+                    },
+                ) {
+                  Image(
+                    painter = rememberAnimatedVectorPainter(icon, paused == false),
+                    modifier = Modifier
+                      .fillMaxSize()
+                      .padding(MaterialTheme.spacing.medium),
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(LocalContentColor.current),
                   )
                 }
               }
             }
           }
         }
-      }   
+      }
 
         AnimatedVisibility(
           visible = controlsShown && !areControlsLocked,
@@ -1169,7 +1170,7 @@ fun PlayerControls(
               slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
                 fadeIn(playerControlsEnterAnimationSpec())
             } else {
-              fadeIn(playerControlsEnterAnimationSpec())
+               fadeIn(playerControlsEnterAnimationSpec())
             },
           exit =
             if (!reduceMotion) {
@@ -1183,13 +1184,13 @@ fun PlayerControls(
               .then(
                 if (showSystemStatusBar) {
                   Modifier.windowInsetsPadding(WindowInsets.statusBars)
-                } else {
+                 } else {
                   Modifier
                 }
               )
               .then(
                 if (showSystemNavigationBar) {
-                  val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
+                   val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
                   Modifier.padding(
                     start = navBarPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                     end = navBarPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
@@ -1225,7 +1226,7 @@ fun PlayerControls(
         AnimatedVisibility(
           visible = controlsShown && !areControlsLocked && !areSlidersShown,
           enter =
-            if (!reduceMotion) {
+             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
                 fadeIn(playerControlsEnterAnimationSpec())
             } else {
@@ -1239,7 +1240,7 @@ fun PlayerControls(
               fadeOut(playerControlsExitAnimationSpec())
             },
           modifier =
-            Modifier
+             Modifier
               .then(
                 if (showSystemNavigationBar) {
                   val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
@@ -1275,26 +1276,26 @@ fun PlayerControls(
               hideBackground = hideBackground,
               decoder = decoder,
               playbackSpeed = playbackSpeed ?: 1f,
-              onBackPress = onBackPress,
+               onBackPress = onBackPress,
               onOpenSheet = onOpenSheet,
               onOpenPanel = onOpenPanel,
               viewModel = viewModel,
               activity = activity,
             )
-          } else {
+           } else {
             BottomRightPlayerControlsLandscape(
               buttons = bottomRightButtons,
               chapters = chapters,
               currentChapter = currentChapter,
               isSpeedNonOne = isSpeedNonOne,
               currentZoom = currentZoom,
-              aspect = aspect,
+               aspect = aspect,
               mediaTitle = mediaTitle,
               hideBackground = hideBackground,
               decoder = decoder,
               playbackSpeed = playbackSpeed ?: 1f,
               onBackPress = onBackPress,
-              onOpenSheet = onOpenSheet,
+               onOpenSheet = onOpenSheet,
               onOpenPanel = onOpenPanel,
               viewModel = viewModel,
               activity = activity,
@@ -1303,7 +1304,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && !isPortrait && !areSlidersShown,
+           visible = controlsShown && !areControlsLocked && !isPortrait && !areSlidersShown,
           enter =
             if (!reduceMotion) {
               slideInHorizontally(playerControlsEnterAnimationSpec()) { -it } +
@@ -1317,18 +1318,18 @@ fun PlayerControls(
                 fadeOut(playerControlsExitAnimationSpec())
             } else {
               fadeOut(playerControlsExitAnimationSpec())
-            },
+             },
           modifier =
             Modifier
               .then(
                 if (showSystemNavigationBar) {
                   val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
-                  Modifier.padding(
+                   Modifier.padding(
                     start = navBarPadding.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                     end = navBarPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
                   )
                 } else {
-                  Modifier
+                   Modifier
                 }
               )
               .constrainAs(bottomLeftControls) {
@@ -1386,7 +1387,7 @@ fun PlayerControls(
       chapter = chapters.getOrNull(currentChapter ?: 0),
       chapters = chapters.toImmutableList(),
       onSeekToChapter = {
-        MPVLib.setPropertyInt("chapter", it)
+         MPVLib.setPropertyInt("chapter", it)
         viewModel.unpause()
       },
       decoder = decoder,
@@ -1412,10 +1413,15 @@ fun PlayerControls(
     PlayerPanels(
       panelShown = panel,
       onDismissRequest = { onOpenPanel(Panels.None) },
-      )
-    }
-  }
-  
+    )
+
+    // ==========================================
+    // INJECT THE NATIVE PAGE 6 HARDWARE HUD HERE
+    // ==========================================
+    HardwareHudOverlay()
+
+  }}
+
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun LiquidCustomButton(
@@ -1442,7 +1448,7 @@ fun LiquidCustomButton(
             Text(
                 text = button.label,
                 // FIXED: Cleaned up the modifier syntax!
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).basicMarquee(), 
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).basicMarquee(),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 maxLines = 1,
                 softWrap = false,
