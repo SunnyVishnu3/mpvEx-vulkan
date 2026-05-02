@@ -610,9 +610,16 @@ fun MultiChoicePreference(
       onDismissRequest = { showDialog = false },
       title = title,
       text = {
+        // Perf: hoist values.toList() out of items() so it isn't recomputed
+        // for every row recomposition.
+        val entries = remember(values) { values.toList() }
         LazyColumn {
-          items(values.toList().size) { index ->
-            val entry = values.toList()[index]
+          items(
+            count = entries.size,
+            key = { idx -> entries[idx].first },
+            contentType = { "subtitle_value" },
+          ) { index ->
+            val entry = entries[index]
             val key = entry.first
             val checked = if (hasAllOption && (selectedValues.isEmpty() || selectedValues.contains("all"))) {
               key == "all"
