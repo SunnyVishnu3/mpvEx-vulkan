@@ -1,8 +1,12 @@
 package app.marlboroadvance.mpvex.database.entities
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+// Perf: stability hint for Compose. All fields are primitives/String, so
+// instances are effectively immutable and safe to skip recomposition for.
+@Immutable
 @Entity
 data class PlaylistEntity(
   @PrimaryKey(autoGenerate = true) val id: Int = 0,
