@@ -1,10 +1,14 @@
 package app.marlboroadvance.mpvex.database.entities
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+// Perf: stability hint for Compose; rows in playlist screens reuse the
+// same instances and shouldn't recompose unless data actually changes.
+@Immutable
 @Entity(
   foreignKeys = [
     ForeignKey(
