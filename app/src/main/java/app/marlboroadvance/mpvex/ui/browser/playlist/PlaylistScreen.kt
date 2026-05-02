@@ -453,9 +453,11 @@ object PlaylistScreen : Screen {
               horizontalArrangement = Arrangement.spacedBy(8.dp),
               verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+              // Perf: contentType for the playlist-grid slot pool.
               items(
                 count = playlistsWithCount.size,
                 key = { playlistsWithCount[it].playlist.id },
+                contentType = { "playlist_grid_card" },
               ) { index ->
                 val playlistWithCount = playlistsWithCount[index]
                 PlaylistCard(
@@ -495,7 +497,12 @@ object PlaylistScreen : Screen {
               ),
               verticalArrangement = Arrangement.spacedBy(0.dp),
             ) {
-              items(playlistsWithCount, key = { it.playlist.id }) { playlistWithCount ->
+              // Perf: contentType for the playlist-list slot pool.
+              items(
+                items = playlistsWithCount,
+                key = { it.playlist.id },
+                contentType = { "playlist_list_card" },
+              ) { playlistWithCount ->
                 PlaylistCard(
                   playlist = playlistWithCount.playlist,
                   itemCount = playlistWithCount.itemCount,

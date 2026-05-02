@@ -526,12 +526,20 @@ private fun RecentItemsContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
           ) {
+            // Perf: contentType varies by sealed-variant so video and playlist
+            // tiles draw from separate slot pools when types interleave.
             items(
               count = recentItems.size,
               key = { index ->
                 when (val item = recentItems[index]) {
                   is RecentlyPlayedItem.VideoItem -> "video_${item.video.id}_${item.timestamp}"
                   is RecentlyPlayedItem.PlaylistItem -> "playlist_${item.playlist.id}_${item.timestamp}"
+                }
+              },
+              contentType = { index ->
+                when (recentItems[index]) {
+                  is RecentlyPlayedItem.VideoItem -> "recent_video_grid"
+                  is RecentlyPlayedItem.PlaylistItem -> "recent_playlist_grid"
                 }
               },
             ) { index ->
@@ -636,12 +644,19 @@ private fun RecentItemsContent(
               bottom = if (isInSelectionMode) 88.dp else 16.dp
             ),
           ) {
+            // Perf: contentType varies by sealed-variant for the list mode.
             items(
               count = recentItems.size,
               key = { index ->
                 when (val item = recentItems[index]) {
                   is RecentlyPlayedItem.VideoItem -> "video_${item.video.id}_${item.timestamp}"
                   is RecentlyPlayedItem.PlaylistItem -> "playlist_${item.playlist.id}_${item.timestamp}"
+                }
+              },
+              contentType = { index ->
+                when (recentItems[index]) {
+                  is RecentlyPlayedItem.VideoItem -> "recent_video_list"
+                  is RecentlyPlayedItem.PlaylistItem -> "recent_playlist_list"
                 }
               },
             ) { index ->

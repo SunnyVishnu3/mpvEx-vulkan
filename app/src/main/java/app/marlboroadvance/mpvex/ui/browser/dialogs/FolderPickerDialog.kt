@@ -219,7 +219,12 @@ fun FolderPickerDialog(
         ) {
           if (showStorageRoot) {
             // Show storage volumes
-            items(storageVolumes) { volume ->
+            // Perf: stable key + contentType for slot reuse on recomposition.
+            items(
+              items = storageVolumes,
+              key = { StorageVolumeUtils.getVolumePath(it) ?: it.toString() },
+              contentType = { "storage_volume" },
+            ) { volume ->
               val volumePath = StorageVolumeUtils.getVolumePath(volume)
               if (volumePath != null) {
                 StorageVolumeItem(
@@ -230,7 +235,7 @@ fun FolderPickerDialog(
                 )
               }
             }
-            
+
             if (storageVolumes.isEmpty()) {
               item {
                 Text(
@@ -244,7 +249,13 @@ fun FolderPickerDialog(
             }
           } else {
             // Show folders
-            items(folders) { folder ->
+            // Perf: stable key by absolutePath; folders share one contentType
+            // pool for cheap row recycling.
+            items(
+              items = folders,
+              key = { it.absolutePath },
+              contentType = { "folder" },
+            ) { folder ->
               FolderItem(
                 folder = folder,
                 onClick = { selectedPath = folder.absolutePath },

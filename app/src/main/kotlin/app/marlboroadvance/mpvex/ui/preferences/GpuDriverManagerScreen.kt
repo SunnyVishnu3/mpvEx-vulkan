@@ -209,7 +209,12 @@ object GpuDriverManagerScreen : Screen {
                 title = { Text(text = "Available GitHub Drivers", fontWeight = FontWeight.Bold) },
                 text = {
                     LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                        items(availableAssets) { asset ->
+                        // Perf: stable key (file name unique per asset).
+                        items(
+                            items = availableAssets,
+                            key = { it.fileName },
+                            contentType = { "github_asset" },
+                        ) { asset ->
                             Card(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { downloadSpecificDriver(asset) },
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
@@ -271,7 +276,12 @@ object GpuDriverManagerScreen : Screen {
                     )
                 }
 
-                items(installedDrivers) { driverItem ->
+                // Perf: folder absolutePath uniquely identifies each driver.
+                items(
+                    items = installedDrivers,
+                    key = { it.folder.absolutePath },
+                    contentType = { "installed_driver" },
+                ) { driverItem ->
                     DriverCard(
                         title = driverItem.displayName,
                         subtitle = driverItem.displaySubtitle,

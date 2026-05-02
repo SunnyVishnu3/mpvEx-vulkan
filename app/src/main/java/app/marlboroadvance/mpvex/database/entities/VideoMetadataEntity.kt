@@ -1,5 +1,6 @@
 package app.marlboroadvance.mpvex.database.entities
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -7,6 +8,8 @@ import androidx.room.PrimaryKey
  * Cached video metadata to avoid repeated MediaInfo extractions
  * Stores duration, size, resolution, and framerate for videos that require MediaInfo processing
  */
+// Perf: stability hint for Compose. All fields are primitives/String.
+@Immutable
 @Entity(tableName = "video_metadata_cache")
 data class VideoMetadataEntity(
   @PrimaryKey

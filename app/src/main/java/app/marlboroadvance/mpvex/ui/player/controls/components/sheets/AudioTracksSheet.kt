@@ -85,7 +85,12 @@ fun AudioTracksSheet(
         LazyRow(
           horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
         ) {
-          items(AudioChannels.entries) {
+          // Perf: enum.name is a stable identity for chip slot reuse.
+          items(
+            items = AudioChannels.entries,
+            key = { it.name },
+            contentType = { "audio_channel" },
+          ) {
             FilterChip(
               selected = audioChannels == it,
               onClick = {

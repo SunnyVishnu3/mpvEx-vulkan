@@ -1,11 +1,15 @@
 package app.marlboroadvance.mpvex.domain.network
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
  * Represents a network connection configuration
  */
+// Perf: stability hint for Compose to skip recomposing rows when same
+// instance is supplied (lists of saved connections).
+@Immutable
 @Entity(tableName = "network_connections")
 data class NetworkConnection(
   @PrimaryKey(autoGenerate = true)
@@ -35,6 +39,7 @@ enum class NetworkProtocol(val displayName: String, val defaultPort: Int) {
 /**
  * Runtime status of a network connection
  */
+@Immutable
 data class ConnectionStatus(
   val connectionId: Long,
   val isConnected: Boolean = false,

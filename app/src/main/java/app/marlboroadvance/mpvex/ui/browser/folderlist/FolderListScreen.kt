@@ -719,6 +719,16 @@ private fun GridContent(
   onFolderClick: (VideoFolder) -> Unit,
   onFolderLongClick: (VideoFolder) -> Unit,
 ) {
+  // Perf: build a bucketId -> newVideoCount lookup once per data change.
+  // The previous per-row .find { } turned the list render into O(n*m).
+  val newCountByBucketId = remember(foldersWithNewCount) {
+    foldersWithNewCount.associate { it.folder.bucketId to it.newVideoCount }
+  }
+  // Perf: hoist parent-path of the recently played file out of the row so we
+  // don't construct a File per item and re-walk the path on every recomposition.
+  val recentlyPlayedParent = remember(recentlyPlayedFilePath) {
+    recentlyPlayedFilePath?.let { File(it).parent }
+  }
   Box(modifier = Modifier.fillMaxSize()) {
     LazyVerticalGrid(
       columns = GridCells.Fixed(folderGridColumns),
@@ -732,16 +742,17 @@ private fun GridContent(
       horizontalArrangement = Arrangement.spacedBy(4.dp),
       verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-      items(folders.size) { index ->
+      // Perf: stable keys + contentType so Compose reuses folder-card slots
+      // across data refreshes instead of recomposing every cell.
+      items(
+        count = folders.size,
+        key = { index -> folders[index].bucketId },
+        contentType = { "folder_grid_card" },
+      ) { index ->
         val folder = folders[index]
-        val isRecentlyPlayed = recentlyPlayedFilePath?.let { filePath ->
-          val file = File(filePath)
-          file.parent == folder.path
-        } ?: false
+        val isRecentlyPlayed = recentlyPlayedParent == folder.path
 
-        val newCount = foldersWithNewCount
-          .find { it.folder.bucketId == folder.bucketId }
-          ?.newVideoCount ?: 0
+        val newCount = newCountByBucketId[folder.bucketId] ?: 0
 
         FolderCard(
           folder = folder,
@@ -792,6 +803,15 @@ private fun ListContent(
   onFolderClick: (VideoFolder) -> Unit,
   onFolderLongClick: (VideoFolder) -> Unit,
 ) {
+  // Perf: build a bucketId -> newVideoCount lookup once per data change to
+  // avoid the O(n*m) per-row .find used previously.
+  val newCountByBucketId = remember(foldersWithNewCount) {
+    foldersWithNewCount.associate { it.folder.bucketId to it.newVideoCount }
+  }
+  // Perf: hoist parent-path of the recently played file out of the row.
+  val recentlyPlayedParent = remember(recentlyPlayedFilePath) {
+    recentlyPlayedFilePath?.let { File(it).parent }
+  }
   Box(modifier = Modifier.fillMaxSize()) {
     LazyColumn(
       state = listState,
@@ -802,15 +822,15 @@ private fun ListContent(
         bottom = navigationBarHeight
       ),
     ) {
-      items(folders) { folder ->
-        val isRecentlyPlayed = recentlyPlayedFilePath?.let { filePath ->
-          val file = File(filePath)
-          file.parent == folder.path
-        } ?: false
+      // Perf: stable keys + contentType for folder-row slot pool.
+      items(
+        items = folders,
+        key = { it.bucketId },
+        contentType = { "folder_list_card" },
+      ) { folder ->
+        val isRecentlyPlayed = recentlyPlayedParent == folder.path
 
-        val newCount = foldersWithNewCount
-          .find { it.folder.bucketId == folder.bucketId }
-          ?.newVideoCount ?: 0
+        val newCount = newCountByBucketId[folder.bucketId] ?: 0
 
         FolderCard(
           folder = folder,
@@ -1044,7 +1064,12 @@ private fun SearchResultsContent(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
       ) {
-        items(folders.size) { index ->
+        // Perf: stable keys + contentType for the search-results grid.
+        items(
+          count = folders.size,
+          key = { index -> "search_folder_${folders[index].bucketId}" },
+          contentType = { "search_folder_grid" },
+        ) { index ->
           val folder = folders[index]
           FolderCard(
             folder = folder,
@@ -1057,8 +1082,12 @@ private fun SearchResultsContent(
             isGridMode = true,
           )
         }
-        
-        items(videos.size) { index ->
+
+        items(
+          count = videos.size,
+          key = { index -> "search_video_${videos[index].id}_${videos[index].path}" },
+          contentType = { "search_video_grid" },
+        ) { index ->
           val video = videos[index]
           VideoCard(
             video = video,
@@ -1080,7 +1109,12 @@ private fun SearchResultsContent(
           bottom = navigationBarHeight + 8.dp
         ),
       ) {
-        items(folders.size) { index ->
+        // Perf: stable keys + contentType for the search-results list.
+        items(
+          count = folders.size,
+          key = { index -> "search_folder_${folders[index].bucketId}" },
+          contentType = { "search_folder_list" },
+        ) { index ->
           val folder = folders[index]
           FolderCard(
             folder = folder,
@@ -1093,8 +1127,12 @@ private fun SearchResultsContent(
             isGridMode = false,
           )
         }
-        
-        items(videos.size) { index ->
+
+        items(
+          count = videos.size,
+          key = { index -> "search_video_${videos[index].id}_${videos[index].path}" },
+          contentType = { "search_video_list" },
+        ) { index ->
           val video = videos[index]
           VideoCard(
             video = video,

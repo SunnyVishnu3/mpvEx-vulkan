@@ -1271,6 +1271,11 @@ private fun FileSystemBrowserContent(
         label = "scrollbarAlpha",
       )
 
+      // Perf: hoist filtered slices out of the LazyColumn lambda so we don't
+      // re-walk `items` and reallocate two lists on every recomposition.
+      val folderItems = remember(items) { items.filterIsInstance<FileSystemItem.Folder>() }
+      val videoItems = remember(items) { items.filterIsInstance<FileSystemItem.VideoFile>() }
+
       PullRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
@@ -1300,9 +1305,12 @@ private fun FileSystemBrowserContent(
             }
 
             // Folders first
+            // Perf: contentType lets Compose reuse the same item slot composition
+            // for adjacent folder rows instead of recomposing from scratch.
             items(
-              items = items.filterIsInstance<FileSystemItem.Folder>(),
+              items = folderItems,
               key = { it.path },
+              contentType = { "fs_folder" },
             ) { folder ->
               val folderModel = app.marlboroadvance.mpvex.domain.media.model.VideoFolder(
                 bucketId = folder.path,
@@ -1335,9 +1343,11 @@ private fun FileSystemBrowserContent(
             }
 
             // Videos second
+            // Perf: contentType keeps video rows in their own slot pool.
             items(
-              items = items.filterIsInstance<FileSystemItem.VideoFile>(),
+              items = videoItems,
               key = { "${it.video.id}_${it.video.path}" },
+              contentType = { "fs_video" },
             ) { videoFile ->
               LiquidGlassCard(
                 backdrop = if (liquidUIEnabled) backdrop else null,
@@ -1477,6 +1487,15 @@ private fun FileSystemSearchContent(
       }
 
       else -> {
+        // Perf: hoist filter+distinctBy out of the LazyColumn lambda. These
+        // walks were re-running on every recomposition and reallocating both
+        // lists; remember(searchResults) reuses them until results change.
+        val folders = remember(searchResults) {
+          searchResults.filterIsInstance<FileSystemItem.Folder>().distinctBy { it.path }
+        }
+        val videos = remember(searchResults) {
+          searchResults.filterIsInstance<FileSystemItem.VideoFile>().distinctBy { it.video.id }
+        }
         Box(
           modifier = Modifier.fillMaxSize()
         ) {
@@ -1491,14 +1510,13 @@ private fun FileSystemSearchContent(
               bottom = navigationBarHeight
             ),
           ) {
-            // Separate folders and videos for proper ordering and deduplicate
-            val folders = searchResults.filterIsInstance<FileSystemItem.Folder>().distinctBy { it.path }
-            val videos = searchResults.filterIsInstance<FileSystemItem.VideoFile>().distinctBy { it.video.id }
             
             // Folders first
+            // Perf: contentType for the search-results folder slot pool.
             items(
               items = folders,
               key = { "search_folder_${it.path}_${it.hashCode()}" },
+              contentType = { "fs_search_folder" },
             ) { folder ->
               val folderModel = app.marlboroadvance.mpvex.domain.media.model.VideoFolder(
                 bucketId = folder.path,
@@ -1527,9 +1545,11 @@ private fun FileSystemSearchContent(
             }
             
             // Videos second
+            // Perf: contentType for the search-results video slot pool.
             items(
               items = videos,
               key = { "search_video_${it.video.id}_${it.video.path}_${it.hashCode()}" },
+              contentType = { "fs_search_video" },
             ) { videoFile ->
               LiquidGlassCard(
                 backdrop = if (liquidUIEnabled) backdrop else null,

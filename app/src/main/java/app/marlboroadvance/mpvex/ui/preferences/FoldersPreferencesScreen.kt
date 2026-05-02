@@ -159,7 +159,13 @@ object FoldersPreferencesScreen : Screen {
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp),
           ) {
-            items(blacklistedFoldersList) { folderPath ->
+            // Perf: keyed items so toggling selection doesn't recompose every
+            // row, only the affected one.
+            items(
+              items = blacklistedFoldersList,
+              key = { it },
+              contentType = { "blacklisted_folder" },
+            ) { folderPath ->
               BlacklistedFolderItem(
                 folderPath = folderPath,
                 isSelected = selectionState.isSelected(folderPath),
@@ -425,7 +431,13 @@ private fun AddFolderDialog(
             .fillMaxWidth()
             .height(400.dp),
         ) {
-          items(availableFolders) { folder ->
+          // Perf: keyed by folder.path for stable identity across rescans;
+          // selection toggles only recompose the affected row.
+          items(
+            items = availableFolders,
+            key = { it.path },
+            contentType = { "available_folder" },
+          ) { folder ->
             Row(
               modifier = Modifier
                 .fillMaxWidth()

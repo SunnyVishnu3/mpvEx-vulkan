@@ -196,11 +196,20 @@ fun OnlineSubtitleSearchSheet(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
           ) {
             androidx.compose.foundation.lazy.LazyColumn {
-              items(mediaSearchResults.size) { index ->
+              // Perf: use stable keys + contentType so Compose can reuse item
+              // slots across data changes instead of recomposing every row.
+              items(
+                count = mediaSearchResults.size,
+                key = { index ->
+                  val r = mediaSearchResults[index]
+                  "${r.mediaType}_${r.id}"
+                },
+                contentType = { "tmdb_result" }
+              ) { index ->
                 val result = mediaSearchResults[index]
                 TmdbResultRow(
                   result = result,
-                  onClick = { 
+                  onClick = {
                     searchQuery = result.title
                     onSelectMedia(result)
                     keyboardController?.hide()

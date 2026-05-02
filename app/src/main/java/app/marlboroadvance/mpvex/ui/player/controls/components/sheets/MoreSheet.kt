@@ -226,13 +226,19 @@ fun MoreSheet(
         }
 
         LazyRow(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller)) {
-          items(Anime4KManager.Mode.entries) { mode ->
+          // Perf: enum.name keys + contentType for chip slot reuse.
+          items(
+            items = Anime4KManager.Mode.entries,
+            key = { it.name },
+            contentType = { "anime4k_mode" },
+          ) { mode ->
             FilterChip(
               label = { Text(stringResource(mode.titleRes)) },
               selected = anime4kMode == mode.name,
               enabled = !isHighRes,
               leadingIcon = null,
               onClick = {
+            
                 decoderPreferences.anime4kMode.set(mode.name)
                 scope.launch(Dispatchers.IO) {
                   runCatching {
@@ -256,13 +262,19 @@ fun MoreSheet(
             color = MaterialTheme.colorScheme.primary
         )
         LazyRow(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller)) {
-          items(Anime4KManager.Quality.entries) { quality ->
+          // Perf: enum.name keys + contentType for chip slot reuse.
+          items(
+            items = Anime4KManager.Quality.entries,
+            key = { it.name },
+            contentType = { "anime4k_quality" },
+          ) { quality ->
              FilterChip(
               label = { Text(stringResource(quality.titleRes)) },
               selected = anime4kQuality == quality.name,
               enabled = anime4kMode != "OFF" && !isHighRes,
               leadingIcon = null,
               onClick = {
+                
                 decoderPreferences.anime4kQuality.set(quality.name)
                 scope.launch(Dispatchers.IO) {
                   runCatching {
