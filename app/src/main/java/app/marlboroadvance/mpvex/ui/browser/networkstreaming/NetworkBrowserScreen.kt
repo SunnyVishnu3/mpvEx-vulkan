@@ -261,9 +261,11 @@ private fun NetworkBrowserContent(
                   modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
                 )
               }
+              // Perf: contentType so folder rows reuse one slot pool.
               items(
                 items = folders,
                 key = { it.path },
+                contentType = { "network_folder" },
               ) { folder ->
                 NetworkFolderCard(
                   file = folder,
@@ -283,9 +285,12 @@ private fun NetworkBrowserContent(
                   modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
                 )
               }
+              // Perf: contentType so video rows have their own slot pool
+              // separate from folder rows above.
               items(
                 items = videos,
                 key = { it.path },
+                contentType = { "network_video" },
               ) { video ->
                 // Only show card if connection is loaded
                 connection?.let { conn ->
