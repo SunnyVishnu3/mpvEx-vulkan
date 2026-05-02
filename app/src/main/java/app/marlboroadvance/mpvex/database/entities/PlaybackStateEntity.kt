@@ -1,8 +1,11 @@
 package app.marlboroadvance.mpvex.database.entities
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+// Perf: stability hint for Compose. All fields are primitives/String.
+@Immutable
 @Entity
 data class PlaybackStateEntity(
   @PrimaryKey val mediaTitle: String,
