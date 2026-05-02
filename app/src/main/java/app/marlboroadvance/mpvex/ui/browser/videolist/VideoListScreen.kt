@@ -737,9 +737,12 @@ private fun VideoListContent(
               horizontalArrangement = Arrangement.spacedBy(8.dp),
               verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+            // Perf: contentType lets the grid reuse video-card slots while
+            // scrolling instead of recomposing each cell from scratch.
             items(
               count = videosWithInfo.size,
               key = { index -> "${videosWithInfo[index].video.id}_${videosWithInfo[index].video.path}" },
+              contentType = { "video_grid_card" },
             ) { index ->
               val videoWithInfo = videosWithInfo[index]
               val isRecentlyPlayed = recentlyPlayedFilePath?.let { videoWithInfo.video.path == it } ?: false
@@ -789,9 +792,11 @@ private fun VideoListContent(
                   bottom = if (showFloatingBottomBar) 88.dp else 16.dp
                 ),
             ) {
+              // Perf: contentType for the list-mode video row slot pool.
               items(
                 count = videosWithInfo.size,
                 key = { index -> "${videosWithInfo[index].video.id}_${videosWithInfo[index].video.path}" },
+                contentType = { "video_list_card" },
               ) { index ->
                 val videoWithInfo = videosWithInfo[index]
                 val isRecentlyPlayed = recentlyPlayedFilePath?.let { videoWithInfo.video.path == it } ?: false
