@@ -47,191 +47,173 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.marlboroadvance.mpvex.ui.theme.spacing
 import kotlinx.coroutines.delay
+import app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidGlassSurface
+import app.marlboroadvance.mpvex.preferences.LiquidTarget
 
-/**
- * A compact speed control display that shows available speed options (0.25x to 4x)
- * with an indicator showing the current speed. Styled to match the zoom overlay.
- *
- * @param currentSpeed The current playback speed (0.25f to 4.0f)
- * @param modifier Optional modifier for the container
- */
-@Composable
-fun SpeedControlSlider(
-  currentSpeed: Float,
-  modifier: Modifier = Modifier,
-) {
-  // Speed presets from 0.25x to 4x
-  val speedPresets = listOf(0.25f, 0.5f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 4.0f)
-  
-  // Find the index of current speed in presets
-  val currentIndex = speedPresets.indexOfFirst { 
-    kotlin.math.abs(it - currentSpeed) < 0.05f 
-  }.coerceIn(0, speedPresets.size - 1)
-  
-  val primaryColor = MaterialTheme.colorScheme.primary
-  val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-  // Use a Surface with less rounded corners instead of CircleShape
-  Surface(
-    shape = RoundedCornerShape(12.dp),
-    color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
-    contentColor = MaterialTheme.colorScheme.onSurface,
-    tonalElevation = 0.dp,
-    shadowElevation = 0.dp,
-    border = BorderStroke(
-      1.dp,
-      MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-    ),
-    modifier = modifier.animateContentSize(),
-  ) {
-    Box(
-      modifier = Modifier.padding(
-        vertical = MaterialTheme.spacing.small,
-        horizontal = MaterialTheme.spacing.medium,
-      ),
-      contentAlignment = Alignment.Center,
-    ) {
-      Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-      ) {
-            // Speed labels - compact version
-            Row(
-              modifier = Modifier.width(280.dp),
-              horizontalArrangement = Arrangement.SpaceBetween,
-              verticalAlignment = Alignment.CenterVertically,
-            ) {
-              speedPresets.forEach { speed ->
-                val isCurrentSpeed = kotlin.math.abs(currentSpeed - speed) < 0.05f
-                Text(
-                  text = "${speed.format()}x",
-                  fontSize = if (isCurrentSpeed) 13.sp else 10.sp,
-                  fontWeight = if (isCurrentSpeed) FontWeight.Bold else FontWeight.Normal,
-                  color = if (isCurrentSpeed) {
-                    primaryColor
-                  } else {
-                    onSurfaceColor.copy(alpha = 0.7f)
-                  },
-                )
-              }
-            }
-            
-            // Compact slider track
-            Canvas(
-              modifier = Modifier
-                .width(280.dp)
-                .height(3.dp),
-            ) {
-              val trackWidth = size.width
-              val trackHeight = 3.dp.toPx()
-              val centerY = size.height / 2
-              val segmentWidth = trackWidth / (speedPresets.size - 1)
-              
-              // Background track
-              drawLine(
-                color = onSurfaceColor.copy(alpha = 0.35f),
-                start = Offset(0f, centerY),
-                end = Offset(trackWidth, centerY),
-                strokeWidth = trackHeight,
-                cap = StrokeCap.Round,
-              )
-              
-              // Progress track (filled portion up to current speed)
-              val progressX = currentIndex * segmentWidth
-              drawLine(
-                color = primaryColor,
-                start = Offset(0f, centerY),
-                end = Offset(progressX, centerY),
-                strokeWidth = trackHeight,
-                cap = StrokeCap.Round,
-              )
-              
-              // Draw tick marks for each speed preset
-              speedPresets.forEachIndexed { index, _ ->
-                val tickX = index * segmentWidth
-                drawCircle(
-                  color = if (index <= currentIndex) {
-                    primaryColor
-                  } else {
-                    onSurfaceColor.copy(alpha = 0.7f)
-                  },
-                  radius = 2.5.dp.toPx(),
-                  center = Offset(tickX, centerY),
-                )
-              }
-            }
-        
-        // Current speed display
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.Center,
-        ) {
-          Icon(
-            imageVector = Icons.Filled.FastForward,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp),
-          )
-          Text(
-            text = "${currentSpeed.format()}x Speed Playing",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(start = 4.dp),
-          )
-        }
-      }
-    }
-  }
-}
-
-/**
- * A compact speed indicator that shows just the icon and speed value.
- * Used when dynamic speed overlay is collapsed or disabled.
- *
- * @param currentSpeed The current playback speed
- * @param modifier Optional modifier for the container
- */
 @Composable
 fun CompactSpeedIndicator(
   currentSpeed: Float,
   modifier: Modifier = Modifier,
 ) {
-  Row(
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.Center,
-    modifier = modifier
-      .background(
-        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
-        shape = RoundedCornerShape(100.dp)
-      )
-      .border(
-        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-        shape = RoundedCornerShape(100.dp)
-      )
-      .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)
-  ) {
-    Icon(
-      imageVector = Icons.Filled.FastForward,
-      contentDescription = null,
-      modifier = Modifier.size(16.dp),
-      tint = MaterialTheme.colorScheme.onSurface 
-    )
-    Text(
-      text = "${currentSpeed.format()}x",
-      fontSize = 14.sp,
-      fontWeight = FontWeight.Bold,
-      style = MaterialTheme.typography.bodyLarge,
-      modifier = Modifier.padding(start = 4.dp),
-      color = MaterialTheme.colorScheme.onSurface // Explicitly set color
-    )
+  val backdrop = LocalLiquidBackdrop.current
+
+  if (backdrop != null) {
+      LiquidGlassSurface(
+          backdrop = backdrop,
+          target = LiquidTarget.BUTTON,
+          shape = RoundedCornerShape(100.dp),
+          modifier = modifier
+      ) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)
+          ) {
+            Icon(
+              imageVector = Icons.Filled.FastForward,
+              contentDescription = null,
+              modifier = Modifier.size(16.dp),
+              tint = Color.White 
+            )
+            Text(
+              text = "${currentSpeed.format()}x",
+              fontSize = 14.sp,
+              fontWeight = FontWeight.Bold,
+              style = MaterialTheme.typography.bodyLarge,
+              modifier = Modifier.padding(start = 4.dp),
+              color = Color.White 
+            )
+          }
+      }
+  } else {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = modifier
+          .background(
+            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+            shape = RoundedCornerShape(100.dp)
+          )
+          .border(
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+            shape = RoundedCornerShape(100.dp)
+          )
+          .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)
+      ) {
+        Icon(
+          imageVector = Icons.Filled.FastForward,
+          contentDescription = null,
+          modifier = Modifier.size(16.dp),
+          tint = MaterialTheme.colorScheme.onSurface 
+        )
+        Text(
+          text = "${currentSpeed.format()}x",
+          fontSize = 14.sp,
+          fontWeight = FontWeight.Bold,
+          style = MaterialTheme.typography.bodyLarge,
+          modifier = Modifier.padding(start = 4.dp),
+          color = MaterialTheme.colorScheme.onSurface
+        )
+      }
   }
 }
 
-/**
- * Format float speed value to display with minimal decimal places
- */
 private fun Float.format(): String {
   return when {
-    this % 1.0f == 0.0f -> this.toInt().toString()
-    else -> String.format("%.2f", this).trimEnd('0').trimEnd('.')
+    this % 1.0f == 0.0f -> String.format("%.0f", this)
+    this % 0.5f == 0.0f -> String.format("%.1f", this)
+    else -> String.format("%.2f", this)
+  }
+}
+
+@Composable
+fun SpeedControlSlider(
+  currentSpeed: Float,
+  speedPresets: List<Float> = listOf(0.25f, 0.5f, 1.0f, 1.25f, 1.5f, 2.0f, 3.0f, 4.0f),
+  modifier: Modifier = Modifier,
+) {
+  var isExpanded by remember { mutableStateOf(false) }
+
+  LaunchedEffect(currentSpeed) {
+    if (!isExpanded) {
+      isExpanded = true
+    }
+    delay(1500)
+    isExpanded = false
+  }
+
+  Box(
+    modifier = modifier.height(36.dp),
+    contentAlignment = Alignment.Center
+  ) {
+    AnimatedVisibility(
+      visible = isExpanded,
+      enter = fadeIn() + expandHorizontally(
+        expandFrom = Alignment.CenterHorizontally,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)
+      ),
+      exit = fadeOut(animationSpec = tween(300)) + shrinkHorizontally(
+        shrinkTowards = Alignment.CenterHorizontally,
+        animationSpec = tween(300, delayMillis = 100)
+      )
+    ) {
+      val primaryColor = MaterialTheme.colorScheme.primary
+      val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+      
+      Row(
+        modifier = Modifier
+          .background(
+            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.85f),
+            shape = RoundedCornerShape(100.dp)
+          )
+          .border(
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+            shape = RoundedCornerShape(100.dp)
+          )
+          .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+      ) {
+        Canvas(modifier = Modifier.width(100.dp).height(24.dp)) {
+          val trackWidth = size.width
+          val trackHeight = 4.dp.toPx()
+          val centerY = size.height / 2
+          val segmentWidth = trackWidth / (speedPresets.size - 1)
+
+          drawLine(
+            color = onSurfaceColor.copy(alpha = 0.35f),
+            start = Offset(0f, centerY),
+            end = Offset(trackWidth, centerY),
+            strokeWidth = trackHeight,
+            cap = StrokeCap.Round,
+          )
+
+          val progressX = (currentSpeed - speedPresets.first()) / (speedPresets.last() - speedPresets.first()) * trackWidth
+          
+          drawLine(
+            color = primaryColor,
+            start = Offset(0f, centerY),
+            end = Offset(progressX.coerceIn(0f, trackWidth), centerY),
+            strokeWidth = trackHeight,
+            cap = StrokeCap.Round,
+          )
+
+          drawCircle(
+            color = primaryColor,
+            radius = 6.dp.toPx(),
+            center = Offset(progressX.coerceIn(0f, trackWidth), centerY)
+          )
+        }
+        
+        Text(
+          text = "${currentSpeed.format()}x",
+          fontSize = 14.sp,
+          fontWeight = FontWeight.Bold,
+          style = MaterialTheme.typography.bodyLarge,
+          color = MaterialTheme.colorScheme.onSurface
+        )
+      }
+    }
   }
 }
