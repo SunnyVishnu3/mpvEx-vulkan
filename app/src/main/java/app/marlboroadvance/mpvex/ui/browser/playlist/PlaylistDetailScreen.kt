@@ -636,9 +636,12 @@ private fun PlaylistVideoListContent(
           modifier = Modifier.fillMaxSize(),
           contentPadding = PaddingValues(start = 8.dp, end = 8.dp),
         ) {
+          // Perf: contentType so all rows share one slot pool — they're all
+          // playlist video rows of the same shape.
           items(
             count = videoItems.size,
             key = { index -> videoItems[index].playlistItem.id },
+            contentType = { "playlist_video_row" },
           ) { index ->
             ReorderableItem(reorderableLazyListState, key = videoItems[index].playlistItem.id) {
               val item = videoItems[index]
