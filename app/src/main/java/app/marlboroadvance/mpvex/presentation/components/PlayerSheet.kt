@@ -60,6 +60,11 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+// --- NEW LIQUID IMPORTS ---
+import app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidGlassSurface
+import app.marlboroadvance.mpvex.preferences.LiquidTarget
+
 private val sheetAnimationSpec = tween<Float>(350)
 
 @SuppressLint("ConfigurationScreenWidthHeight")
@@ -135,45 +140,60 @@ fun PlayerSheet(
         },
     contentAlignment = Alignment.BottomCenter,
   ) {
-    Surface(
-      modifier =
-        Modifier
-          .sizeIn(maxWidth = maxWidth, maxHeight = maxHeight)
-          .clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-            onClick = {},
-          ).nestedScroll(
-            remember(anchoredDraggableState) {
-              anchoredDraggableState.preUpPostDownNestedScrollConnection()
-            },
-          ).then(modifier)
-          .offset {
-            IntOffset(
-              0,
-              anchoredDraggableState.offset
-                .takeIf { it.isFinite() }
-                ?.roundToInt()
-                ?: 0,
-            )
-          }.anchoredDraggable(
-            state = anchoredDraggableState,
-            orientation = Orientation.Vertical,
-          ).windowInsetsPadding(
-            WindowInsets.systemBars
-              .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
-          ).imePadding(),
-      shape = MaterialTheme.shapes.extraLarge.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize),
-      color = surfaceColor ?: MaterialTheme.colorScheme.surface,
-      tonalElevation = tonalElevation,
-      content = {
-        BackHandler(
-          enabled = anchoredDraggableState.targetValue == 0,
-          onBack = internalOnDismissRequest,
+    val backdrop = LocalLiquidBackdrop.current
+    val sheetModifier = Modifier
+      .sizeIn(maxWidth = maxWidth, maxHeight = maxHeight)
+      .clickable(
+        interactionSource = remember { MutableInteractionSource() },
+        indication = null,
+        onClick = {},
+      ).nestedScroll(
+        remember(anchoredDraggableState) {
+          anchoredDraggableState.preUpPostDownNestedScrollConnection()
+        },
+      ).then(modifier)
+      .offset {
+        IntOffset(
+          0,
+          anchoredDraggableState.offset
+            .takeIf { it.isFinite() }
+            ?.roundToInt()
+            ?: 0,
         )
-        content()
-      },
-    )
+      }.anchoredDraggable(
+        state = anchoredDraggableState,
+        orientation = Orientation.Vertical,
+      ).windowInsetsPadding(
+        WindowInsets.systemBars
+          .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+      ).imePadding()
+
+    val sheetContent: @Composable () -> Unit = {
+      BackHandler(
+        enabled = anchoredDraggableState.targetValue == 0,
+        onBack = internalOnDismissRequest,
+      )
+      content()
+    }
+
+    if (backdrop != null) {
+      LiquidGlassSurface(
+        backdrop = backdrop,
+        target = LiquidTarget.DIALOG,
+        shape = MaterialTheme.shapes.extraLarge.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize),
+        modifier = sheetModifier
+      ) {
+        sheetContent()
+      }
+    } else {
+      Surface(
+        modifier = sheetModifier,
+        shape = MaterialTheme.shapes.extraLarge.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize),
+        color = surfaceColor ?: MaterialTheme.colorScheme.surface,
+        tonalElevation = tonalElevation,
+        content = sheetContent,
+      )
+    }
 
     LaunchedEffect(true) {
       backgroundAlpha = 0.5f

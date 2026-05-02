@@ -18,8 +18,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -83,20 +83,22 @@ fun MoreSheet(
   
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
+  
   var infoDialogData by remember { mutableStateOf<Pair<String, String>?>(null) }
-
-  if (infoDialogData != null) {
-      AlertDialog(
-          onDismissRequest = { },
-          title = { Text(infoDialogData!!.first) },
-          text = { Text(infoDialogData!!.second) },
-          confirmButton = {
-              TextButton(onClick = { infoDialogData = null }) {
-                  Text(stringResource(R.string.generic_ok))
-              }
-          }
-      )
+  
+  infoDialogData?.let { (title, message) ->
+    AlertDialog(
+      onDismissRequest = { infoDialogData = null },
+      title = { Text(title) },
+      text = { Text(message) },
+      confirmButton = {
+        TextButton(onClick = { infoDialogData = null }) {
+          Text(stringResource(id = R.string.generic_ok))
+        }
+      }
+    )
   }
+
 
   PlayerSheet(
     onDismissRequest,
@@ -127,7 +129,7 @@ fun MoreSheet(
             ) {
               Icon(imageVector = Icons.Outlined.Timer, contentDescription = null)
               Text(
-                text = if (remainingTime == 0) stringResource(R.string.timer_title) 
+                text = if (remainingTime == 0) stringResource(R.string.timer_title)
                        else stringResource(R.string.timer_remaining, DateUtils.formatElapsedTime(remainingTime.toLong())),
               )
               if (isSleepTimerDialogShown) {
@@ -150,7 +152,7 @@ fun MoreSheet(
           }
         }
       }
-      
+
       SectionHeaderWithInfo(
         title = stringResource(R.string.player_sheets_stats_page_title),
         onInfoClick = {
@@ -161,17 +163,17 @@ fun MoreSheet(
                  val resId = context.resources.getIdentifier(descResName, "string", context.packageName)
                  if (resId != 0) context.getString(resId) else "No description available."
              }
-             
+
              val title = when (statisticsPage) {
                  0 -> context.getString(R.string.player_sheets_tracks_off)
                  6 -> "Page 6: Hardware HUD"
                  else -> context.getString(R.string.player_sheets_stats_page_chip, statisticsPage)
              }
-             
+
              infoDialogData = Pair(context.getString(R.string.player_sheets_stats_page_title), "$title\n\n$description")
         }
       )
-      
+
       LazyRow(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller)) {
         items(7) { page ->
           FilterChip(
@@ -194,7 +196,7 @@ fun MoreSheet(
               if (page in 1..5) {
                   MPVLib.command("script-binding", "stats/display-page-$page")
               }
-              
+
               advancedPreferences.enabledStatisticsPage.set(page)
             },
             selected = statisticsPage == page,
@@ -202,7 +204,7 @@ fun MoreSheet(
           )
         }
       }
-      
+
       if (enableAnime4K && (!gpuNext || useVulkan)) {
         val width = MPVLib.getPropertyInt("video-params/w") ?: 0
         val height = MPVLib.getPropertyInt("video-params/h") ?: 0
@@ -282,6 +284,36 @@ fun MoreSheet(
   }
 }
 
+@Composable
+private fun SectionHeaderWithInfo(
+    title: String,
+    onInfoClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        IconButton(
+            onClick = onInfoClick,
+            modifier = Modifier.size(24.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TimePickerDialog(
@@ -333,7 +365,7 @@ fun TimePickerDialog(
         )
 
         TimeInput(state = state)
-        
+
         Column(
             horizontalAlignment = Alignment.Start,
             modifier = Modifier.fillMaxWidth()
@@ -390,34 +422,6 @@ fun TimePickerDialog(
           }
         }
       }
-    }
-  }
-}
-
-@Composable
-fun SectionHeaderWithInfo(
-  title: String,
-  onInfoClick: () -> Unit,
-  modifier: Modifier = Modifier
-) {
-  Row(
-    modifier = modifier.fillMaxWidth(),
-    horizontalArrangement = Arrangement.Start,
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Text(
-      text = title,
-      style = MaterialTheme.typography.titleMedium,
-      color = MaterialTheme.colorScheme.primary
-    )
-    Spacer(modifier = Modifier.width(8.dp))
-    IconButton(onClick = onInfoClick, modifier = Modifier.size(24.dp)) {
-      Icon(
-        imageVector = Icons.Outlined.Info,
-        contentDescription = "Info",
-        tint = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.size(16.dp)
-      )
     }
   }
 }

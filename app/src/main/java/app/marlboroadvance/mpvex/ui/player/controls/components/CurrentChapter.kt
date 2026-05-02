@@ -34,91 +34,159 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.marlboroadvance.mpvex.preferences.AppearancePreferences
-import app.marlboroadvance.mpvex.preferences.preference.collectAsState
-import app.marlboroadvance.mpvex.ui.theme.controlColor
 import app.marlboroadvance.mpvex.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
-import org.koin.compose.koinInject
+import app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidGlassSurface
+import app.marlboroadvance.mpvex.preferences.LiquidTarget
 
 @Composable
 fun CurrentChapter(
   chapter: Segment,
+  onClick: () -> Unit,
   modifier: Modifier = Modifier,
-  onClick: () -> Unit = {},
 ) {
-  val appearancePreferences = koinInject<AppearancePreferences>()
+  val backdrop = LocalLiquidBackdrop.current
 
-  Surface(
-    modifier =
-      modifier
-        .height(45.dp)
-        .widthIn(max = 220.dp)
-        .clip(RoundedCornerShape(50))
-        .clickable(onClick = onClick),
-    shape = RoundedCornerShape(50),
-    color =
-        MaterialTheme.colorScheme.surfaceContainer.copy(
-          alpha = 0.55f,
-        ),
-    contentColor = MaterialTheme.colorScheme.onSurface,
-    tonalElevation = 0.dp,
-    border =
-        BorderStroke(
-          1.dp,
-          MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-        ),
-  ) {
-    AnimatedContent(
-      targetState = chapter,
-      modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
-      transitionSpec = {
-        if (targetState.start > initialState.start) {
-          (slideInVertically { height -> height } + fadeIn())
-            .togetherWith(slideOutVertically { height -> -height } + fadeOut())
-        } else {
-          (slideInVertically { height -> -height } + fadeIn())
-            .togetherWith(slideOutVertically { height -> height } + fadeOut())
-        }.using(
-          SizeTransform(clip = false),
-        )
-      },
-      label = "Chapter",
-    ) { currentChapter ->
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+  if (backdrop != null) {
+      LiquidGlassSurface(
+          backdrop = backdrop,
+          target = LiquidTarget.BUTTON,
+          shape = RoundedCornerShape(100.dp),
+          modifier = modifier
+            .clip(RoundedCornerShape(100.dp))
+            .clickable(onClick = onClick)
       ) {
-        Text(
-          text = Utils.prettyTime(currentChapter.start.toInt()),
-          fontWeight = FontWeight.Bold,
-          style = MaterialTheme.typography.bodyMedium,
-          maxLines = 1,
-          overflow = TextOverflow.Clip,
-          color = MaterialTheme.colorScheme.primary,
-        )
-        currentChapter.name.let {
-          Text(
-            text = Typography.bullet.toString(),
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            color = MaterialTheme.colorScheme.onSurface,
-            overflow = TextOverflow.Clip,
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+          ) {
+            Icon(
+              imageVector = Icons.Default.Bookmarks,
+              contentDescription = "Chapter",
+              tint = Color.White,
+              modifier = Modifier.size(16.dp),
+            )
+            AnimatedContent(
+              targetState = chapter,
+              transitionSpec = {
+                if (targetState.start > initialState.start) {
+                  (slideInVertically { height -> height } + fadeIn())
+                    .togetherWith(slideOutVertically { height -> -height } + fadeOut())
+                } else {
+                  (slideInVertically { height -> -height } + fadeIn())
+                    .togetherWith(slideOutVertically { height -> height } + fadeOut())
+                }.using(SizeTransform(clip = false))
+              },
+              label = "Chapter",
+            ) { currentChapter ->
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+              ) {
+                Text(
+                  text = Utils.prettyTime(currentChapter.start.toInt()),
+                  fontWeight = FontWeight.Bold,
+                  style = MaterialTheme.typography.bodyMedium,
+                  maxLines = 1,
+                  overflow = TextOverflow.Clip,
+                  color = MaterialTheme.colorScheme.primary,
+                )
+                currentChapter.name.let {
+                  Text(
+                    text = "•",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    color = Color.White,
+                    overflow = TextOverflow.Clip,
+                  )
+                  Text(
+                    text = it,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White,
+                    modifier = Modifier.basicMarquee(),
+                  )
+                }
+              }
+            }
+          }
+      }
+  } else {
+      Surface(
+        modifier = modifier
+          .clip(RoundedCornerShape(100.dp))
+          .clickable(onClick = onClick),
+        shape = RoundedCornerShape(100.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+      ) {
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = 6.dp),
+          horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+        ) {
+          Icon(
+            imageVector = Icons.Default.Bookmarks,
+            contentDescription = "Chapter",
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(16.dp),
           )
-          Text(
-            text = it,
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.basicMarquee(),
-          )
+          AnimatedContent(
+            targetState = chapter,
+            transitionSpec = {
+              if (targetState.start > initialState.start) {
+                (slideInVertically { height -> height } + fadeIn())
+                  .togetherWith(slideOutVertically { height -> -height } + fadeOut())
+              } else {
+                (slideInVertically { height -> -height } + fadeIn())
+                  .togetherWith(slideOutVertically { height -> height } + fadeOut())
+              }.using(SizeTransform(clip = false))
+            },
+            label = "Chapter",
+          ) { currentChapter ->
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+            ) {
+              Text(
+                text = Utils.prettyTime(currentChapter.start.toInt()),
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
+                color = MaterialTheme.colorScheme.primary,
+              )
+              currentChapter.name.let {
+                Text(
+                  text = "•",
+                  textAlign = TextAlign.Center,
+                  style = MaterialTheme.typography.bodyMedium,
+                  maxLines = 1,
+                  color = MaterialTheme.colorScheme.onSurface,
+                  overflow = TextOverflow.Clip,
+                )
+                Text(
+                  text = it,
+                  textAlign = TextAlign.Center,
+                  style = MaterialTheme.typography.bodyMedium,
+                  maxLines = 1,
+                  overflow = TextOverflow.Ellipsis,
+                  fontWeight = FontWeight.ExtraBold,
+                  color = MaterialTheme.colorScheme.onSurface,
+                  modifier = Modifier.basicMarquee(),
+                )
+              }
+            }
+          }
         }
       }
-    }
   }
 }
