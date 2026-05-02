@@ -17,9 +17,16 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import app.marlboroadvance.mpvex.preferences.LiquidTarget
+import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
 
 // Broadcasts the glass camera to any button that wants it!
 val LocalLiquidBackdrop = androidx.compose.runtime.staticCompositionLocalOf<com.kyant.backdrop.Backdrop?> { null }
+
+// ADDED: shared LiquidUIPreferences CompositionLocal.
+// Why: previously every LiquidGlassSurface built its own DataStore wrapper via remember{ LiquidUIPreferences(context) }.
+// With many glass surfaces on screen (nav + buttons + cards) that meant N wrappers all observing the same DataStore.
+// MainActivity can now provide one instance for the whole tree; null fallback keeps old behavior working.
+val LocalLiquidPreferences = androidx.compose.runtime.staticCompositionLocalOf<LiquidUIPreferences?> { null }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
