@@ -223,7 +223,12 @@ object LuaScriptsScreen : Screen {
           .fillMaxSize()
           .padding(padding)
       ) {
-        items(availableScripts) { scriptName ->
+        // Perf: script names are unique strings — use them as stable keys.
+        items(
+          items = availableScripts,
+          key = { it },
+          contentType = { "lua_script" },
+        ) { scriptName ->
           Column(
             modifier = Modifier.fillMaxWidth()
           ) {
