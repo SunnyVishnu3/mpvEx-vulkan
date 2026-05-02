@@ -47,7 +47,9 @@ class LiquidUIPreferences(context: Context) {
     fun blurRadiusFlow(target: LiquidTarget): Flow<Float> = dataStore.data.map { it[floatPreferencesKey("${target.id}_blur")] ?: 0f }
     fun refractionHeightFlow(target: LiquidTarget): Flow<Float> = dataStore.data.map { it[floatPreferencesKey("${target.id}_height")] ?: 40f }
     fun refractionAmountFlow(target: LiquidTarget): Flow<Float> = dataStore.data.map { it[floatPreferencesKey("${target.id}_amount")] ?: 23f }
-    fun tintAlphaFlow(target: LiquidTarget): Flow<Float> = dataStore.data.map { it[floatPreferencesKey("${target.id}_alpha")] ?: 0.15f }
+    // CHANGED: default raised 0.15f → 0.5f. Old value let backdrop text bleed through navigation/dialog
+    // glass; 0.5f is the Backdrop docs' recommended balance of "glass look" vs. text readability.
+    fun tintAlphaFlow(target: LiquidTarget): Flow<Float> = dataStore.data.map { it[floatPreferencesKey("${target.id}_alpha")] ?: 0.5f }
     
     fun chromaticAberrationFlow(target: LiquidTarget): Flow<Boolean> = dataStore.data.map { it[booleanPreferencesKey("${target.id}_chromatic")] ?: false }
     fun depthEffectFlow(target: LiquidTarget): Flow<Boolean> = dataStore.data.map { it[booleanPreferencesKey("${target.id}_depth")] ?: true }
