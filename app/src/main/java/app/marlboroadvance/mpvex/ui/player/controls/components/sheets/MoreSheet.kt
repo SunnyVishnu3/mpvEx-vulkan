@@ -11,12 +11,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.AlertDialog
@@ -81,6 +83,21 @@ fun MoreSheet(
   
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
+  
+  var infoDialogData by remember { mutableStateOf<Pair<String, String>?>(null) }
+  
+  infoDialogData?.let { (title, message) ->
+    AlertDialog(
+      onDismissRequest = { infoDialogData = null },
+      title = { Text(title) },
+      text = { Text(message) },
+      confirmButton = {
+        TextButton(onClick = { infoDialogData = null }) {
+          Text(stringResource(id = R.string.generic_ok))
+        }
+      }
+    )
+  }
 
 
   PlayerSheet(
@@ -155,10 +172,6 @@ fun MoreSheet(
 
              infoDialogData = Pair(context.getString(R.string.player_sheets_stats_page_title), "$title\n\n$description")
         }
-      Text(
-        text = stringResource(R.string.player_sheets_stats_page_title),
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary
       )
 
       LazyRow(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller)) {
@@ -269,6 +282,36 @@ fun MoreSheet(
       }
     }
   }
+}
+
+@Composable
+private fun SectionHeaderWithInfo(
+    title: String,
+    onInfoClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        IconButton(
+            onClick = onInfoClick,
+            modifier = Modifier.size(24.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -382,4 +425,3 @@ fun TimePickerDialog(
     }
   }
 }
-
