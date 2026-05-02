@@ -20,6 +20,12 @@ fun LiquidAlertDialog(
 ) {
     val backdrop = LocalLiquidBackdrop.current
 
+    // CHANGED: dialog scrim was previously `Color.White.copy(alpha = 0.15f)`. That flat 15%-opaque white was the
+    // root cause of the dialog text bleeding into menu/background text — and it didn't adapt to dark theme.
+    // New scrim: theme color (`surfaceContainerHigh`) at 0.85 alpha. Adapts to light/dark automatically and is
+    // opaque enough that text behind the dialog can't compete with text inside it.
+    val scrimColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f)
+
     AlertDialog(
         onDismissRequest = onDismissRequest,
         confirmButton = confirmButton,
@@ -27,10 +33,9 @@ fun LiquidAlertDialog(
         icon = icon,
         title = title,
         text = text,
-        // The Magic Sauce: If Liquid is enabled, it strips the grey background and makes it a transparent glass pane!
         modifier = if (backdrop != null) {
             modifier.background(
-                color = Color.White.copy(alpha = 0.15f), 
+                color = scrimColor,
                 shape = MaterialTheme.shapes.extraLarge
             )
         } else modifier,
