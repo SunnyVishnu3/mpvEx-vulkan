@@ -15,6 +15,7 @@ accompanist = "0.37.3"
 okhttp = "5.3.2"
 sardineAndroid = "0.9"
 reorderable = "3.1.0"
+aboutlibraries = "14.0.1"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
