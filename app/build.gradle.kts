@@ -11,7 +11,7 @@ plugins {
 
 android {
   namespace = "app.marlboroadvance.mpvex"
-  compileSdk = 36
+  compileSdk = 37
 
   defaultConfig {
     applicationId = "app.marlboroadvance.mpvex"
@@ -200,7 +200,7 @@ dependencies {
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.compose.constraintlayout)
   implementation("androidx.preference:preference-ktx:1.2.1")
-  implementation("androidx.constraintlayout:constraintlayout:2.2.0")
+  implementation("androidx.constraintlayout:constraintlayout:2.2.1")
   implementation(libs.androidx.material3.icons.extended)
   implementation(libs.androidx.compose.animation.graphics)
   implementation(libs.mediasession)
@@ -226,7 +226,7 @@ dependencies {
   implementation(libs.truetype.parser)
   implementation(libs.fsaf)
   implementation(libs.mediainfo.lib)
-  implementation(files("libs/mpv-android-lib-v0.0.1.aar"))
+  implementation(files("libs/mpvlib.aar"))
 
   // Network protocol libraries
   implementation(libs.smbj)
@@ -246,7 +246,7 @@ dependencies {
   implementation("io.github.kyant0:shapes:1.2.0")
 
   // DataStore for preferences persistence (To toggle the UI on/off)
-  implementation("androidx.datastore:datastore-preferences:1.0.0")
+  implementation("androidx.datastore:datastore-preferences:1.2.1")
   implementation("androidx.graphics:graphics-core:1.0.4")
 }
 

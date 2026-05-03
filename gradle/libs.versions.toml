@@ -1,20 +1,20 @@
 [versions]
-agp = "9.0.1"
-commonsNet = "3.12.0"
+agp = "9.2.0"
+commonsNet = "3.13.0"
 smbj = "0.14.0"
-kotlin = "2.3.10"
-composeBom = "2026.02.01"
-activityCompose = "1.12.4"
-koin = "4.1.1"
+kotlin = "2.3.21"
+composeBom = "2026.04.01"
+activityCompose = "1.13.0"
+koin = "4.2.1"
 lazycolumnscrollbar = "2.2.0"
 nanohttpd = "2.3.1"
 room = "2.8.4"
-navigation3 = "1.0.1"
-kotlinx-serialization = "1.10.0"
+navigation3 = "1.1.1"
+kotlinx-serialization = "1.11.0"
 accompanist = "0.37.3"
 okhttp = "5.3.2"
 sardineAndroid = "0.8"
-reorderable = "3.0.0"
+reorderable = "3.1.0"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -24,12 +24,12 @@ smbj = { module = "com.hierynomus:smbj", version.ref = "smbj" }
 lazycolumnscrollbar = { module = "com.github.nanihadesuka:LazyColumnScrollbar", version.ref = "lazycolumnscrollbar" }
 nanohttpd = { module = "org.nanohttpd:nanohttpd", version.ref = "nanohttpd" }
 sardine-android = { module = "com.github.thegrizzlylabs:sardine-android", version.ref = "sardineAndroid" }
-saveable = { group = "androidx.compose.runtime", name = "runtime-saveable", version = "1.10.4" }
+saveable = { group = "androidx.compose.runtime", name = "runtime-saveable", version = "1.11.0" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-androidx-material3-android = { group = "androidx.compose.material3", name = "material3", version = "1.5.0-alpha15" }
+androidx-material3-android = { group = "androidx.compose.material3", name = "material3", version = "1.5.0-alpha18" }
 androidx-compose-material = { group = "androidx.compose.material", name = "material" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.7.1" }
 androidx-material3-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version = "1.7.8" }
@@ -48,7 +48,7 @@ koin-android = { module = "io.insert-koin:koin-android" }
 koin-compose = { module = "io.insert-koin:koin-compose" }
 koin-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel" }
 
-compose-prefs = { module = "me.zhanghai.compose.preference:preference", version = "2.1.1" }
+compose-prefs = { module = "me.zhanghai.compose.preference:preference", version = "2.2.0" }
 
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
@@ -70,7 +70,7 @@ koin = ["koin-core", "koin-android", "koin-compose", "koin-viewmodel"]
 compose-navigation3 = ["androidx-navigation3-runtime", "androidx-navigation3-ui"]
 
 [plugins]
-ksp = { id = "com.google.devtools.ksp", version = "2.3.6" }
+ksp = { id = "com.google.devtools.ksp", version = "2.3.7" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 room = { id = "androidx.room", version.ref = "room" }
