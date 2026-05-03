@@ -206,31 +206,17 @@ fun MoreSheet(
       }
 
       if (enableAnime4K && (!gpuNext || useVulkan)) {
-        val width = MPVLib.getPropertyInt("video-params/w") ?: 0
-        val height = MPVLib.getPropertyInt("video-params/h") ?: 0
-        val isHighRes = width >= 3840 || height >= 2160
-
         Text(
             text = stringResource(R.string.anime4k_mode_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary
         )
-        
-        if (isHighRes) {
-            Text(
-                text = "Not available for 4K/8K video",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-        }
 
         LazyRow(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller)) {
           items(Anime4KManager.Mode.entries) { mode ->
             FilterChip(
               label = { Text(stringResource(mode.titleRes)) },
               selected = anime4kMode == mode.name,
-              enabled = !isHighRes,
               leadingIcon = null,
               onClick = {
                 decoderPreferences.anime4kMode.set(mode.name)
@@ -260,7 +246,7 @@ fun MoreSheet(
              FilterChip(
               label = { Text(stringResource(quality.titleRes)) },
               selected = anime4kQuality == quality.name,
-              enabled = anime4kMode != "OFF" && !isHighRes,
+              enabled = anime4kMode != "OFF",
               leadingIcon = null,
               onClick = {
                 decoderPreferences.anime4kQuality.set(quality.name)

@@ -13,7 +13,7 @@ navigation3 = "1.1.1"
 kotlinx-serialization = "1.11.0"
 accompanist = "0.37.3"
 okhttp = "5.3.2"
-sardineAndroid = "0.8"
+sardineAndroid = "0.9"
 reorderable = "3.1.0"
 
 [libraries]
