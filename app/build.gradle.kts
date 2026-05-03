@@ -7,6 +7,7 @@ plugins {
   alias(libs.plugins.kotlinx.serialization)
   alias(libs.plugins.ksp)
   alias(libs.plugins.room)
+  alias(libs.plugins.aboutlibraries)
 }
 
 android {
@@ -237,6 +238,7 @@ dependencies {
   implementation(libs.nanohttpd)
   implementation(libs.lazycolumnscrollbar)
   implementation(libs.reorderable)
+  implementation(libs.aboutlibraries.compose)
 
   // LIQUID GLASS DEPENDENCIES
   // AndroidLiquidGlass 2.0.0-alpha03 (Contains the advanced lens effects)
