@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop
+import app.marlboroadvance.mpvex.ui.components.liquid.TransparentLiquidButton
 import app.marlboroadvance.mpvex.ui.components.liquid.LiquidGlassSurface
 import app.marlboroadvance.mpvex.preferences.LiquidTarget
 
@@ -112,54 +113,113 @@ fun SlideToUnlock(
       )
     }
 
-    Box(
-      modifier = Modifier
-        .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-        .padding(4.dp)
-        .size(56.dp)
-        .clip(CircleShape)
-        .background(MaterialTheme.colorScheme.primary)
-        .pointerInput(Unit) {
-          detectHorizontalDragGestures(
-            onDragStart = {
-              isDragging = true
-              onDraggingChanged(true)
+    if (backdrop != null) {
+      TransparentLiquidButton(
+        modifier = Modifier
+          .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+          .padding(4.dp)
+          .size(56.dp),
+        backdrop = backdrop,
+        shape = CircleShape,
+        onClick = { /* Drag handled by pointerInput below */ }
+      ) {
+        Box(
+          modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+              detectHorizontalDragGestures(
+                onDragStart = {
+                  isDragging = true
+                  onDraggingChanged(true)
+                },
+                onDragEnd = {
+                  isDragging = false
+                  onDraggingChanged(false)
+                  if (offsetX.value >= maxOffset * 0.9f) {
+                    onUnlock()
+                  } else {
+                    coroutineScope.launch {
+                      offsetX.animateTo(targetValue = 0f, animationSpec = tween(durationMillis = 300))
+                    }
+                  }
+                },
+                onDragCancel = {
+                  isDragging = false
+                  onDraggingChanged(false)
+                  coroutineScope.launch {
+                    offsetX.animateTo(targetValue = 0f, animationSpec = tween(durationMillis = 300))
+                  }
+                },
+                onHorizontalDrag = { _, dragAmount ->
+                  coroutineScope.launch {
+                    val newValue = (offsetX.value + dragAmount).coerceIn(0f, maxOffset)
+                    offsetX.snapTo(newValue)
+                  }
+                },
+              )
             },
-            onDragEnd = {
-              isDragging = false
-              onDraggingChanged(false)
-              if (offsetX.value >= maxOffset * 0.9f) {
-                onUnlock()
-              } else {
+          contentAlignment = Alignment.Center,
+        ) {
+          androidx.compose.animation.Crossfade(targetState = showUnlockIcon, animationSpec = tween(durationMillis = 200)) { showUnlock ->
+            Icon(
+              imageVector = if (showUnlock) Icons.Filled.LockOpen else Icons.Filled.Lock,
+              contentDescription = "Slide to unlock",
+              tint = Color.White,
+              modifier = Modifier.size(28.dp),
+            )
+          }
+        }
+      }
+    } else {
+      Box(
+        modifier = Modifier
+          .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+          .padding(4.dp)
+          .size(56.dp)
+          .clip(CircleShape)
+          .background(MaterialTheme.colorScheme.primary)
+          .pointerInput(Unit) {
+            detectHorizontalDragGestures(
+              onDragStart = {
+                isDragging = true
+                onDraggingChanged(true)
+              },
+              onDragEnd = {
+                isDragging = false
+                onDraggingChanged(false)
+                if (offsetX.value >= maxOffset * 0.9f) {
+                  onUnlock()
+                } else {
+                  coroutineScope.launch {
+                    offsetX.animateTo(targetValue = 0f, animationSpec = tween(durationMillis = 300))
+                  }
+                }
+              },
+              onDragCancel = {
+                isDragging = false
+                onDraggingChanged(false)
                 coroutineScope.launch {
                   offsetX.animateTo(targetValue = 0f, animationSpec = tween(durationMillis = 300))
                 }
-              }
-            },
-            onDragCancel = {
-              isDragging = false
-              onDraggingChanged(false)
-              coroutineScope.launch {
-                offsetX.animateTo(targetValue = 0f, animationSpec = tween(durationMillis = 300))
-              }
-            },
-            onHorizontalDrag = { _, dragAmount ->
-              coroutineScope.launch {
-                val newValue = (offsetX.value + dragAmount).coerceIn(0f, maxOffset)
-                offsetX.snapTo(newValue)
-              }
-            },
+              },
+              onHorizontalDrag = { _, dragAmount ->
+                coroutineScope.launch {
+                  val newValue = (offsetX.value + dragAmount).coerceIn(0f, maxOffset)
+                  offsetX.snapTo(newValue)
+                }
+              },
+            )
+          },
+        contentAlignment = Alignment.Center,
+      ) {
+        androidx.compose.animation.Crossfade(targetState = showUnlockIcon, animationSpec = tween(durationMillis = 200)) { showUnlock ->
+          Icon(
+            imageVector = if (showUnlock) Icons.Filled.LockOpen else Icons.Filled.Lock,
+            contentDescription = "Slide to unlock",
+            tint = Color.White,
+            modifier = Modifier.size(28.dp),
           )
-        },
-      contentAlignment = Alignment.Center,
-    ) {
-      androidx.compose.animation.Crossfade(targetState = showUnlockIcon, animationSpec = tween(durationMillis = 200)) { showUnlock ->
-        Icon(
-          imageVector = if (showUnlock) Icons.Filled.LockOpen else Icons.Filled.Lock,
-          contentDescription = "Slide to unlock",
-          tint = Color.White,
-          modifier = Modifier.size(28.dp),
-        )
+        }
       }
     }
   }

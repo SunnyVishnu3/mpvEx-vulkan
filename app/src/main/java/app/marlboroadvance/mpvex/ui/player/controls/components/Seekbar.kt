@@ -69,6 +69,8 @@ import com.kyant.backdrop.backdrops.rememberBackdrop
 // ----------------------------------------------------
 
 import app.marlboroadvance.mpvex.ui.player.controls.LocalPlayerButtonsClickEvent
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidSlider
+import app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop
 import app.marlboroadvance.mpvex.ui.theme.spacing
 import app.marlboroadvance.mpvex.preferences.SeekbarStyle
 import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
@@ -137,45 +139,37 @@ fun SeekbarWithTimers(
     ) {
       Box(
         modifier = Modifier.fillMaxWidth().height(64.dp)
-          .pointerInput(Unit) {
+          .pointerInput(duration) {
             detectTapGestures(
               onTap = { offset ->
                 val newPosition = (offset.x / size.width) * duration
-                if (!isUserInteracting) isUserInteracting = true
-                userPosition = newPosition.coerceIn(0f, duration)
-                onValueChange(userPosition)
+                val coercedPosition = newPosition.coerceIn(0f, duration)
+                userPosition = coercedPosition
+                onValueChange(coercedPosition)
                 scope.launch { 
-                  animatedPosition.snapTo(userPosition)
-                  isUserInteracting = false
+                  animatedPosition.snapTo(coercedPosition)
                   onValueChangeFinished()
                 }
               }
             )
           }
-          .pointerInput(Unit) {
+          .pointerInput(duration) {
             detectDragGestures(
               onDragStart = { isUserInteracting = true },
               onDragEnd = { 
-                scope.launch { 
-                  delay(50) 
-                  animatedPosition.snapTo(userPosition)
-                  isUserInteracting = false
-                  onValueChangeFinished()
-                }
+                isUserInteracting = false
+                onValueChangeFinished()
               },
               onDragCancel = { 
-                scope.launch { 
-                  delay(50)
-                  animatedPosition.snapTo(userPosition)
-                  isUserInteracting = false
-                  onValueChangeFinished()
-                }
+                isUserInteracting = false
+                onValueChangeFinished()
               },
-            ) { change, _ ->
+            ) { change, dragAmount ->
               change.consume()
-              val newPosition = (change.position.x / size.width) * duration
-              userPosition = newPosition.coerceIn(0f, duration)
-              onValueChange(userPosition)
+              val delta = (dragAmount.x / size.width) * duration
+              val newPosition = (userPosition + delta).coerceIn(0f, duration)
+              userPosition = newPosition
+              onValueChange(newPosition)
             }
           }
       )
@@ -184,15 +178,28 @@ fun SeekbarWithTimers(
         modifier = Modifier.fillMaxWidth().height(32.dp),
         contentAlignment = Alignment.Center,
       ) {
-        if (isLiquidUI || seekbarStyle == SeekbarStyle.Liquid) {
-            LiquidSeekbar(
-                position = if (isUserInteracting) userPosition else animatedPosition.value,
-                duration = duration,
-                chapters = chapters,
-                isScrubbing = isUserInteracting,
-                loopStart = loopStart,
-                loopEnd = loopEnd,
-                liquidColor = liquidColor
+        val backdrop = LocalLiquidBackdrop.current
+        if ((isLiquidUI || seekbarStyle == SeekbarStyle.Liquid) && backdrop != null) {
+            LiquidSlider(
+                value = { if (isUserInteracting) userPosition else animatedPosition.value },
+                onValueChange = {
+                    userPosition = it
+                    onValueChange(it)
+                },
+                onDragStarted = { isUserInteracting = true },
+                onDragStopped = {
+                    scope.launch { 
+                        delay(50) 
+                        animatedPosition.snapTo(userPosition)
+                        isUserInteracting = false
+                        onValueChangeFinished()
+                    }
+                },
+                valueRange = 0f..duration.coerceAtLeast(0.1f),
+                visibilityThreshold = 0.01f,
+                backdrop = backdrop,
+                accentColor = liquidColor,
+                modifier = Modifier.fillMaxWidth()
             )
         } else {
             when (seekbarStyle) {

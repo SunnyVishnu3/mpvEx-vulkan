@@ -50,6 +50,7 @@ import app.marlboroadvance.mpvex.preferences.MultiChoiceSegmentedButton
 import app.marlboroadvance.mpvex.preferences.preference.collectAsState
 import app.marlboroadvance.mpvex.presentation.Screen
 import app.marlboroadvance.mpvex.ui.components.liquid.AdaptiveToggle
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidSliderPreference
 import app.marlboroadvance.mpvex.ui.components.liquid.LiquidSwitchPreference
 import app.marlboroadvance.mpvex.ui.preferences.components.ThemePicker
 import app.marlboroadvance.mpvex.ui.theme.DarkMode
@@ -247,44 +248,40 @@ object AppearancePreferencesScreen : Screen {
                                     // --- THE SLIDERS ---
                                     Text("${selectedTarget.title} Tuning", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
 
-                                    SliderPreference(
+                                    LiquidSliderPreference(
                                         value = blurRadius,
                                         onValueChange = { v -> scope.launch { liquidPreferences.setBlurRadius(selectedTarget, v) } },
-                                        sliderValue = blurRadius,
-                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setBlurRadius(selectedTarget, v) } },
                                         title = { Text("Blur Radius") },
                                         valueRange = 0f..64f,
-                                        summary = { Text("${blurRadius.roundToInt()} px", color = MaterialTheme.colorScheme.outline) }
+                                        summary = { Text("${blurRadius.roundToInt()} px", color = MaterialTheme.colorScheme.outline) },
+                                        preferences = liquidPreferences
                                     )
 
-                                    SliderPreference(
+                                    LiquidSliderPreference(
                                         value = refractionHeight,
                                         onValueChange = { v -> scope.launch { liquidPreferences.setRefractionHeight(selectedTarget, v) } },
-                                        sliderValue = refractionHeight,
-                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setRefractionHeight(selectedTarget, v) } },
                                         title = { Text("Refraction Height") },
                                         valueRange = 0f..100f,
-                                        summary = { Text("${refractionHeight.roundToInt()} dp", color = MaterialTheme.colorScheme.outline) }
+                                        summary = { Text("${refractionHeight.roundToInt()} dp", color = MaterialTheme.colorScheme.outline) },
+                                        preferences = liquidPreferences
                                     )
 
-                                    SliderPreference(
+                                    LiquidSliderPreference(
                                         value = refractionAmount,
                                         onValueChange = { v -> scope.launch { liquidPreferences.setRefractionAmount(selectedTarget, v) } },
-                                        sliderValue = refractionAmount,
-                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setRefractionAmount(selectedTarget, v) } },
                                         title = { Text("Refraction Amount") },
                                         valueRange = 0f..100f,
-                                        summary = { Text("${refractionAmount.roundToInt()} dp", color = MaterialTheme.colorScheme.outline) }
+                                        summary = { Text("${refractionAmount.roundToInt()} dp", color = MaterialTheme.colorScheme.outline) },
+                                        preferences = liquidPreferences
                                     )
 
-                                    SliderPreference(
+                                    LiquidSliderPreference(
                                         value = tintAlpha,
                                         onValueChange = { v -> scope.launch { liquidPreferences.setTintAlpha(selectedTarget, v) } },
-                                        sliderValue = tintAlpha,
-                                        onSliderValueChange = { v -> scope.launch { liquidPreferences.setTintAlpha(selectedTarget, v) } },
                                         title = { Text("Glass Opacity (Tint)") },
                                         valueRange = 0.0f..1.0f,
-                                        summary = { Text("${(tintAlpha * 100).roundToInt()}%", color = MaterialTheme.colorScheme.outline) }
+                                        summary = { Text("${(tintAlpha * 100).roundToInt()}%", color = MaterialTheme.colorScheme.outline) },
+                                        preferences = liquidPreferences
                                     )
 
                                     PreferenceDivider()
@@ -349,15 +346,14 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val unplayedOldVideoDays by preferences.unplayedOldVideoDays.collectAsState()
-                            SliderPreference(
+                            LiquidSliderPreference(
                                 value = unplayedOldVideoDays.toFloat(),
                                 onValueChange = { preferences.unplayedOldVideoDays.set(it.roundToInt()) },
-                                sliderValue = unplayedOldVideoDays.toFloat(),
-                                onSliderValueChange = { preferences.unplayedOldVideoDays.set(it.roundToInt()) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_unplayed_old_video_days_title)) },
                                 valueRange = 1f..30f,
                                 enabled = showUnplayedOldVideoLabel,
-                                summary = { Text(text = stringResource(id = R.string.pref_appearance_unplayed_old_video_days_summary, unplayedOldVideoDays), color = MaterialTheme.colorScheme.outline) }
+                                summary = { Text(text = stringResource(id = R.string.pref_appearance_unplayed_old_video_days_summary, unplayedOldVideoDays), color = MaterialTheme.colorScheme.outline) },
+                                preferences = liquidPreferences
                             )
 
                             PreferenceDivider()
@@ -373,15 +369,14 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val watchedThreshold by browserPreferences.watchedThreshold.collectAsState()
-                            SliderPreference(
+                            LiquidSliderPreference(
                                 value = watchedThreshold.toFloat(),
                                 onValueChange = { browserPreferences.watchedThreshold.set(it.roundToInt()) },
-                                sliderValue = watchedThreshold.toFloat(),
-                                onSliderValueChange = { browserPreferences.watchedThreshold.set(it.roundToInt()) },
                                 title = { Text(text = stringResource(id = R.string.pref_appearance_watched_threshold_title)) },
                                 valueRange = 50f..100f,
-                                valueSteps = 9,
-                                summary = { Text(text = stringResource(id = R.string.pref_appearance_watched_threshold_summary, watchedThreshold), color = MaterialTheme.colorScheme.outline) }
+                                steps = 9,
+                                summary = { Text(text = stringResource(id = R.string.pref_appearance_watched_threshold_summary, watchedThreshold), color = MaterialTheme.colorScheme.outline) },
+                                preferences = liquidPreferences
                             )
 
                             PreferenceDivider()

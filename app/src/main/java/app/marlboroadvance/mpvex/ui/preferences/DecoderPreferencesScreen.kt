@@ -228,10 +228,46 @@ object DecoderPreferencesScreen : Screen {
                   diskShaderCache = it
                   customPrefs.edit().putBoolean("disk_shader_cache", it).apply()
                 },
-                title = { Text("Disk Shader Cache") },
+                title = { Text("GPU Shader Cache") },
                 summary = {
                   Text(
                     "Caches compiled GPU shaders to storage to prevent playback stuttering",
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
+              var streamDiskCache by remember { mutableStateOf(customPrefs.getBoolean("stream_disk_cache", false)) }
+              SwitchPreference(
+                value = streamDiskCache,
+                onValueChange = {
+                  streamDiskCache = it
+                  customPrefs.edit().putBoolean("stream_disk_cache", it).apply()
+                },
+                title = { Text("Stream Disk Cache") },
+                summary = {
+                  Text(
+                    "Caches network stream data (video/audio) to disk instead of RAM",
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
+              var batteryEfficiency by remember { mutableStateOf(customPrefs.getBoolean("battery_efficiency_mode", false)) }
+              SwitchPreference(
+                value = batteryEfficiency,
+                onValueChange = {
+                  batteryEfficiency = it
+                  customPrefs.edit().putBoolean("battery_efficiency_mode", it).apply()
+                },
+                title = { Text("Battery Efficiency Mode") },
+                summary = {
+                  Text(
+                    "Prioritizes energy saving by using efficient rendering paths and reducing GPU work",
                     color = MaterialTheme.colorScheme.outline,
                   )
                 },

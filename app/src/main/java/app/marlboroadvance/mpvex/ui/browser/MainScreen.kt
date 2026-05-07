@@ -46,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -62,6 +63,8 @@ import kotlinx.serialization.Serializable
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import app.marlboroadvance.mpvex.ui.components.liquid.LiquidGlassSurface
+import app.marlboroadvance.mpvex.ui.components.liquid.LiquidBottomTabs
+import app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBottomTabScale
 import app.marlboroadvance.mpvex.preferences.LiquidUIPreferences
 // ----------------------------
 
@@ -127,36 +130,59 @@ object MainScreen : Screen {
           
           // THE TOGGLE LOGIC
           if (isLiquidUI) {
-            // The Floating Glass Capsule (from the 1.0.4 fork, upgraded to alpha03)
-            LiquidGlassSurface(
-                backdrop = bottomBarBackdrop,
-                modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 24.dp)
-                    .fillMaxWidth()
-                    .height(64.dp),
-                shape = RoundedCornerShape(32.dp)
+            LiquidBottomTabs(
+              selectedTabIndex = { selectedTab },
+              onTabSelected = { selectedTab = it },
+              backdrop = bottomBarBackdrop,
+              tabsCount = 4,
+              modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 24.dp)
+                .fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val activeColor = MaterialTheme.colorScheme.primary
-                    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    
-                    IconButton(onClick = { selectedTab = 0 }) {
-                        Icon(Icons.Filled.Home, "Home", modifier = Modifier.size(28.dp), tint = if (selectedTab == 0) activeColor else inactiveColor)
-                    }
-                    IconButton(onClick = { selectedTab = 1 }) {
-                        Icon(Icons.Filled.History, "Recents", modifier = Modifier.size(28.dp), tint = if (selectedTab == 1) activeColor else inactiveColor)
-                    }
-                    IconButton(onClick = { selectedTab = 2 }) {
-                        Icon(Icons.AutoMirrored.Filled.PlaylistPlay, "Playlists", modifier = Modifier.size(28.dp), tint = if (selectedTab == 2) activeColor else inactiveColor)
-                    }
-                    IconButton(onClick = { selectedTab = 3 }) {
-                        Icon(Icons.Filled.Language, "Network", modifier = Modifier.size(28.dp), tint = if (selectedTab == 3) activeColor else inactiveColor)
-                    }
+              val scaleProvider = LocalLiquidBottomTabScale.current
+              val activeColor = MaterialTheme.colorScheme.primary
+              val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+              IconButton(
+                onClick = { selectedTab = 0 },
+                modifier = Modifier.weight(1f).graphicsLayer {
+                  val s = scaleProvider()
+                  scaleX = s
+                  scaleY = s
                 }
+              ) {
+                Icon(Icons.Filled.Home, "Home", modifier = Modifier.size(28.dp), tint = if (selectedTab == 0) activeColor else inactiveColor)
+              }
+              IconButton(
+                onClick = { selectedTab = 1 },
+                modifier = Modifier.weight(1f).graphicsLayer {
+                  val s = scaleProvider()
+                  scaleX = s
+                  scaleY = s
+                }
+              ) {
+                Icon(Icons.Filled.History, "Recents", modifier = Modifier.size(28.dp), tint = if (selectedTab == 1) activeColor else inactiveColor)
+              }
+              IconButton(
+                onClick = { selectedTab = 2 },
+                modifier = Modifier.weight(1f).graphicsLayer {
+                  val s = scaleProvider()
+                  scaleX = s
+                  scaleY = s
+                }
+              ) {
+                Icon(Icons.AutoMirrored.Filled.PlaylistPlay, "Playlists", modifier = Modifier.size(28.dp), tint = if (selectedTab == 2) activeColor else inactiveColor)
+              }
+              IconButton(
+                onClick = { selectedTab = 3 },
+                modifier = Modifier.weight(1f).graphicsLayer {
+                  val s = scaleProvider()
+                  scaleX = s
+                  scaleY = s
+                }
+              ) {
+                Icon(Icons.Filled.Language, "Network", modifier = Modifier.size(28.dp), tint = if (selectedTab == 3) activeColor else inactiveColor)
+              }
             }
           } else {
             // The Classic mpvEx Navigation Bar

@@ -137,7 +137,7 @@ fun RenderPlayerButton(
         ) {
           Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = MaterialTheme.spacing.extraSmall, vertical = MaterialTheme.spacing.small)
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = MaterialTheme.spacing.small)
           ) {
             Text(
               mediaTitle ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -145,7 +145,7 @@ fun RenderPlayerButton(
               modifier = Modifier.weight(1f, fill = false),
             )
             viewModel.getPlaylistInfo()?.let { playlistInfo ->
-              Text(" • $playlistInfo", maxLines = 1, overflow = TextOverflow.Visible, color = Color.White, style = MaterialTheme.typography.bodySmall)
+              Text(" • $playlistInfo", maxLines = 1, overflow = TextOverflow.Visible, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
             }
           }
         }
@@ -273,17 +273,23 @@ fun RenderPlayerButton(
         if (expanded) {
           if (backdrop != null && !hideBackground) {
              LiquidGlassSurface(
-               backdrop = backdrop, target = LiquidTarget.BUTTON, shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.height(buttonSize)
+               backdrop = backdrop, 
+               target = LiquidTarget.BUTTON, 
+               shape = MaterialTheme.shapes.extraLarge, 
+               modifier = Modifier.height(buttonSize)
              ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
-                   Box(modifier = Modifier.size(buttonSize - 4.dp).clip(CircleShape).clickable(onClick = { viewModel.frameStepBackward(); viewModel.resetFrameNavigationTimer() }), contentAlignment = Alignment.Center) { Icon(Icons.Default.FastRewind, contentDescription = "Previous Frame", tint = Color.White, modifier = Modifier.size(20.dp)) }
-                   if (isSnapshotLoading) {
-                       Box(modifier = Modifier.size(buttonSize - 4.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary) }
-                   } else {
-                       @OptIn(ExperimentalFoundationApi::class)
-                       Box(modifier = Modifier.size(buttonSize - 4.dp).clip(CircleShape).combinedClickable(onClick = { viewModel.takeSnapshot(context); viewModel.resetFrameNavigationTimer() }, onLongClick = { onOpenSheet(Sheets.FrameNavigation) }), contentAlignment = Alignment.Center) { Icon(Icons.Default.CameraAlt, contentDescription = "Take Screenshot", tint = Color.White, modifier = Modifier.size(20.dp)) }
-                   }
-                   Box(modifier = Modifier.size(buttonSize - 4.dp).clip(CircleShape).clickable(onClick = { viewModel.frameStepForward(); viewModel.resetFrameNavigationTimer() }), contentAlignment = Alignment.Center) { Icon(Icons.Default.FastForward, contentDescription = "Next Frame", tint = Color.White, modifier = Modifier.size(20.dp)) }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp), 
+                    verticalAlignment = Alignment.CenterVertically, 
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                ) {
+                    TransparentLiquidButton(backdrop = backdrop, onClick = { viewModel.frameStepBackward(); viewModel.resetFrameNavigationTimer() }, modifier = Modifier.size(buttonSize)) { Icon(Icons.Default.FastRewind, contentDescription = "Previous Frame", tint = Color.White, modifier = Modifier.size(20.dp)) }
+                    if (isSnapshotLoading) {
+                        Box(modifier = Modifier.size(buttonSize), contentAlignment = Alignment.Center) { CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary) }
+                    } else {
+                        TransparentLiquidButton(backdrop = backdrop, onClick = { viewModel.takeSnapshot(context); viewModel.resetFrameNavigationTimer() }, onLongClick = { onOpenSheet(Sheets.FrameNavigation) }, modifier = Modifier.size(buttonSize)) { Icon(Icons.Default.CameraAlt, contentDescription = "Take Screenshot", tint = Color.White, modifier = Modifier.size(20.dp)) }
+                    }
+                    TransparentLiquidButton(backdrop = backdrop, onClick = { viewModel.frameStepForward(); viewModel.resetFrameNavigationTimer() }, modifier = Modifier.size(buttonSize)) { Icon(Icons.Default.FastForward, contentDescription = "Next Frame", tint = Color.White, modifier = Modifier.size(20.dp)) }
                 }
              }
           } else {
@@ -434,11 +440,28 @@ fun RenderPlayerButton(
       ) { expanded ->
         if (expanded) {
           if (backdrop != null && !hideBackground) {
-             LiquidGlassSurface(backdrop = backdrop, target = LiquidTarget.BUTTON, shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.height(buttonSize)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
-                   Box(modifier = Modifier.height(buttonSize - 4.dp).widthIn(min = buttonSize - 4.dp).clip(CircleShape).background(if (loopA != null) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Transparent).clickable(onClick = { viewModel.setLoopA() }), contentAlignment = Alignment.Center) { Text(text = if (loopA != null) viewModel.formatTimestamp(loopA!!) else "A", style = MaterialTheme.typography.labelLarge, color = Color.White, modifier = Modifier.padding(horizontal = if (loopA != null) 8.dp else 0.dp)) }
-                   Box(modifier = Modifier.size(buttonSize - 4.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)).clickable(onClick = { viewModel.clearABLoop(); viewModel.toggleABLoopExpanded() }), contentAlignment = Alignment.Center) { Icon(imageVector = Icons.Default.Close, contentDescription = "Clear Loop", tint = Color.White, modifier = Modifier.size(16.dp)) }
-                   Box(modifier = Modifier.height(buttonSize - 4.dp).widthIn(min = buttonSize - 4.dp).clip(CircleShape).background(if (loopB != null) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Transparent).clickable(onClick = { viewModel.setLoopB() }), contentAlignment = Alignment.Center) { Text(text = if (loopB != null) viewModel.formatTimestamp(loopB!!) else "B", style = MaterialTheme.typography.labelLarge, color = Color.White, modifier = Modifier.padding(horizontal = if (loopB != null) 8.dp else 0.dp)) }
+             LiquidGlassSurface(
+               backdrop = backdrop, 
+               target = LiquidTarget.BUTTON, 
+               shape = MaterialTheme.shapes.extraLarge, 
+               modifier = Modifier.height(buttonSize)
+             ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp), 
+                    verticalAlignment = Alignment.CenterVertically, 
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                ) {
+                    TransparentLiquidButton(backdrop = backdrop, onClick = { viewModel.setLoopA() }, modifier = Modifier.height(buttonSize).widthIn(min = buttonSize)) { 
+                        Box(modifier = Modifier.fillMaxSize().padding(horizontal = if (loopA != null) 8.dp else 0.dp), contentAlignment = Alignment.Center) {
+                            Text(text = if (loopA != null) viewModel.formatTimestamp(loopA!!) else "A", style = MaterialTheme.typography.labelLarge, color = if (loopA != null) MaterialTheme.colorScheme.primary else Color.White) 
+                        }
+                    }
+                    TransparentLiquidButton(backdrop = backdrop, onClick = { viewModel.clearABLoop(); viewModel.toggleABLoopExpanded() }, modifier = Modifier.size(buttonSize)) { Icon(imageVector = Icons.Default.Close, contentDescription = "Clear Loop", tint = Color.White, modifier = Modifier.size(16.dp)) }
+                    TransparentLiquidButton(backdrop = backdrop, onClick = { viewModel.setLoopB() }, modifier = Modifier.height(buttonSize).widthIn(min = buttonSize)) { 
+                        Box(modifier = Modifier.fillMaxSize().padding(horizontal = if (loopB != null) 8.dp else 0.dp), contentAlignment = Alignment.Center) {
+                            Text(text = if (loopB != null) viewModel.formatTimestamp(loopB!!) else "B", style = MaterialTheme.typography.labelLarge, color = if (loopB != null) MaterialTheme.colorScheme.primary else Color.White) 
+                        }
+                    }
                 }
              }
           } else {

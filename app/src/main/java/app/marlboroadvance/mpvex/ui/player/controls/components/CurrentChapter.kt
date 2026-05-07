@@ -38,7 +38,7 @@ import app.marlboroadvance.mpvex.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
 import app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop
-import app.marlboroadvance.mpvex.ui.components.liquid.LiquidGlassSurface
+import app.marlboroadvance.mpvex.ui.components.liquid.TransparentLiquidButton
 import app.marlboroadvance.mpvex.preferences.LiquidTarget
 
 @Composable
@@ -50,13 +50,11 @@ fun CurrentChapter(
   val backdrop = LocalLiquidBackdrop.current
 
   if (backdrop != null) {
-      LiquidGlassSurface(
+      TransparentLiquidButton(
           backdrop = backdrop,
-          target = LiquidTarget.BUTTON,
           shape = RoundedCornerShape(100.dp),
-          modifier = modifier
-            .clip(RoundedCornerShape(100.dp))
-            .clickable(onClick = onClick)
+          modifier = modifier,
+          onClick = onClick
       ) {
           Row(
             verticalAlignment = Alignment.CenterVertically,

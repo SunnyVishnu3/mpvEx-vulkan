@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.marlboroadvance.mpvex.preferences.PlayerButton
 import app.marlboroadvance.mpvex.ui.player.Panels
@@ -37,6 +39,8 @@ import app.marlboroadvance.mpvex.ui.player.controls.components.ControlsGroup
 import app.marlboroadvance.mpvex.ui.theme.controlColor
 import app.marlboroadvance.mpvex.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
+import app.marlboroadvance.mpvex.ui.components.liquid.LocalLiquidBackdrop
+import app.marlboroadvance.mpvex.ui.components.liquid.TransparentLiquidButton
 
 @Composable
 fun TopPlayerControlsPortrait(
@@ -45,9 +49,11 @@ fun TopPlayerControlsPortrait(
   onBackPress: () -> Unit,
   onOpenSheet: (Sheets) -> Unit,
   viewModel: PlayerViewModel,
+  buttonSize: Dp = 40.dp,
 ) {
   val playlistModeEnabled = viewModel.hasPlaylistSupport()
   val clickEvent = LocalPlayerButtonsClickEvent.current
+  val backdrop = LocalLiquidBackdrop.current
 
   Column {
     Row(
@@ -61,68 +67,91 @@ fun TopPlayerControlsPortrait(
           color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         )
 
-        val titleInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-
-        androidx.compose.foundation.layout.Box(
-          modifier =
-            Modifier
-              .clip(CircleShape)
-              .clickable(
-                interactionSource = titleInteractionSource,
-                indication = ripple(bounded = true),
-                enabled = playlistModeEnabled,
-                onClick = {
-                  clickEvent()
-                  onOpenSheet(Sheets.Playlist)
-                },
-              ),
-        ) {
-          Surface(
+        if (backdrop != null && !hideBackground) {
+          TransparentLiquidButton(
+            backdrop = backdrop,
+            modifier = Modifier.height(buttonSize),
             shape = CircleShape,
-            color =
-              if (hideBackground) {
-                Color.Transparent
-              } else {
-                MaterialTheme.colorScheme.surfaceContainer.copy(
-                  alpha = 0.55f,
-                )
-              },
-            contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
-            tonalElevation = 0.dp,
-            shadowElevation = 0.dp,
-            border =
-              if (hideBackground) {
-                null
-              } else {
-                BorderStroke(
-                  1.dp,
-                  MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                )
-              },
+            onClick = { clickEvent(); onOpenSheet(Sheets.Playlist) }
           ) {
             Row(
               verticalAlignment = Alignment.CenterVertically,
-              modifier =
-                Modifier
-                  .padding(
-                    horizontal = MaterialTheme.spacing.medium,
-                    vertical = MaterialTheme.spacing.small,
-                  ),
+              modifier = Modifier.padding(horizontal = 12.dp, vertical = MaterialTheme.spacing.small)
             ) {
               Text(
-                mediaTitle ?: "",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyMedium,
+                mediaTitle ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyMedium, color = Color.White,
                 modifier = Modifier.weight(1f, fill = false),
               )
               viewModel.getPlaylistInfo()?.let { playlistInfo ->
+                Text(" • $playlistInfo", maxLines = 1, overflow = TextOverflow.Visible, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
+              }
+            }
+          }
+        } else {
+          val titleInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+
+          androidx.compose.foundation.layout.Box(
+            modifier =
+              Modifier
+                .clip(CircleShape)
+                .clickable(
+                  interactionSource = titleInteractionSource,
+                  indication = ripple(bounded = true),
+                  enabled = playlistModeEnabled,
+                  onClick = {
+                    clickEvent()
+                    onOpenSheet(Sheets.Playlist)
+                  },
+                ),
+          ) {
+            Surface(
+              shape = CircleShape,
+              color =
+                if (hideBackground) {
+                  Color.Transparent
+                } else {
+                  MaterialTheme.colorScheme.surfaceContainer.copy(
+                    alpha = 0.55f,
+                  )
+                },
+              contentColor = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
+              tonalElevation = 0.dp,
+              shadowElevation = 0.dp,
+              border =
+                if (hideBackground) {
+                  null
+                } else {
+                  BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                  )
+                },
+            ) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier =
+                  Modifier
+                    .padding(
+                      horizontal = MaterialTheme.spacing.medium,
+                      vertical = MaterialTheme.spacing.small,
+                    ),
+              ) {
                 Text(
-                  " • $playlistInfo",
+                  mediaTitle ?: "",
                   maxLines = 1,
-                  overflow = TextOverflow.Visible,
-                  style = MaterialTheme.typography.bodySmall,
+                  overflow = TextOverflow.Ellipsis,
+                  style = MaterialTheme.typography.bodyMedium,
+                  modifier = Modifier.weight(1f, fill = false),
                 )
+                viewModel.getPlaylistInfo()?.let { playlistInfo ->
+                  Text(
+                    " • $playlistInfo",
+                    maxLines = 1,
+                    overflow = TextOverflow.Visible,
+                    style = MaterialTheme.typography.bodySmall,
+                  )
+                }
               }
             }
           }

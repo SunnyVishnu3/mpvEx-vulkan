@@ -1151,6 +1151,7 @@ fun PlayerControls(
               onBackPress = onBackPress,
               onOpenSheet = onOpenSheet,
               viewModel = viewModel,
+              buttonSize = 40.dp,
             )
           } else {
             TopLeftPlayerControlsLandscape(
@@ -1159,6 +1160,7 @@ fun PlayerControls(
               onBackPress = onBackPress,
               onOpenSheet = onOpenSheet,
               viewModel = viewModel,
+              buttonSize = 45.dp,
             )
           }
         }

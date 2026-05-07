@@ -96,22 +96,27 @@ class MPVView(
   var aid: Int by TrackDelegate("aid")
 
   override fun initOptions() {
-    val profile = decoderPreferences.profile.get()
+    val customPrefs = context.getSharedPreferences("mpvex_custom_prefs", Context.MODE_PRIVATE)
+    val batteryEfficiency = customPrefs.getBoolean("battery_efficiency_mode", false)
+
+    val profile = if (batteryEfficiency) "fast" else decoderPreferences.profile.get()
     MPVLib.setOptionString("profile", profile)
-    setVo(if (decoderPreferences.gpuNext.get()) "gpu-next" else "gpu")
+
+    // vo selection with battery efficiency override
+    val requestedVo = if (decoderPreferences.gpuNext.get()) "gpu-next" else "gpu"
+    val finalVo = if (batteryEfficiency) "gpu" else requestedVo
+    setVo(finalVo)
     
     // ========================================================================
     // APPLY CUSTOM SHADER CACHE & AUDIO ENGINE SETTINGS
     // ========================================================================
-    val customPrefs = context.getSharedPreferences("mpvex_custom_prefs", Context.MODE_PRIVATE)
-
     // 1. Audio Engine
     val audioEngine = customPrefs.getString("audio_engine", "auto")
     if (audioEngine != "auto" && !audioEngine.isNullOrEmpty()) {
         MPVLib.setOptionString("ao", audioEngine)
     }
 
-    // 2. Disk Shader Cache
+    // 2. GPU Shader Cache
     val useShaderCache = customPrefs.getBoolean("disk_shader_cache", true)
     if (useShaderCache) {
         MPVLib.setOptionString("gpu-shader-cache", "yes")
@@ -120,6 +125,16 @@ class MPVView(
         MPVLib.setOptionString("gpu-shader-cache-dir", cacheDir.absolutePath)
     } else {
         MPVLib.setOptionString("gpu-shader-cache", "no")
+    }
+
+    // 2.1 Stream Disk Cache
+    val useStreamDiskCache = customPrefs.getBoolean("stream_disk_cache", false)
+    if (useStreamDiskCache) {
+        MPVLib.setOptionString("cache", "yes")
+        MPVLib.setOptionString("cache-on-disk", "yes")
+        val streamCacheDir = File(context.cacheDir, "mpv_stream_cache")
+        streamCacheDir.mkdirs()
+        MPVLib.setOptionString("cache-dir", streamCacheDir.absolutePath)
     }
     // ========================================================================
 
@@ -173,7 +188,11 @@ class MPVView(
     MPVLib.setOptionString("hr-seek-framedrop", if (preciseSeek) "no" else "yes")
 
     // Anime4K shader initialization (MUST be in initOptions, not after file load!)
-    applyAnime4KShaders()
+    if (!batteryEfficiency) {
+        applyAnime4KShaders()
+    } else {
+        MPVLib.setOptionString("glsl-shaders", "")
+    }
 
     setupSubtitlesOptions()
     setupAudioOptions()

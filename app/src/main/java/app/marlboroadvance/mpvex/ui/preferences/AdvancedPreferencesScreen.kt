@@ -730,6 +730,80 @@ object AdvancedPreferencesScreen : Screen {
                   }
                 },
               )
+
+              PreferenceDivider()
+
+              Preference(
+                title = { Text("Clear GPU shader cache") },
+                summary = {
+                  Text(
+                    "Delete compiled GPU shaders. Fixes rendering glitches or 'purple screen' issues.",
+                    color = MaterialTheme.colorScheme.outline
+                  )
+                },
+                onClick = {
+                  scope.launch(Dispatchers.IO) {
+                    val cacheDir = File(context.cacheDir, "mpv_shaders")
+                    if (cacheDir.exists()) cacheDir.deleteRecursively()
+                    withContext(Dispatchers.Main) {
+                      Toast.makeText(context, "GPU shader cache cleared", Toast.LENGTH_SHORT).show()
+                    }
+                  }
+                }
+              )
+
+              PreferenceDivider()
+
+              Preference(
+                title = { Text("Clear libplacebo cache") },
+                summary = {
+                  Text(
+                    "Remove internal rendering engine cache (used by vo=gpu-next).",
+                    color = MaterialTheme.colorScheme.outline
+                  )
+                },
+                onClick = {
+                  scope.launch(Dispatchers.IO) {
+                    val placeboCache = File(context.filesDir, "libplacebo.cache")
+                    if (placeboCache.exists()) placeboCache.delete()
+                    withContext(Dispatchers.Main) {
+                      Toast.makeText(context, "libplacebo cache cleared", Toast.LENGTH_SHORT).show()
+                    }
+                  }
+                }
+              )
+
+              PreferenceDivider()
+
+              Preference(
+                title = { Text("Clear driver cache") },
+                summary = {
+                  Text(
+                    "Clear Adreno/Turnip driver-level caches if present.",
+                    color = MaterialTheme.colorScheme.outline
+                  )
+                },
+                onClick = {
+                  scope.launch(Dispatchers.IO) {
+                    // Common locations for driver caches in Android apps
+                    val cacheLocations = listOf(
+                        File(context.cacheDir, "adreno_cache"),
+                        File(context.cacheDir, "blob_storage"), // Common for Turnip
+                        File(context.filesDir, "adreno_cache")
+                    )
+                    var cleared = false
+                    cacheLocations.forEach { dir ->
+                        if (dir.exists()) {
+                            dir.deleteRecursively()
+                            cleared = true
+                        }
+                    }
+                    withContext(Dispatchers.Main) {
+                      Toast.makeText(context, if (cleared) "Driver cache cleared" else "No driver cache found", Toast.LENGTH_SHORT).show()
+                    }
+                  }
+                }
+              )
             }
           }
          
