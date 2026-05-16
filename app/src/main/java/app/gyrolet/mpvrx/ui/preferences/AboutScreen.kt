@@ -18,6 +18,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -369,6 +370,46 @@ object AboutScreen : Screen {
                             Spacer(Modifier.height(2.dp))
                             Text(
                                 text = "panditritesh2001@okhdfcbank",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = cs.onSurface,
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Copy UPI ID",
+                            modifier = Modifier.size(20.dp),
+                            tint = cs.primary,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = cs.surfaceVariant.copy(alpha = 0.5f),
+                    border = BorderStroke(1.dp, cs.outlineVariant.copy(alpha = 0.5f)),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                clipboardManager.setText(AnnotatedString("panditritesh@hdfc"))
+                                Toast.makeText(context, "UPI ID copied!", Toast.LENGTH_SHORT).show()
+                            }
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Secondary UPI ID",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = cs.outline,
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = "panditritesh@hdfc",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Medium,
                                 color = cs.onSurface,
@@ -805,5 +846,40 @@ private val OPEN_SOURCE_LIBRARIES = listOf(
     description = "Drag-and-drop list reordering for Compose surfaces.",
     license = "Apache-2.0",
     url = "https://github.com/Calvin-LL/Reorderable",
+  ),
+  OpenSourceLibrary(
+    name = "Seeker",
+    artifact = "io.github.2307vivek:seeker",
+    description = "A customizable seekbar component for Jetpack Compose.",
+    license = "Apache-2.0",
+    url = "https://github.com/2307vivek/seeker",
+  ),
+  OpenSourceLibrary(
+    name = "Sora Editor",
+    artifact = "io.github.Rosemoe.sora-editor",
+    description = "A powerful, efficient code editor for Android with TextMate highlighting.",
+    license = "LGPL-2.1",
+    url = "https://github.com/Rosemoe/sora-editor",
+  ),
+  OpenSourceLibrary(
+    name = "Media3",
+    artifact = "androidx.media3",
+    description = "Android media libraries for advanced playback and effects.",
+    license = "Apache-2.0",
+    url = "https://developer.android.com/jetpack/androidx/releases/media3",
+  ),
+  OpenSourceLibrary(
+    name = "Jsoup",
+    artifact = "org.jsoup:jsoup",
+    description = "Java HTML Parser for web scraping and document extraction.",
+    license = "MIT",
+    url = "https://jsoup.org/",
+  ),
+  OpenSourceLibrary(
+    name = "Llamatik",
+    artifact = "com.llamatik:library",
+    description = "Local LLM inference bridge for running AI models on Android.",
+    license = "Apache-2.0",
+    url = "https://github.com/llamatik/library",
   ),
 )
