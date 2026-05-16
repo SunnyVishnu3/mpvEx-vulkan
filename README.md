@@ -306,9 +306,7 @@ If you find MpvRx useful and would like to support its development, consider buy
 
 ### UPI
 
-**UPI IDs:**
-- `panditritesh2001@okhdfcbank` (Primary)
-- `panditritesh@hdfc` (Secondary)
+`panditritesh2001@okhdfcbank`
 
 <a href="upi://pay?pa=panditritesh2001@okhdfcbank&pn=Ritesh%20Pandit&cu=INR">
   <img src="fastlane/metadata/android/en-US/images/upiqr-code.svg" width="250" height="250" alt="UPI QR Code">
