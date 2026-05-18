@@ -22,6 +22,8 @@ These notes are written in plain English and focus on what changed for real use.
 
 - **Fixed app icon on Android 16** — changed the adaptive icon background from transparent to opaque black so the icon doesn't disappear on launchers that don't handle transparency well.
 
+- **User mpv.conf now has highest priority** — during player startup, your mpv.conf settings are re-applied after all app defaults so they always take precedence. Whatever you put in mpv.conf will override everything else.
+
 ## 1.3.5
 
 - **Removed Play Store and F-Droid build variants** — streamlined to a single `standard` flavor with full update support and all features enabled.

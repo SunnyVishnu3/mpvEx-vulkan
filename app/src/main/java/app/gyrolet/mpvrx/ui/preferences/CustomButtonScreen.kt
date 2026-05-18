@@ -2,6 +2,7 @@ package app.gyrolet.mpvrx.ui.preferences
 
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
+import app.gyrolet.mpvrx.ui.editor.MpvHelpScreen
 import app.gyrolet.mpvrx.ui.editor.MpvScriptEditor
 
 import androidx.compose.animation.AnimatedVisibility
@@ -636,6 +637,7 @@ fun ButtonSlotCard(
             ),
         ) {
             Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                val dialogBackstack = LocalBackStack.current
                 Column(Modifier.fillMaxSize()) {
                     TopAppBar(
                         title = {
@@ -652,6 +654,18 @@ fun ButtonSlotCard(
                             }
                         },
                         actions = {
+                            IconButton(
+                                onClick = { dialogBackstack.add(MpvHelpScreen()) },
+                                modifier = Modifier.padding(end = 4.dp).size(40.dp),
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.secondary,
+                                ),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Info,
+                                    contentDescription = "Help",
+                                )
+                            }
                             IconButton(onClick = { dismissAndSave() }) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_material_symbols_check),

@@ -37,6 +37,7 @@ import app.gyrolet.mpvrx.R
 import app.gyrolet.mpvrx.preferences.AdvancedPreferences
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.presentation.Screen
+import app.gyrolet.mpvrx.ui.editor.MpvHelpScreen
 import app.gyrolet.mpvrx.ui.editor.MpvScriptEditor
 import app.gyrolet.mpvrx.ui.utils.LocalBackStack
 import app.gyrolet.mpvrx.ui.utils.popSafely
@@ -180,6 +181,20 @@ data class ConfigEditorScreen(
           }
         },
         actions = {
+          IconButton(
+            onClick = {
+              backStack.add(MpvHelpScreen())
+            },
+            modifier = Modifier.padding(end = 4.dp).size(40.dp),
+            colors = IconButtonDefaults.iconButtonColors(
+              contentColor = MaterialTheme.colorScheme.secondary,
+            ),
+          ) {
+            Icon(
+              imageVector = Icons.Outlined.Info,
+              contentDescription = "Help",
+            )
+          }
           IconButton(
             onClick  = { saveConfig() },
             enabled  = hasUnsavedChanges,

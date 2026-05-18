@@ -22,7 +22,8 @@ object MpvAutoCompleteProvider {
         val label: String,
         val signature: String,
         val desc: String,
-        val kind: CompletionItemKind = CompletionItemKind.Function
+        val kind: CompletionItemKind = CompletionItemKind.Function,
+        val commitSuffix: String = "",
     )
 
     fun provideCompletion(prefix: String, mode: MpvCompletionMode, publisher: CompletionPublisher) {
@@ -40,7 +41,8 @@ object MpvAutoCompleteProvider {
             )
             .take(MAX_COMPLETIONS)
             .map { def ->
-                SimpleCompletionItem(def.label, def.desc, prefix.length, def.label).apply {
+                val commitText = def.label + def.commitSuffix
+                SimpleCompletionItem(def.label, def.desc, prefix.length, commitText).apply {
                     kind(def.kind)
                     def.detailText()?.let { detail = it }
                 }
@@ -50,8 +52,8 @@ object MpvAutoCompleteProvider {
         publisher.addItems(suggestions)
     }
 
-    private fun createDef(label: String, signature: String, desc: String, kind: CompletionItemKind = CompletionItemKind.Function) = 
-        CompletionDef(label, signature, desc, kind)
+    private fun createDef(label: String, signature: String, desc: String, kind: CompletionItemKind = CompletionItemKind.Function, commitSuffix: String = "") = 
+        CompletionDef(label, signature, desc, kind, commitSuffix)
 
     private fun completionsFor(mode: MpvCompletionMode): List<CompletionDef> =
         when (mode) {
@@ -63,12 +65,16 @@ object MpvAutoCompleteProvider {
     private fun CompletionDef.matchRank(query: String): Int {
         val label = this.label.lowercase()
         val normalizedQuery = query.lowercase()
+        val nqDot = normalizedQuery.replace('=', '.')
         return when {
             label == normalizedQuery -> 0
             label.startsWith(normalizedQuery) -> 1
+            label == nqDot -> 0
+            label.startsWith(nqDot) -> 1
             label.contains(".$normalizedQuery") ||
                 label.contains("-$normalizedQuery") ||
-                label.contains("/$normalizedQuery") -> 2
+                label.contains("/$normalizedQuery") ||
+                label.contains("=$normalizedQuery") -> 2
             label.contains(normalizedQuery) -> 3
             else -> Int.MAX_VALUE
         }
@@ -84,7 +90,7 @@ object MpvAutoCompleteProvider {
     }
 
     private fun configOption(label: String, value: String, desc: String) =
-        createDef(label, "$label=$value", desc, CompletionItemKind.Property)
+        createDef(label, "$label=$value", desc, CompletionItemKind.Property, commitSuffix = "=")
 
     private fun inputKey(label: String, desc: String) =
         createDef(label, "input.conf key", desc, CompletionItemKind.Keyword)
@@ -164,6 +170,71 @@ object MpvAutoCompleteProvider {
             configOption("af", "<filter-list>", "Set the audio filter chain."),
             configOption("input-default-bindings", "<yes|no>", "Enable default key bindings."),
             configOption("input-vo-keyboard", "<yes|no>", "Enable keyboard input through VO."),
+
+            // ── Audio extras ──
+            configOption("audio-pitch-correction", "<yes|no>", "Preserve pitch when changing speed."),
+            configOption("audio-exclusive", "<yes|no>", "Exclusive audio output mode."),
+            configOption("audio-buffer", "<seconds>", "Audio output buffer size."),
+            configOption("audio-file-paths", "<path-list>", "Search paths for external audio files."),
+            configOption("audio-format", "<auto|s16|s32|float>", "Audio sample format."),
+            configOption("audio-samplerate", "<auto|Hz>", "Audio output sample rate."),
+            configOption("audio-channels", "<auto|count>", "Audio output channel count."),
+
+            // ── Video extras ──
+            configOption("video-rotate", "<0|90|180|270>", "Force video rotation."),
+            configOption("video-zoom", "<number>", "Video zoom level."),
+            configOption("video-unscaled", "<no|yes|downscale-big>", "Disable video scaling."),
+            configOption("video-aspect-override", "<ratio|-1>", "Override aspect ratio."),
+            configOption("video-align-x", "<-1..1>", "Horizontal video alignment."),
+            configOption("video-align-y", "<-1..1>", "Vertical video alignment."),
+            configOption("video-pan-x", "<number>", "Pan video horizontally."),
+            configOption("video-pan-y", "<number>", "Pan video vertically."),
+            configOption("deinterlace", "<yes|no|auto>", "Enable deinterlacing."),
+
+            // ── Playback extras ──
+            configOption("keep-open-pauses", "<yes|no>", "Pause on EOF instead of stopping."),
+            configOption("hr-seek", "<no|yes|always>", "Use precise seeks."),
+            configOption("hr-seek-framedrop", "<yes|no>", "Drop frames during hr-seek."),
+            configOption("cache-pause", "<yes|no>", "Pause when cache runs low."),
+            configOption("cache-pause-initial", "<yes|no>", "Pause until initial cache filled."),
+            configOption("demuxer-max-duration", "<seconds>", "Max demuxer cache duration."),
+            configOption("demuxer-max-back-duration", "<seconds>", "Max backward cache duration."),
+            configOption("demuxer-seekable-cache", "<yes|no>", "Enable seeking in cached range."),
+            configOption("ab-loop-a", "<time>", "Set A-B loop point A."),
+            configOption("ab-loop-b", "<time>", "Set A-B loop point B."),
+
+            // ── Subtitle extras ──
+            configOption("sub-font", "<name>", "Subtitle font family."),
+            configOption("sub-font-size", "<number>", "Subtitle font size."),
+            configOption("sub-color", "<#RRGGBB[AA]>", "Subtitle text color."),
+            configOption("sub-border-color", "<#RRGGBB[AA]>", "Subtitle border color."),
+            configOption("sub-border-size", "<number>", "Subtitle border/outline size."),
+            configOption("sub-shadow-color", "<#RRGGBB[AA]>", "Subtitle shadow color."),
+            configOption("sub-shadow-offset", "<number>", "Subtitle shadow offset."),
+            configOption("sub-bold", "<yes|no>", "Bold subtitle text."),
+            configOption("sub-ass-override", "<no|yes|force|scale>", "Override ASS subtitle styles."),
+            configOption("sub-justify", "<auto|left|center|right>", "Subtitle text justification."),
+            configOption("sub-clear-on-seek", "<yes|no>", "Clear subs on seek."),
+
+            // ── OSD extras ──
+            configOption("osd-font", "<name>", "OSD font family."),
+            configOption("osd-color", "<#RRGGBB[AA]>", "OSD text color."),
+            configOption("osd-border-color", "<#RRGGBB[AA]>", "OSD border color."),
+            configOption("osd-shadow-color", "<#RRGGBB[AA]>", "OSD shadow color."),
+            configOption("osd-margin-x", "<number>", "Horizontal OSD margin."),
+            configOption("osd-margin-y", "<number>", "Vertical OSD margin."),
+
+            // ── Display extras ──
+            configOption("ontop", "<yes|no>", "Keep window on top."),
+            configOption("border", "<yes|no>", "Show window border."),
+            configOption("cursor-autohide", "<time|no|always>", "Auto-hide cursor after inactivity."),
+
+            // ── HDR extras ──
+            configOption("tone-mapping-param", "<number>", "Tone-mapping algorithm parameter."),
+            configOption("tone-mapping-mode", "<auto|rgb|luma>", "Tone-mapping mode."),
+            configOption("gamut-mapping-mode", "<auto|clip|desaturate|warn>", "Gamut mapping behavior."),
+            configOption("hdr-compute-peak", "<yes|no>", "Compute HDR peak per-frame."),
+            configOption("hdr-peak-percentile", "<number>", "HDR peak percentile."),
         )
     }
 
@@ -200,6 +271,35 @@ object MpvAutoCompleteProvider {
         inputKey("MBTN_MID", "Middle mouse button."),
         inputKey("WHEEL_UP", "Mouse wheel up."),
         inputKey("WHEEL_DOWN", "Mouse wheel down."),
+        inputKey("MBTN_LEFT_DBL", "Left mouse button double-click."),
+        inputKey("MBTN_RIGHT_DBL", "Right mouse button double-click."),
+        inputKey("SHIFT+MBTN_LEFT", "Shift + left click."),
+        inputKey("SHIFT+MBTN_RIGHT", "Shift + right click."),
+        inputKey("Ctrl+MBTN_LEFT", "Control + left click."),
+        inputKey("Ctrl+WHEEL_UP", "Control + wheel up (zoom)."),
+        inputKey("Ctrl+WHEEL_DOWN", "Control + wheel down (zoom)."),
+        inputKey("F1", "F1 function key."),
+        inputKey("F2", "F2 function key."),
+        inputKey("F3", "F3 function key."),
+        inputKey("F4", "F4 function key."),
+        inputKey("F5", "F5 function key."),
+        inputKey("F6", "F6 function key."),
+        inputKey("F7", "F7 function key."),
+        inputKey("F8", "F8 function key."),
+        inputKey("F9", "F9 function key."),
+        inputKey("F10", "F10 function key."),
+        inputKey("F11", "F11 function key."),
+        inputKey("F12", "F12 function key."),
+        inputKey("0", "The number 0 key."),
+        inputKey("1", "The number 1 key."),
+        inputKey("2", "The number 2 key."),
+        inputKey("3", "The number 3 key."),
+        inputKey("4", "The number 4 key."),
+        inputKey("5", "The number 5 key."),
+        inputKey("6", "The number 6 key."),
+        inputKey("7", "The number 7 key."),
+        inputKey("8", "The number 8 key."),
+        inputKey("9", "The number 9 key."),
     )
 
     private val mpvCompletions = listOf(
@@ -516,51 +616,27 @@ object MpvAutoCompleteProvider {
         createDef("input-bindings", "input-bindings", "List of active input bindings.", CompletionItemKind.Property),
         createDef("profile-list", "profile-list", "List of profiles.", CompletionItemKind.Property),
 
-        // ============================================================
-        // Important options/properties for your Android player
-        // ============================================================
-        createDef("ytdl", "ytdl", "Enable youtube-dl / yt-dlp hook.", CompletionItemKind.Property),
-        createDef("ytdl-path", "ytdl-path", "Path to youtube-dl / yt-dlp binary.", CompletionItemKind.Property),
-        createDef("script-opts", "script-opts", "Script option key-value list.", CompletionItemKind.Property),
-        createDef("config", "config", "Load config files.", CompletionItemKind.Property),
-        createDef("input-default-bindings", "input-default-bindings", "Enable default key bindings.", CompletionItemKind.Property),
-        createDef("input-vo-keyboard", "input-vo-keyboard", "Enable VO keyboard input.", CompletionItemKind.Property),
-        createDef("keep-open", "keep-open", "Keep window/player open after EOF.", CompletionItemKind.Property),
-        createDef("loop-file", "loop-file", "Loop current file.", CompletionItemKind.Property),
-        createDef("loop-playlist", "loop-playlist", "Loop playlist.", CompletionItemKind.Property),
-        createDef("save-position-on-quit", "save-position-on-quit", "Save playback position on quit.", CompletionItemKind.Property),
+        createDef("cache-speed", "cache-speed", "Cache fill rate (bytes/sec).", CompletionItemKind.Property),
+        createDef("cache-duration", "cache-duration", "Cache duration.", CompletionItemKind.Property),
+        createDef("cache-used", "cache-used", "Used cache bytes.", CompletionItemKind.Property),
+        createDef("demuxer-cache-duration", "demuxer-cache-duration", "Demuxer cache duration.", CompletionItemKind.Property),
+        createDef("demuxer-cache-idle", "demuxer-cache-idle", "Demuxer cache is idle.", CompletionItemKind.Property),
+        createDef("demuxer-via-network", "demuxer-via-network", "Demuxer via network.", CompletionItemKind.Property),
+        createDef("audio-device-list", "audio-device-list", "Available audio devices.", CompletionItemKind.Property),
+        createDef("audio-bitrate", "audio-bitrate", "Audio bitrate.", CompletionItemKind.Property),
+        createDef("video-bitrate", "video-bitrate", "Video bitrate.", CompletionItemKind.Property),
+        createDef("display-names", "display-names", "Available display names.", CompletionItemKind.Property),
+        createDef("display-width", "display-width", "Display width.", CompletionItemKind.Property),
+        createDef("display-height", "display-height", "Display height.", CompletionItemKind.Property),
+        createDef("play-dir", "play-dir", "Playback direction (1/-1).", CompletionItemKind.Property),
+        createDef("drop-frame-count", "drop-frame-count", "Dropped frame count.", CompletionItemKind.Property),
+        createDef("avsync", "avsync", "Audio/video sync difference.", CompletionItemKind.Property),
+        createDef("display-sync-active", "display-sync-active", "Display sync active.", CompletionItemKind.Property),
 
-        createDef("vo", "vo", "Video output driver.", CompletionItemKind.Property),
-        createDef("ao", "ao", "Audio output driver.", CompletionItemKind.Property),
-        createDef("gpu-api", "gpu-api", "GPU API.", CompletionItemKind.Property),
-        createDef("gpu-context", "gpu-context", "GPU context.", CompletionItemKind.Property),
-        createDef("profile", "profile", "mpv profile.", CompletionItemKind.Property),
-        createDef("target-prim", "target-prim", "Target color primaries.", CompletionItemKind.Property),
-        createDef("target-trc", "target-trc", "Target transfer curve.", CompletionItemKind.Property),
-        createDef("target-peak", "target-peak", "Target peak brightness.", CompletionItemKind.Property),
-        createDef("target-colorspace-hint", "target-colorspace-hint", "Hint display colorspace.", CompletionItemKind.Property),
-        createDef("tone-mapping", "tone-mapping", "Tone mapping algorithm.", CompletionItemKind.Property),
-        createDef("tone-mapping-param", "tone-mapping-param", "Tone mapping parameter.", CompletionItemKind.Property),
-        createDef("tone-mapping-mode", "tone-mapping-mode", "Tone mapping mode.", CompletionItemKind.Property),
-        createDef("tone-mapping-visualize", "tone-mapping-visualize", "Visualize tone mapping.", CompletionItemKind.Property),
-        createDef("inverse-tone-mapping", "inverse-tone-mapping", "Enable inverse tone mapping.", CompletionItemKind.Property),
-        createDef("gamut-mapping-mode", "gamut-mapping-mode", "Gamut mapping mode.", CompletionItemKind.Property),
-        createDef("hdr-compute-peak", "hdr-compute-peak", "Compute HDR peak.", CompletionItemKind.Property),
-        createDef("hdr-peak-percentile", "hdr-peak-percentile", "HDR peak percentile.", CompletionItemKind.Property),
-        createDef("video-output-levels", "video-output-levels", "Video output levels.", CompletionItemKind.Property),
-        createDef("video-sync", "video-sync", "Video sync mode.", CompletionItemKind.Property),
-        createDef("interpolation", "interpolation", "Frame interpolation.", CompletionItemKind.Property),
-        createDef("tscale", "tscale", "Temporal scaler.", CompletionItemKind.Property),
-        createDef("scale", "scale", "Video scaler.", CompletionItemKind.Property),
-        createDef("cscale", "cscale", "Chroma scaler.", CompletionItemKind.Property),
-        createDef("dscale", "dscale", "Downscaler.", CompletionItemKind.Property),
-        createDef("deband", "deband", "Enable debanding.", CompletionItemKind.Property),
-        createDef("deband-iterations", "deband-iterations", "Deband iterations.", CompletionItemKind.Property),
-        createDef("deband-threshold", "deband-threshold", "Deband threshold.", CompletionItemKind.Property),
-        createDef("sigmoid-upscaling", "sigmoid-upscaling", "Sigmoid upscaling.", CompletionItemKind.Property),
-        createDef("correct-downscaling", "correct-downscaling", "Correct downscaling.", CompletionItemKind.Property),
-        createDef("linear-downscaling", "linear-downscaling", "Linear downscaling.", CompletionItemKind.Property),
-        createDef("dither-depth", "dither-depth", "Dither depth.", CompletionItemKind.Property),
+        createDef("toggle", "toggle <property>", "Toggle boolean property.", CompletionItemKind.Keyword),
+        createDef("speed-multiply", "speed-multiply <factor>", "Multiply playback speed.", CompletionItemKind.Keyword),
+        createDef("speed-set", "speed-set <speed>", "Set absolute speed.", CompletionItemKind.Keyword),
+        createDef("ab-loop", "ab-loop", "Toggle A-B loop.", CompletionItemKind.Keyword),
 
         // ============================================================
         // Common JS / MuJS globals
