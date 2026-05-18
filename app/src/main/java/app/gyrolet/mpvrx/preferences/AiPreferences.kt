@@ -58,6 +58,9 @@ class AiPreferences(
   val renameWithAi = preferenceStore.getBoolean("ai_rename_enabled", true)
   val subtitleFormatWithAi = preferenceStore.getBoolean("ai_subtitle_format_enabled", true)
   val subtitleTranslationEnabled = preferenceStore.getBoolean("ai_subtitle_translation_enabled", false)
+
+  // Real-time subtitle generation (speech-to-text while playing)
+  val realtimeSubsEnabled = preferenceStore.getBoolean("ai_realtime_subs_enabled", true)
   val subtitleTranslationFirstTime = preferenceStore.getBoolean("ai_subtitle_translation_first_time", true)
 
   val showThinking = preferenceStore.getBoolean("ai_show_thinking", true)

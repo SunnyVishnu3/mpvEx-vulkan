@@ -75,6 +75,8 @@ fun SubtitlesSheet(
   translatingTrackName: String = "",
   provider: AiProvider = AiProvider.GEMINI,
   autoTranslateLanguages: String = "",
+  aiEnabled: Boolean = true,
+  realtimeSubsEnabled: Boolean = true,
   modifier: Modifier = Modifier,
 ) {
   val items = remember(tracks) {
@@ -199,7 +201,7 @@ fun SubtitlesSheet(
           IconButton(onClick = onOpenOnlineSearch) {
             Icon(Icons.Default.Search, null)
           }
-          if (isOnlineProvider) {
+          if (isOnlineProvider && aiEnabled && realtimeSubsEnabled) {
             IconButton(onClick = onGenerateSubtitle) {
               Icon(Icons.Default.Subtitles, "Generate subtitles")
             }
@@ -213,7 +215,7 @@ fun SubtitlesSheet(
         },
       )
 
-      if (isTranslating) {
+      if (aiEnabled && isTranslating) {
         Column(
           modifier = Modifier.padding(start = MaterialTheme.spacing.medium, end = MaterialTheme.spacing.medium, top = MaterialTheme.spacing.small),
           verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)
@@ -252,7 +254,7 @@ fun SubtitlesSheet(
         }
       }
 
-      if (isGeneratingSubtitles) {
+      if (aiEnabled && isGeneratingSubtitles) {
         androidx.compose.foundation.layout.Column(
           modifier = Modifier.padding(MaterialTheme.spacing.medium),
           verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)

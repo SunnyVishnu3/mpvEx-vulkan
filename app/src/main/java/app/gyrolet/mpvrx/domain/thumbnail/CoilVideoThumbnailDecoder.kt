@@ -3,11 +3,21 @@ package app.gyrolet.mpvrx.domain.thumbnail
 import android.content.ContentUris
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageFormat
 import android.graphics.Matrix
+import android.graphics.PixelFormat
+import android.media.Image
+import android.media.ImageReader
+import android.media.MediaCodec
+import android.media.MediaCodecInfo
+import android.media.MediaCodecList
+import android.media.MediaExtractor
+import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
-import android.provider.MediaStore
 import android.os.Build
+import android.provider.MediaStore
 import android.util.Size
+import android.view.Surface
 import androidx.core.graphics.drawable.toDrawable
 import app.gyrolet.mpvrx.utils.storage.FileTypeUtils
 import coil3.ImageLoader
@@ -21,7 +31,12 @@ import coil3.disk.DiskCache
 import coil3.fetch.SourceFetchResult
 import coil3.request.Options
 import coil3.toAndroidUri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okio.FileSystem
+import java.nio.ByteBuffer
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class CoilVideoThumbnailDecoder(
   private val source: ImageSource,
@@ -80,6 +95,14 @@ class CoilVideoThumbnailDecoder(
         }
 
       var shouldRotate = true
+      val sourcePathForFallback = sourcePath()
+      val fallbackTimeUs =
+        when (strategy) {
+          is ThumbnailStrategy.FrameAtPercentage -> frameTimeMicros(retriever, strategy.percentage)
+          is ThumbnailStrategy.Hybrid -> frameTimeMicros(retriever, strategy.percentage)
+          is ThumbnailStrategy.EmbeddedOrHybrid -> frameTimeMicros(retriever, strategy.percentage)
+          else -> 0L
+        }
       val rawBitmap =
         when (strategy) {
           ThumbnailStrategy.FirstFrame -> retriever.getThumbnailFrameAt(0)
@@ -102,6 +125,8 @@ class CoilVideoThumbnailDecoder(
 
           ThumbnailStrategy.EmbeddedOrFirstFrame ->
             embeddedPicture?.also { shouldRotate = false } ?: retriever.getThumbnailFrameAt(0)
+        } ?: sourcePathForFallback?.let { path ->
+          decodeWithSoftwareCodec(path, fallbackTimeUs)
         } ?: throw IllegalStateException("Failed to decode video thumbnail")
 
       val rotatedBitmap = if (shouldRotate) rotateBitmapIfNeeded(retriever, rawBitmap) else rawBitmap
@@ -232,6 +257,170 @@ class CoilVideoThumbnailDecoder(
       bitmap.recycle()
     }
     return rotated
+  }
+
+  private suspend fun decodeWithSoftwareCodec(
+    path: String,
+    timeUs: Long,
+  ): Bitmap? = withContext(Dispatchers.IO) {
+    val extractor = MediaExtractor()
+    runCatching { extractor.setDataSource(path) }.onFailure { extractor.release(); return@withContext null }
+
+    var trackIndex = -1
+    for (i in 0 until extractor.trackCount) {
+      val mime = extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME)
+      if (mime?.startsWith("video/") == true) { trackIndex = i; break }
+    }
+    if (trackIndex < 0) { extractor.release(); return@withContext null }
+
+    extractor.selectTrack(trackIndex)
+    val trackFormat = extractor.getTrackFormat(trackIndex)
+    val mimeType = trackFormat.getString(MediaFormat.KEY_MIME) ?: run { extractor.release(); return@withContext null }
+
+    val codecInfo = findSoftwareCodec(mimeType) ?: run { extractor.release(); return@withContext null }
+    val width = trackFormat.getInteger(MediaFormat.KEY_WIDTH)
+    val height = trackFormat.getInteger(MediaFormat.KEY_HEIGHT)
+    val targetWidth = minOf(width, MAX_THUMBNAIL_SIZE)
+    val targetHeight = (height.toFloat() * targetWidth / width).toInt().coerceAtLeast(1)
+
+    val imageReader = ImageReader.newInstance(targetWidth, targetHeight, PixelFormat.RGBA_8888, 2)
+    val surface = imageReader.surface
+    val codec = runCatching { MediaCodec.createByCodecName(codecInfo.name) }.getOrNull()
+    if (codec == null) { imageReader.close(); extractor.release(); return@withContext null }
+
+    var bitmap: Bitmap? = null
+    val latch = CountDownLatch(1)
+
+    imageReader.setOnImageAvailableListener({ reader ->
+      val image = reader.acquireLatestImage()
+      if (image != null && bitmap == null) {
+        bitmap = imageReaderImageToBitmap(image)
+        image.close()
+        latch.countDown()
+      }
+    }, null)
+
+    val decodeResult = runCatching {
+      codec.configure(trackFormat, surface, null, 0)
+      codec.start()
+      extractor.seekTo(timeUs, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
+      val bufferInfo = MediaCodec.BufferInfo()
+      var inputDone = false
+      var outputDone = false
+
+      while (!outputDone && bitmap == null) {
+        if (!inputDone) {
+          val inputIndex = codec.dequeueInputBuffer(5000L)
+          if (inputIndex >= 0) {
+            val inputBuffer = codec.getInputBuffer(inputIndex) ?: continue
+            val sampleSize = extractor.readSampleData(inputBuffer, 0)
+            if (sampleSize < 0) {
+              codec.queueInputBuffer(inputIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+              inputDone = true
+            } else {
+              codec.queueInputBuffer(inputIndex, 0, sampleSize, extractor.sampleTime, 0)
+              extractor.advance()
+            }
+          }
+        }
+
+        val outputIndex = codec.dequeueOutputBuffer(bufferInfo, 5000L)
+        if (outputIndex >= 0) {
+          if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) outputDone = true
+          codec.releaseOutputBuffer(outputIndex, true)
+        }
+      }
+    }
+
+    latch.await(2, TimeUnit.SECONDS)
+    codec.stop()
+    codec.release()
+    imageReader.close()
+    extractor.release()
+    decodeResult.getOrNull()
+    bitmap
+  }
+
+  private fun findSoftwareCodec(mimeType: String): MediaCodecInfo? {
+    val codecList = MediaCodecList(MediaCodecList.ALL_CODECS)
+    for (info in codecList.codecInfos) {
+      if (info.isEncoder || !info.isAlias) continue
+      if (!info.name.startsWith("c2.android.") && !info.name.startsWith("OMX.google.")) continue
+      if (info.supportedTypes.any { it.equals(mimeType, ignoreCase = true) }) return info
+    }
+    for (info in codecList.codecInfos) {
+      if (info.isEncoder) continue
+      if (!info.name.startsWith("c2.android.") && !info.name.startsWith("OMX.google.")) continue
+      if (info.supportedTypes.any { it.equals(mimeType, ignoreCase = true) }) return info
+    }
+    return null
+  }
+
+  private fun imageReaderImageToBitmap(image: Image): Bitmap? {
+    if (image.format == PixelFormat.RGBA_8888) {
+      val buffer = image.planes[0].buffer
+      val pixelCount = image.width * image.height
+      val pixels = IntArray(pixelCount)
+      val temp = ByteArray(4)
+      for (i in 0 until pixelCount) {
+        buffer.get(temp)
+        pixels[i] = ((temp[3].toInt() and 0xFF) shl 24) or
+          ((temp[0].toInt() and 0xFF) shl 16) or
+          ((temp[1].toInt() and 0xFF) shl 8) or
+          (temp[2].toInt() and 0xFF)
+      }
+      val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+      bitmap.setPixels(pixels, 0, image.width, 0, 0, image.width, image.height)
+      return bitmap
+    }
+
+    if (image.format == ImageFormat.YUV_420_888) {
+      return yuv420ToBitmap(image)
+    }
+
+    return null
+  }
+
+  private fun yuv420ToBitmap(image: Image): Bitmap? {
+    val planes = image.planes
+    if (planes.size < 3) return null
+
+    val width = image.width
+    val height = image.height
+    val yPlane = planes[0]
+    val uPlane = planes[1]
+    val vPlane = planes[2]
+    val yBuffer = yPlane.buffer
+    val uBuffer = uPlane.buffer
+    val vBuffer = vPlane.buffer
+    val yRowStride = yPlane.rowStride
+    val uRowStride = uPlane.rowStride
+    val vRowStride = vPlane.rowStride
+    val uPixelStride = uPlane.pixelStride
+    val vPixelStride = vPlane.pixelStride
+
+    val pixels = IntArray(width * height)
+    for (y in 0 until height) {
+      for (x in 0 until width) {
+        val yIdx = y * yRowStride + x
+        val uIdx = (y / 2) * uRowStride + (x / 2) * uPixelStride
+        val vIdx = (y / 2) * vRowStride + (x / 2) * vPixelStride
+
+        val yVal = (yBuffer.get(yIdx).toInt() and 0xFF) - 16
+        val uVal = (uBuffer.get(uIdx).toInt() and 0xFF) - 128
+        val vVal = (vBuffer.get(vIdx).toInt() and 0xFF) - 128
+
+        val r = (1.164f * yVal + 1.596f * vVal).toInt().coerceIn(0, 255)
+        val g = (1.164f * yVal - 0.392f * uVal - 0.813f * vVal).toInt().coerceIn(0, 255)
+        val b = (1.164f * yVal + 2.017f * uVal).toInt().coerceIn(0, 255)
+
+        pixels[y * width + x] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+      }
+    }
+
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+    return bitmap
   }
 
   private fun readFromDiskCache(): DiskCache.Snapshot? =

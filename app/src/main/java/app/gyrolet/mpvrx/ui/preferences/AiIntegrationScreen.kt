@@ -134,6 +134,7 @@ object AiIntegrationScreen : Screen {
     val subtitleTranslationFirstTime by preferences.subtitleTranslationFirstTime.collectAsState()
     val subtitleGenerationOutputFormat by preferences.subtitleGenerationOutputFormat.collectAsState()
     val autoTranslateLanguages by preferences.autoTranslateLanguages.collectAsState()
+    val realtimeSubsEnabled by preferences.realtimeSubsEnabled.collectAsState()
 
     var models by remember { mutableStateOf<List<AiModelInfo>>(emptyList()) }
     var isLoadingModels by remember { mutableStateOf(false) }
@@ -776,7 +777,7 @@ object AiIntegrationScreen : Screen {
                 SwitchPreference(
                   value = subtitleFormatWithAi,
                   onValueChange = { preferences.subtitleFormatWithAi.set(it) },
-                  title = { Text("AI Subtitle Search Formatting") },
+                  title = { Text("AI Search") },
                   summary = {
                     Text(
                       "Auto-format video titles for Wyzie/SubHub subtitle search",
@@ -795,6 +796,20 @@ object AiIntegrationScreen : Screen {
                   val sttProviders = listOf(AiProvider.GROQ, AiProvider.GEMINI, AiProvider.OPENAI, AiProvider.OPENROUTER)
                   val sttProvider by preferences.sttProvider.collectAsState()
                   val sttModel by preferences.sttModel.collectAsState()
+
+                  SwitchPreference(
+                    value = realtimeSubsEnabled,
+                    onValueChange = { preferences.realtimeSubsEnabled.set(it) },
+                    title = { Text("Real-time Subtitle Generation") },
+                    summary = {
+                      Text(
+                        "Generate subtitles from audio while playing video",
+                        color = MaterialTheme.colorScheme.outline,
+                      )
+                    },
+                  )
+
+                  PreferenceDivider()
 
                   ListPreference(
                     value = subtitleGenerationOutputFormat,

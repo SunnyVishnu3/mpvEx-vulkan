@@ -832,9 +832,9 @@ object SearchablePreferences {
                 screen = AiIntegrationScreen,
             ))
             add(SearchablePreference(
-                title = "AI Subtitle Search Formatting",
+                title = "AI Search",
                 summary = "Auto-format video titles for Wyzie/SubHub subtitle search",
-                keywords = listOf("subtitle", "search", "format", "wyzie", "subhub", "title"),
+                keywords = listOf("subtitle", "search", "format", "wyzie", "subhub", "title", "ai"),
                 category = "AI",
                 screen = AiIntegrationScreen,
             ))

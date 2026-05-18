@@ -12,6 +12,16 @@ These notes are written in plain English and focus on what changed for real use.
 
 - **Smarter AI across the board** — reasoning tags are automatically stripped from final results, token limits prevent stalls in heavy tasks, and every AI feature (rename, formatting, translation) comes with customizable prompts that fall back gracefully to built-in instructions.
 
+- **Real-time subtitle toggle** — new on/off switch in AI settings to control real-time subtitle generation from audio. When off, the indicator and generate button are hidden from the player.
+
+- **AI features respect the master switch** — turning off AI Integration now hides all AI indicators (translation, real-time subs) and buttons (generate, translate, format) from the player view. Renamed "AI Subtitle Search Formatting" to "AI Search" for clarity.
+
+- **Settings export now stores app version** — exported XML files include the app version, so import dialogs show the correct version instead of "unknown".
+
+- **HEVC 10bit thumbnails** — added a software-decoder fallback using Android's MediaCodec API. When the system can't decode a video frame (e.g. HEVC 10bit on devices without hardware support), the app now tries Google's software decoder before giving up. This means more thumbnails will show up on devices with limited codec support.
+
+- **Fixed app icon on Android 16** — changed the adaptive icon background from transparent to opaque black so the icon doesn't disappear on launchers that don't handle transparency well.
+
 ## 1.3.5
 
 - **Removed Play Store and F-Droid build variants** — streamlined to a single `standard` flavor with full update support and all features enabled.

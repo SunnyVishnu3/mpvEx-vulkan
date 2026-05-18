@@ -133,6 +133,8 @@ fun PlayerSheets(
       val subtitleGenerationProgress by viewModel.subtitleGenerationProgress.composeCollectAsState()
       val subtitleGenerationStatus by viewModel.subtitleGenerationStatus.composeCollectAsState()
       val aiPreferences = koinInject<app.gyrolet.mpvrx.preferences.AiPreferences>()
+      val aiEnabled by aiPreferences.enabled.collectAsState()
+      val realtimeSubsEnabled by aiPreferences.realtimeSubsEnabled.collectAsState()
       val translationEnabled by aiPreferences.subtitleTranslationEnabled.collectAsState()
       val provider by aiPreferences.provider.collectAsState()
       val autoTranslateLanguages by aiPreferences.autoTranslateLanguages.collectAsState()
@@ -153,7 +155,7 @@ fun PlayerSheets(
         isTranslating = isTranslating,
         translationProgress = translationProgress,
         translationStatus = translationStatus,
-        translationEnabled = translationEnabled,
+        translationEnabled = aiEnabled && translationEnabled,
         isGeneratingSubtitles = isGeneratingSubtitles,
         subtitleGenerationProgress = subtitleGenerationProgress,
         subtitleGenerationStatus = subtitleGenerationStatus,
@@ -161,6 +163,8 @@ fun PlayerSheets(
         translatingTrackName = translatingTrackName,
         provider = provider,
         autoTranslateLanguages = autoTranslateLanguages,
+        aiEnabled = aiEnabled,
+        realtimeSubsEnabled = realtimeSubsEnabled,
       )
     }
 
