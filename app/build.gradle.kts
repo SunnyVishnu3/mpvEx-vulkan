@@ -140,7 +140,8 @@ kotlin {
       "-Xcontext-parameters",
       "-Xannotation-default-target=param-property",
       "-opt-in=com.google.accompanist.permissions.ExperimentalPermissionsApi",
-      "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+      "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+      "-opt-in=androidx.compose.material3.ExperimentalMaterial3ExpressiveApi"
     )
     jvmTarget.set(JvmTarget.JVM_17)
   }

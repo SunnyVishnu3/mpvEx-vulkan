@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.RippleConfiguration
@@ -247,19 +248,22 @@ fun MpvrxTheme(content: @Composable () -> Unit) {
         else -> appTheme.getLightColorScheme()
     }
 
-    // Provide theme transition state first, OUTSIDE MaterialTheme
+    // Provide theme transition state first, OUTSIDE MaterialExpressiveTheme
     CompositionLocalProvider(
-        LocalSpacing provides Spacing(),
-        LocalThemeTransitionState provides rememberThemeTransitionState(),
+      LocalSpacing provides Spacing(),
+      LocalThemeTransitionState provides rememberThemeTransitionState(),
+      LocalMotionPolicy provides rememberMotionPolicy(),
+      LocalEmphasizedTypography provides AppEmphasizedTypography,
     ) {
-        ThemeTransitionContent {
-            MaterialTheme(
-                colorScheme = colorScheme,
-                typography = if (useSystemFont) SystemTypography else AppTypography,
-                content = content,
-                motionScheme = MotionScheme.expressive(),
-            )
-        }
+      ThemeTransitionContent {
+        MaterialExpressiveTheme(
+          colorScheme = colorScheme,
+          typography = if (useSystemFont) SystemTypography else AppTypography,
+          shapes = AppShapes,
+          motionScheme = MotionScheme.expressive(),
+          content = content,
+        )
+      }
     }
 }
 
