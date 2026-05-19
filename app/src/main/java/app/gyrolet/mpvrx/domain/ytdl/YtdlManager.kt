@@ -29,20 +29,28 @@ class YtdlManager(
   fun initialize(): Boolean {
     if (!ytdlDir.exists() && !ytdlDir.mkdirs()) return false
 
-    // Copy python313.zip from assets if not exists
-    if (!pythonZip.exists()) {
-      copyAsset("ytdl/python313.zip", pythonZip)
-    }
+    // Search for Python assets in py.<abi>/ folders
+    val abis = android.os.Build.SUPPORTED_ABIS
+    var pythonAssetsFound = false
 
-    // Copy python3 binary from assets if not exists
-    if (!pythonBinFile.exists()) {
-        val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"
-        if (!copyAsset("py.$abi/python3", pythonBinFile)) {
-            // Fallback or handle error
-            Log.e(TAG, "Failed to copy python3 for ABI $abi")
-        } else {
+    if (!pythonZip.exists() || !pythonBinFile.exists()) {
+      for (abi in abis) {
+        val zipPath = "py.$abi/python313.zip"
+        val binPath = "py.$abi/python3"
+        
+        // We try to copy both. If zip fails, we don't even try the binary for this ABI.
+        if (copyAsset(zipPath, pythonZip)) {
+          if (copyAsset(binPath, pythonBinFile)) {
             pythonBinFile.setExecutable(true)
+            pythonAssetsFound = true
+            Log.d(TAG, "Successfully copied Python assets for ABI: $abi")
+            break
+          } else {
+            // If zip was copied but bin failed, clean up zip to try next ABI
+            pythonZip.delete()
+          }
         }
+      }
     }
 
     // Copy cacert.pem from assets (required for https)
@@ -51,14 +59,19 @@ class YtdlManager(
       copyAsset("cacert.pem", caCert)
     }
 
-    // Copy setup.py from assets
-    if (!setupScript.exists()) {
-      copyAsset("ytdl/setup.py", setupScript)
-    }
-
-    // Copy wrapper from assets
-    if (!wrapperScript.exists()) {
-      copyAsset("ytdl/wrapper", wrapperScript)
+    // Copy setup.py and wrapper from assets (from the ytdl/ folder)
+    val scripts = mapOf(
+      "ytdl/setup.py" to setupScript,
+      "ytdl/wrapper" to wrapperScript
+    )
+    
+    for ((asset, dest) in scripts) {
+      if (!dest.exists()) {
+        copyAsset(asset, dest)
+      }
+      if (asset.endsWith("wrapper")) {
+          dest.setExecutable(true)
+      }
     }
 
     setupEnvironment()
