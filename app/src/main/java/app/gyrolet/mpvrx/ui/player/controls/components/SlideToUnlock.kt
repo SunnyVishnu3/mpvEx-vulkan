@@ -4,7 +4,8 @@ import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
+import app.gyrolet.mpvrx.ui.theme.AppMotion
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -115,7 +116,7 @@ fun SlideToUnlock(
                 coroutineScope.launch {
                   offsetX.animateTo(
                     targetValue = 0f,
-                    animationSpec = tween(durationMillis = 300),
+                    animationSpec = spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness),
                   )
                 }
               }
@@ -126,7 +127,7 @@ fun SlideToUnlock(
               coroutineScope.launch {
                 offsetX.animateTo(
                   targetValue = 0f,
-                  animationSpec = tween(durationMillis = 300),
+                  animationSpec = spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness),
                 )
               }
             },
@@ -143,7 +144,7 @@ fun SlideToUnlock(
       // Crossfade between lock and unlock icons
       androidx.compose.animation.Crossfade(
         targetState = showUnlockIcon,
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness),
       ) { showUnlock ->
         Icon(
           imageVector = if (showUnlock) Icons.Filled.LockOpen else Icons.Filled.Lock,

@@ -1,12 +1,10 @@
 package app.gyrolet.mpvrx.ui.player.controls.components
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -59,6 +57,7 @@ import app.gyrolet.mpvrx.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.gyrolet.mpvrx.preferences.SeekbarStyle
 import app.gyrolet.mpvrx.ui.player.SkipSegment
 import app.gyrolet.mpvrx.ui.player.SkipSegmentType
+import app.gyrolet.mpvrx.ui.theme.AppMotion
 import app.gyrolet.mpvrx.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
 import `is`.xyz.mpv.Utils
@@ -100,9 +99,9 @@ fun SeekbarWithTimers(
         animatedPosition.animateTo(
           targetValue = position,
           animationSpec =
-            tween(
-              durationMillis = 200,
-              easing = LinearEasing,
+            spring(
+              dampingRatio = AppMotion.Spatial.Standard.dampingRatio,
+              stiffness = AppMotion.Spatial.Standard.stiffness,
             ),
         )
       }
@@ -450,7 +449,7 @@ private fun SquigglySeekbar(
   val isInteracting = isScrubbing
   val thumbVisibility by animateFloatAsState(
     targetValue = if (isInteracting) 0f else 1f,
-    animationSpec = tween(durationMillis = 180, easing = LinearEasing),
+    animationSpec = spring(dampingRatio = AppMotion.Effect.Alpha.dampingRatio, stiffness = AppMotion.Effect.Alpha.stiffness),
     label = "wavy_seekbar_thumb_visibility",
   )
 
@@ -488,9 +487,9 @@ private fun SquigglySeekbar(
       animator.animateTo(
         targetValue = targetHeight,
         animationSpec =
-          tween(
-            durationMillis = duration,
-            easing = LinearEasing,
+          spring(
+            dampingRatio = AppMotion.Spatial.Expressive.dampingRatio,
+            stiffness = AppMotion.Spatial.Expressive.stiffness,
           ),
       ) {
         heightFraction = value
@@ -745,7 +744,7 @@ private fun SlimSeekbar(
         },
         animationSpec = when {
             isScrubbing -> spring(stiffness = 500f, dampingRatio = 0.75f)
-            else        -> tween(durationMillis = 600, easing = LinearEasing)
+            else        -> spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness)
         },
         label = "slim_seekbar_height",
     )
@@ -753,7 +752,7 @@ private fun SlimSeekbar(
     // Chapter gap widens when pressed so segments look clearly distinct
     val chapterGapHalfDp by animateDpAsState(
         targetValue = if (isScrubbing) 2.dp else 1.5.dp,
-        animationSpec = tween(durationMillis = 200, easing = LinearEasing),
+        animationSpec = spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness),
         label = "slim_chapter_gap",
     )
 
@@ -1047,9 +1046,9 @@ fun StandardSeekbar(
             val animator = Animatable(heightFraction)
             animator.animateTo(
                 targetValue = targetHeight,
-                animationSpec = tween(
-                    durationMillis = animationDuration,
-                    easing = LinearEasing,
+                animationSpec = spring(
+                    dampingRatio = AppMotion.Spatial.Expressive.dampingRatio,
+                    stiffness = AppMotion.Spatial.Expressive.stiffness,
                 ),
             ) {
                 heightFraction = value

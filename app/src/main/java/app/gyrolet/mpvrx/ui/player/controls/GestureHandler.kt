@@ -6,7 +6,8 @@ import app.gyrolet.mpvrx.ui.icons.Icons
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
+import app.gyrolet.mpvrx.ui.theme.AppMotion
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -1059,7 +1060,7 @@ fun DoubleTapToSeekOvals(
   var scaleTarget by remember { mutableStateOf(1f) }
   val scale by animateFloatAsState(
       targetValue = scaleTarget,
-      animationSpec = tween(durationMillis = 150),
+      animationSpec = spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness),
       label = "text_scale"
   )
   
@@ -1202,7 +1203,7 @@ fun MovingChevron(
     LaunchedEffect(Unit) {
         progress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(250, easing = LinearEasing)
+            animationSpec = spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness)
         )
         onFinished()
     }
