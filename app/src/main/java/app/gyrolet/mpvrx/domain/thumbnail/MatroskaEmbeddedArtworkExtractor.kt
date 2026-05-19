@@ -94,7 +94,13 @@ internal object MatroskaEmbeddedArtworkExtractor {
     val bytes = ByteArray(dataSize.toInt())
     file.seek(dataOffset)
     file.readFully(bytes)
-    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+    val sampleSize = calculateThumbnailSampleSize(options.outWidth, options.outHeight)
+    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply {
+      inSampleSize = sampleSize
+      inPreferredConfig = Bitmap.Config.RGB_565
+    })
   }
 
   private fun readElementHeader(file: RandomAccessFile): ElementHeader? {
@@ -189,7 +195,7 @@ internal object MatroskaEmbeddedArtworkExtractor {
     val id: Long,
     val size: Long,
     val dataOffset: Long,
-    @Suppress("unused") val headerSize: Long,
+    val headerSize: Long,
   )
 
   private data class Attachment(

@@ -1,6 +1,5 @@
 package app.gyrolet.mpvrx.repository.subtitlehub
 
-import android.content.Context
 import android.net.Uri
 import android.util.Log
 import app.gyrolet.mpvrx.preferences.SubtitlesPreferences
@@ -33,7 +32,6 @@ import java.net.URL
 import java.net.URLEncoder
 
 class MpvRxSubtitleHubRepository(
-  @Suppress("unused") private val context: Context,
   private val client: OkHttpClient,
   private val json: Json,
   private val preferences: SubtitlesPreferences,

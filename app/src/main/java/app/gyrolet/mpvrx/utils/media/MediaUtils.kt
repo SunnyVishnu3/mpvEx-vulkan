@@ -194,32 +194,6 @@ object MediaUtils {
   }
 
   /**
-   * @deprecated Use RecentlyPlayedOps.getLastPlayed() directly
-   */
-  @Deprecated(
-    message = "Use RecentlyPlayedOps.getLastPlayed() directly",
-    replaceWith =
-      ReplaceWith(
-        "RecentlyPlayedOps.getLastPlayed()",
-        "app.gyrolet.mpvrx.utils.history.RecentlyPlayedOps",
-      ),
-  )
-  suspend fun getRecentlyPlayedFile(): String? = RecentlyPlayedOps.getLastPlayed()
-
-  /**
-   * @deprecated Use RecentlyPlayedOps.hasRecentlyPlayed() directly
-   */
-  @Deprecated(
-    message = "Use RecentlyPlayedOps.hasRecentlyPlayed() directly",
-    replaceWith =
-      ReplaceWith(
-        "RecentlyPlayedOps.hasRecentlyPlayed()",
-        "app.gyrolet.mpvrx.utils.history.RecentlyPlayedOps",
-      ),
-  )
-  suspend fun hasRecentlyPlayedFile(): Boolean = RecentlyPlayedOps.hasRecentlyPlayed()
-
-  /**
    * Validate URL structure and protocol support.
    * Checks only URL format and MPV protocol support (http, https, rtsp, rtmp, etc.).
    * Network errors are detected when MPV attempts to open the stream.

@@ -97,7 +97,7 @@ val domainModule = module {
     single { HdrToysManager(androidContext()) }
     single { OnlineSubtitleFileStore(androidContext(), get()) }
     single { WyzieSearchRepository(androidContext(), get(), get(), get(), get()) }
-    single { MpvRxSubtitleHubRepository(androidContext(), get(), get(), get(), get()) }
+    single { MpvRxSubtitleHubRepository(get(), get(), get(), get()) }
     single { OnlineSubtitleOrchestrator(get<WyzieSearchRepository>(), get<MpvRxSubtitleHubRepository>()) }
     single { IntroDbRepository(get(), get()) }
     single { GeminiClient(get(), get()) }

@@ -166,6 +166,16 @@ object FolderViewScanner {
                     )
                 }
                 
+                // Build parent -> direct children index for O(1) subfolder lookups
+                val parentToChildKeys = mutableMapOf<String, MutableSet<String>>()
+                for ((folderKey, aggregate) in videosByFolder) {
+                    val parentPath = aggregate.path.substringBeforeLast('/')
+                    val parentKey = storagePathKey(parentPath)
+                    if (parentKey != null) {
+                        parentToChildKeys.getOrPut(parentKey) { mutableSetOf() }.add(folderKey)
+                    }
+                }
+
                 // Build folder data - only count immediate children videos
                 for ((folderKey, aggregate) in videosByFolder) {
                     val folderPath = aggregate.path
@@ -182,11 +192,8 @@ object FolderViewScanner {
                         }
                     }
                     
-                    // Check if this folder has subfolders with videos
-                    val hasSubfolders = videosByFolder.values.any { otherFolder ->
-                        otherFolder.path != folderPath &&
-                        isDirectStorageChild(folderPath, otherFolder.path)
-                    }
+                    // O(1) subfolder check using pre-built index
+                    val hasSubfolders = parentToChildKeys[folderKey]?.isNotEmpty() == true
                     
                     folders[folderKey] = FolderData(
                         path = folderPath,

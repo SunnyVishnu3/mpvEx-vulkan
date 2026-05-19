@@ -487,9 +487,10 @@ fun MultiChoicePreference(
       onDismissRequest = { showDialog = false },
       title = title,
       text = {
+        val valuesList = values.toList()
         LazyColumn {
-          items(values.toList().size) { index ->
-            val entry = values.toList()[index]
+          items(count = valuesList.size, key = { index -> valuesList[index].first }) { index ->
+            val entry = valuesList[index]
             val key = entry.first
             val checked = if (hasAllOption && (selectedValues.isEmpty() || selectedValues.contains("all"))) {
               key == "all"

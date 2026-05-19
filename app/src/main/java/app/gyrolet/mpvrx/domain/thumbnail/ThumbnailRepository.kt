@@ -157,9 +157,16 @@ class ThumbnailRepository(
 
       val snapshot = imageLoader.diskCache?.openSnapshot(diskCacheKey(video)) ?: return@withContext null
       snapshot.use {
+        val file = it.data.toFile()
         val decoded =
           runCatching {
-            BitmapFactory.decodeStream(it.data.toFile().inputStream())
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(file.absolutePath, options)
+            val sampleSize = calculateThumbnailSampleSize(options.outWidth, options.outHeight)
+            BitmapFactory.decodeFile(file.absolutePath, BitmapFactory.Options().apply {
+              inSampleSize = sampleSize
+              inPreferredConfig = Bitmap.Config.RGB_565
+            })
           }.getOrNull() ?: return@withContext null
 
         val scaled = scaleBitmap(decoded, widthPx, heightPx)

@@ -567,8 +567,17 @@ object TreeViewScanner {
   private fun getDirectChildren(
     parentPath: String,
     allNodes: Map<String, FolderNode>,
-  ): List<FolderNode> =
-    allNodes.values.filter { node -> isDirectStorageChild(parentPath, node.path) }
+  ): List<FolderNode> {
+    val parentKey = storagePathKey(parentPath) ?: return emptyList()
+    val prefix = "$parentKey/"
+    val candidates = mutableListOf<FolderNode>()
+    for ((key, node) in allNodes) {
+      if (key.startsWith(prefix) && isDirectStorageChild(parentPath, node.path)) {
+        candidates.add(node)
+      }
+    }
+    return candidates
+  }
 
   private fun getEffectiveChildren(
     parentPath: String,

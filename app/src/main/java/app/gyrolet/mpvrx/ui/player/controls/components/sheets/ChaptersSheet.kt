@@ -49,7 +49,7 @@ fun ChaptersSheet(
           .padding(vertical = MaterialTheme.spacing.medium),
     ) {
       LazyColumn(state = listState) {
-        itemsIndexed(chapters) { index, chapter ->
+        itemsIndexed(chapters, key = { _, chapter -> chapter.start }) { index, chapter ->
           ChapterTrack(
             chapter = chapter,
             index = index,

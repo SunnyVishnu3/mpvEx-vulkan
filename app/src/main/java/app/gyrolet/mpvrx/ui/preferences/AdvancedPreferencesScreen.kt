@@ -632,7 +632,7 @@ object AdvancedPreferencesScreen : Screen {
                 },
                 onClick = {
                   scope.launch(Dispatchers.IO) {
-                    val fontsDir = File(context.filesDir.path + "/fonts")
+                    val fontsDir = File(context.filesDir, "fonts")
                     if (fontsDir.exists()) {
                       fontsDir.listFiles()?.forEach { file ->
                         // Delete all font files
@@ -747,4 +747,4 @@ object AdvancedPreferencesScreen : Screen {
 }
 
 fun getSimplifiedPathFromUri(uri: String): String =
-  Environment.getExternalStorageDirectory().canonicalPath + "/" + Uri.decode(uri).substringAfterLast(":")
+  File(Environment.getExternalStorageDirectory(), Uri.decode(uri).substringAfterLast(":")).canonicalPath

@@ -761,7 +761,7 @@ private fun GridContent(
       horizontalArrangement = Arrangement.spacedBy(2.dp),
       verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-      items(folders.size) { index ->
+      items(count = folders.size, key = { index -> folders[index].bucketId }) { index ->
         val folder = folders[index]
         val isRecentlyPlayed = recentlyPlayedFilePath?.let { filePath ->
           val file = File(filePath)
@@ -1143,7 +1143,7 @@ private fun SearchResultsContent(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
       ) {
-        items(folders.size) { index ->
+        items(count = folders.size, key = { index -> folders[index].bucketId }) { index ->
           val folder = folders[index]
           FolderCard(
             folder = folder,
@@ -1157,7 +1157,7 @@ private fun SearchResultsContent(
           )
         }
         
-        items(videos.size) { index ->
+        items(count = videos.size, key = { index -> videos[index].id }) { index ->
           val video = videos[index]
           VideoCard(
             video = video,
@@ -1181,7 +1181,7 @@ private fun SearchResultsContent(
           bottom = navigationBarHeight + 8.dp
         ),
       ) {
-        items(folders.size) { index ->
+        items(count = folders.size, key = { index -> folders[index].bucketId }) { index ->
           val folder = folders[index]
           FolderCard(
             folder = folder,
@@ -1195,7 +1195,7 @@ private fun SearchResultsContent(
           )
         }
         
-        items(videos.size) { index ->
+        items(count = videos.size, key = { index -> videos[index].id }) { index ->
           val video = videos[index]
           VideoCard(
             video = video,

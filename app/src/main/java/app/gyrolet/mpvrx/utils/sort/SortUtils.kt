@@ -86,39 +86,6 @@ object SortUtils {
     return orderedFolders + orderedVideos
   }
 
-  // Legacy string-based sorting (for backward compatibility)
-  @Deprecated(
-    "Use enum-based sortVideos instead",
-    ReplaceWith(
-      "sortVideos(videos, VideoSortType.valueOf(sortType), if (sortOrderAsc) SortOrder.Ascending else SortOrder.Descending)",
-    ),
-  )
-  fun sortVideos(
-    videos: List<Video>,
-    sortType: String,
-    sortOrderAsc: Boolean,
-  ): List<Video> {
-    val type = VideoSortType.entries.find { it.displayName == sortType } ?: VideoSortType.Title
-    val order = if (sortOrderAsc) SortOrder.Ascending else SortOrder.Descending
-    return sortVideos(videos, type, order)
-  }
-
-  @Deprecated(
-    "Use enum-based sortFolders instead",
-    ReplaceWith(
-      "sortFolders(folders, FolderSortType.valueOf(sortType), if (sortOrderAsc) SortOrder.Ascending else SortOrder.Descending)",
-    ),
-  )
-  fun sortFolders(
-    folders: List<VideoFolder>,
-    sortType: String,
-    sortOrderAsc: Boolean,
-  ): List<VideoFolder> {
-    val type = FolderSortType.entries.find { it.displayName == sortType } ?: FolderSortType.Title
-    val order = if (sortOrderAsc) SortOrder.Ascending else SortOrder.Descending
-    return sortFolders(folders, type, order)
-  }
-
   class NaturalOrderComparator(
     private val ignoreCase: Boolean,
     private val shouldSkip: (Char) -> Boolean,
@@ -213,40 +180,34 @@ object SortUtils {
     }
   }
 
-  private fun compareVideoFoldersByTitle(
-    first: VideoFolder,
-    second: VideoFolder,
+  private fun <T> compareFoldersByTitle(
+    first: T,
+    second: T,
+    getName: (T) -> String,
+    getPath: (T) -> String,
   ): Int {
     val groupCompare =
-      folderSortGroupKey(first.name, first.path).compareTo(folderSortGroupKey(second.name, second.path))
+      folderSortGroupKey(getName(first), getPath(first)).compareTo(folderSortGroupKey(getName(second), getPath(second)))
     if (groupCompare != 0) {
       return groupCompare
     }
 
-    val nameCompare = NaturalOrderComparator.DEFAULT.compare(first.name, second.name)
+    val nameCompare = NaturalOrderComparator.DEFAULT.compare(getName(first), getName(second))
     if (nameCompare != 0) {
       return nameCompare
     }
 
-    return first.path.lowercase(Locale.ROOT).compareTo(second.path.lowercase(Locale.ROOT))
+    return getPath(first).lowercase(Locale.ROOT).compareTo(getPath(second).lowercase(Locale.ROOT))
   }
+
+  private fun compareVideoFoldersByTitle(
+    first: VideoFolder,
+    second: VideoFolder,
+  ): Int = compareFoldersByTitle(first, second, VideoFolder::name, VideoFolder::path)
 
   private fun compareFileSystemFoldersByTitle(
     first: FileSystemItem.Folder,
     second: FileSystemItem.Folder,
-  ): Int {
-    val groupCompare =
-      folderSortGroupKey(first.name, first.path).compareTo(folderSortGroupKey(second.name, second.path))
-    if (groupCompare != 0) {
-      return groupCompare
-    }
-
-    val nameCompare = NaturalOrderComparator.DEFAULT.compare(first.name, second.name)
-    if (nameCompare != 0) {
-      return nameCompare
-    }
-
-    return first.path.lowercase(Locale.ROOT).compareTo(second.path.lowercase(Locale.ROOT))
-  }
+  ): Int = compareFoldersByTitle(first, second, FileSystemItem.Folder::name, FileSystemItem.Folder::path)
 }
 

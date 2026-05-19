@@ -1544,6 +1544,7 @@ fun PlayerControls(
     val audioTracks by viewModel.audioTracks.collectAsState(persistentListOf())
     val sleepTimerTimeRemaining by viewModel.remainingTime.collectAsState()
     val speedPresets by playerPreferences.speedPresets.collectAsState()
+    val sortedSpeedPresets = androidx.compose.runtime.remember(speedPresets) { speedPresets.map { it.toFloat() }.sorted() }
 
     PlayerSheets(
       viewModel = viewModel,
@@ -1576,7 +1577,7 @@ fun PlayerControls(
       onAddSpeedPreset = { playerPreferences.speedPresets += it.toFixed(2).toString() },
       onRemoveSpeedPreset = { playerPreferences.speedPresets -= it.toFixed(2).toString() },
       onResetSpeedPresets = playerPreferences.speedPresets::delete,
-      speedPresets = speedPresets.map { it.toFloat() }.sorted(),
+      speedPresets = sortedSpeedPresets,
       onResetDefaultSpeed = {
         MPVLib.setPropertyFloat("speed", playerPreferences.defaultSpeed.deleteAndGet().toFixed(2))
       },
