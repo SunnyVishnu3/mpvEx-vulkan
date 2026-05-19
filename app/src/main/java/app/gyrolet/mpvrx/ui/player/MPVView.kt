@@ -15,6 +15,7 @@ import app.gyrolet.mpvrx.preferences.PlayerPreferences
 import app.gyrolet.mpvrx.preferences.SubtitlesPreferences
 import app.gyrolet.mpvrx.domain.anime4k.Anime4KManager
 import app.gyrolet.mpvrx.domain.hdr.HdrToysManager
+import app.gyrolet.mpvrx.domain.ytdl.YtdlManager
 import app.gyrolet.mpvrx.ui.player.PlayerActivity.Companion.TAG
 import app.gyrolet.mpvrx.ui.player.controls.components.panels.toColorHexString
 import app.gyrolet.mpvrx.ui.preferences.VulkanUtils
@@ -37,6 +38,7 @@ class MPVView(
   private val subtitlesPreferences: SubtitlesPreferences by inject()
   private val anime4kManager: Anime4KManager by inject()
   private val hdrToysManager: HdrToysManager by inject()
+  private val ytdlManager: YtdlManager by inject()
 
   var isExiting = false
   var forceOpenGlFallback = false
@@ -187,8 +189,37 @@ class MPVView(
     // HDR Toys shaders (loaded after Anime4K so they append in the correct order)
     applyHdrToysMode(hdrScreenMode, hdrPipelineReady)
 
+    setupYtdlOptions()
+
     setupSubtitlesOptions()
     setupAudioOptions()
+  }
+
+  private fun setupYtdlOptions() {
+    val enabled = advancedPreferences.enableYtdl.get()
+    MPVLib.setOptionString("ytdl", if (enabled) "yes" else "no")
+    if (!enabled) return
+
+    if (ytdlManager.initialize()) {
+      val pythonBin = ytdlManager.getYtdlPath()
+
+      if (pythonBin != null) {
+        // Workaround for SDK 29+ execution restriction:
+        // Use /system/bin/sh -c to run the python interpreter from the lib folder.
+        // ytdl-path in mpv can be a command string if the internal ytdl_hook.lua supports it
+        // OR we set it to a wrapper script. 
+        // For now, let's try setting it directly.
+        MPVLib.setOptionString("ytdl-path", pythonBin)
+        
+        // We also need to tell the hook to use our script
+        MPVLib.setOptionString("script-opts", "ytdl_hook-ytdl_path=$pythonBin")
+      }
+      
+      val format = advancedPreferences.ytdlFormat.get()
+      if (format.isNotEmpty()) {
+        MPVLib.setOptionString("ytdl-format", format)
+      }
+    }
   }
 
   override fun observeProperties() {

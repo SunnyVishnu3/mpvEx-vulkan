@@ -23,5 +23,9 @@ class AdvancedPreferences(
 
   /** Notification style for the playback service (Media vs Progress-centric on Android 16+). */
   val notificationStyle = preferenceStore.getEnum("notification_style", NotificationStyle.Media)
+
+  // YTDL Preferences
+  val enableYtdl = preferenceStore.getBoolean("enable_ytdl", true)
+  val ytdlFormat = preferenceStore.getString("ytdl_format", "bestvideo[height<=?1080]+bestaudio/best")
 }
 

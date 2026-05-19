@@ -2,6 +2,7 @@ package app.gyrolet.mpvrx.di
 
 import app.gyrolet.mpvrx.domain.anime4k.Anime4KManager
 import app.gyrolet.mpvrx.domain.hdr.HdrToysManager
+import app.gyrolet.mpvrx.domain.ytdl.YtdlManager
 import app.gyrolet.mpvrx.domain.thumbnail.CoilVideoThumbnailDecoder
 import app.gyrolet.mpvrx.domain.thumbnail.toThumbnailStrategy
 import app.gyrolet.mpvrx.network.AndroidCookieJar
@@ -95,6 +96,7 @@ val domainModule = module {
     }
     single { Anime4KManager(androidContext()) }
     single { HdrToysManager(androidContext()) }
+    single { YtdlManager(androidContext(), get()) }
     single { OnlineSubtitleFileStore(androidContext(), get()) }
     single { WyzieSearchRepository(androidContext(), get(), get(), get(), get()) }
     single { MpvRxSubtitleHubRepository(get(), get(), get(), get()) }
