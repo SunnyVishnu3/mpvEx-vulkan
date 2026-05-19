@@ -16,7 +16,8 @@ class YtdlManager(
   private val httpClient: OkHttpClient,
 ) {
   private val ytdlDir = File(context.filesDir, "ytdl")
-  private val pythonZip = File(ytdlDir, "python3.zip")
+  private val pythonZip = File(ytdlDir, "python313.zip")
+  private val pythonBinFile = File(ytdlDir, "python3")
   private val setupScript = File(ytdlDir, "setup.py")
   private val wrapperScript = File(ytdlDir, "wrapper")
   private val ytdlBin = File(context.filesDir, "youtube-dl")
@@ -28,9 +29,20 @@ class YtdlManager(
   fun initialize(): Boolean {
     if (!ytdlDir.exists() && !ytdlDir.mkdirs()) return false
 
-    // Copy python3.zip from assets if not exists
+    // Copy python313.zip from assets if not exists
     if (!pythonZip.exists()) {
-      copyAsset("ytdl/python3.zip", pythonZip)
+      copyAsset("ytdl/python313.zip", pythonZip)
+    }
+
+    // Copy python3 binary from assets if not exists
+    if (!pythonBinFile.exists()) {
+        val abi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"
+        if (!copyAsset("py.$abi/python3", pythonBinFile)) {
+            // Fallback or handle error
+            Log.e(TAG, "Failed to copy python3 for ABI $abi")
+        } else {
+            pythonBinFile.setExecutable(true)
+        }
     }
 
     // Copy cacert.pem from assets (required for https)
@@ -124,6 +136,10 @@ class YtdlManager(
   }
 
   fun getYtdlPath(): String? {
+    if (pythonBinFile.exists()) {
+        return pythonBinFile.absolutePath
+    }
+
     val libDir = context.applicationInfo.nativeLibraryDir
     val pythonBin = File(libDir, "libpython3.so")
     if (pythonBin.exists()) {
