@@ -1,0 +1,134 @@
+# ═══════════════════════════════════════════════════════════
+# ANDROID & GRADLE BUILD FILES
+# ═══════════════════════════════════════════════════════════
+*.iml
+.gradle/
+/build
+/*/build
+/app/build
+/buildSrc/build
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+.cxx
+.externalNativeBuild
+*.log
+
+# ═══════════════════════════════════════════════════════════
+# ANDROID STUDIO / INTELLIJ IDEA
+# ═══════════════════════════════════════════════════════════
+/.idea/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/caches
+.idea/modules.xml
+.idea/navEditor.xml
+.idea/.name
+.idea/compiler.xml
+.idea/runConfigurations.xml
+.idea/misc.xml
+.idea/deploymentTargetSelector.xml
+*.iws
+*.ipr
+
+# ═══════════════════════════════════════════════════════════
+# SENSITIVE FILES - NEVER COMMIT THESE!
+# ═══════════════════════════════════════════════════════════
+/local.properties
+local.properties
+keystore.properties
+*.keystore
+*.jks
+*.key
+*.p12
+*.pem
+google-services.json
+GoogleService-Info.plist
+
+# API keys and secrets
+api_keys.xml
+secrets.properties
+.env
+.env.local
+.mcp.json
+.codex/config.toml
+opencode.json
+
+# ═══════════════════════════════════════════════════════════
+# RELEASE BUILDS & SIGNING
+# ═══════════════════════════════════════════════════════════
+/app/release
+/app/debug
+release/
+*.keystore
+*.jks
+signing.properties
+/docs/local-signing/
+
+# ═══════════════════════════════════════════════════════════
+# KOTLIN
+# ═══════════════════════════════════════════════════════════
+.kotlin/
+/.kotlin/errors
+*.kotlin_module
+*.kotlin_builtins
+
+# ═══════════════════════════════════════════════════════════
+# OS-SPECIFIC
+# ═══════════════════════════════════════════════════════════
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ═══════════════════════════════════════════════════════════
+# CAPTURES & PROFILING
+# ═══════════════════════════════════════════════════════════
+/captures
+*.hprof
+*.trace
+*.prof
+
+# ═══════════════════════════════════════════════════════════
+# AI AGENTS
+# ═══════════════════════════════════════════════════════════
+.playwright-cli/
+.playwright-mcp/
+.worktrees/
+scripts/logs/*.txt
+docs/internal/references/
+.opencode/
+.claude/
+
+# GitNexus local index
+/.gitnexus/
+
+# ═══════════════════════════════════════════════════════════
+# VERSION CONTROL
+# ═══════════════════════════════════════════════════════════
+.vscode/
+.history/
+*.swp
+*.swo
+*~
+
+# ═══════════════════════════════════════════════════════════
+# OTHER
+# ═══════════════════════════════════════════════════════════
+*.bak
+*.orig
+*.rej
+*.tmp
+LOGS/

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+    Night theme for Device Masker (AMOLED optimized).
+    Same as day theme since we use Compose for theming.
+    -->
+    <style name="Theme.DeviceMasker" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- AMOLED black background -->
+        <item name="android:windowBackground">@android:color/black</item>
+
+        <!-- Transparent system bars for edge-to-edge -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+
+        <!-- Edge-to-edge display (API 27+, gracefully ignored on 26) -->
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="27">shortEdges</item>
+
+        <!-- Light status bar icons for dark background -->
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
+    </style>
+</resources>

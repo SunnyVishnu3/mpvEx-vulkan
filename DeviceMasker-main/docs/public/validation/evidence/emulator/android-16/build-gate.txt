@@ -1,0 +1,229 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.5.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Calculating task graph as no cached configuration is available for tasks: spotlessCheck detekt :xposed:testDebugUnitTest :app:assembleCiRelease :verifier:assembleDebug
+> Task :verifier:preBuild UP-TO-DATE
+> Task :verifier:generateDebugAssets UP-TO-DATE
+> Task :common:generateReleaseAssets UP-TO-DATE
+> Task :common:preBuild UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :xposed:generateReleaseAssets UP-TO-DATE
+> Task :xposed:preBuild UP-TO-DATE
+> Task :app:generateCiReleaseAssets UP-TO-DATE
+> Task :common:preReleaseBuild UP-TO-DATE
+> Task :xposed:preDebugBuild UP-TO-DATE
+> Task :app:preCiReleaseBuild UP-TO-DATE
+> Task :common:preDebugBuild UP-TO-DATE
+> Task :xposed:preDebugUnitTestBuild UP-TO-DATE
+> Task :common:processDebugNavigationResources UP-TO-DATE
+> Task :xposed:prepareLintJarForPublish UP-TO-DATE
+> Task :common:detekt UP-TO-DATE
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :xposed:javaPreCompileDebug UP-TO-DATE
+> Task :common:javaPreCompileDebug UP-TO-DATE
+> Task :common:prepareLintJarForPublish UP-TO-DATE
+> Task :xposed:generateDebugResources UP-TO-DATE
+> Task :common:extractProguardFiles UP-TO-DATE
+> Task :xposed:processDebugNavigationResources UP-TO-DATE
+> Task :xposed:preReleaseBuild UP-TO-DATE
+> Task :common:generateDebugResources UP-TO-DATE
+> Task :app:detekt UP-TO-DATE
+> Task :common:processReleaseNavigationResources UP-TO-DATE
+> Task :xposed:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :common:javaPreCompileRelease UP-TO-DATE
+> Task :common:generateReleaseResources UP-TO-DATE
+> Task :xposed:generateReleaseResources UP-TO-DATE
+> Task :xposed:processReleaseNavigationResources UP-TO-DATE
+> Task :xposed:javaPreCompileRelease UP-TO-DATE
+> Task :app:mergeCiReleaseJniLibFolders UP-TO-DATE
+> Task :xposed:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :common:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :app:generateCiReleaseBuildConfig UP-TO-DATE
+> Task :common:prepareReleaseArtProfile UP-TO-DATE
+> Task :common:packageDebugResources UP-TO-DATE
+> Task :app:javaPreCompileCiRelease UP-TO-DATE
+> Task :app:generateCiReleaseResources UP-TO-DATE
+> Task :xposed:packageDebugResources UP-TO-DATE
+> Task :common:writeReleaseAarMetadata UP-TO-DATE
+> Task :xposed:packageReleaseResources UP-TO-DATE
+> Task :xposed:prepareReleaseArtProfile UP-TO-DATE
+> Task :xposed:mergeReleaseNativeLibs NO-SOURCE
+> Task :common:mergeReleaseNativeLibs NO-SOURCE
+> Task :xposed:writeReleaseAarMetadata UP-TO-DATE
+> Task :app:mapCiReleaseSourceSetPaths UP-TO-DATE
+> Task :xposed:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :xposed:parseDebugLocalResources UP-TO-DATE
+> Task :common:parseDebugLocalResources UP-TO-DATE
+> Task :common:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :xposed:parseReleaseLocalResources UP-TO-DATE
+> Task :common:packageReleaseResources UP-TO-DATE
+> Task :app:extractDeepLinksCiRelease UP-TO-DATE
+> Task :app:createCiReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:packageCiReleaseResources UP-TO-DATE
+> Task :common:extractDeepLinksRelease UP-TO-DATE
+> Task :xposed:generateReleaseRFile UP-TO-DATE
+> Task :common:generateDebugRFile UP-TO-DATE
+> Task :xposed:generateDebugRFile UP-TO-DATE
+> Task :common:parseReleaseLocalResources UP-TO-DATE
+> Task :common:processReleaseManifest UP-TO-DATE
+> Task :xposed:extractDeepLinksRelease UP-TO-DATE
+> Task :common:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :xposed:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :xposed:processReleaseManifest UP-TO-DATE
+> Task :xposed:compileReleaseLibraryResources UP-TO-DATE
+> Task :common:compileReleaseLibraryResources UP-TO-DATE
+> Task :xposed:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :common:generateReleaseRFile UP-TO-DATE
+> Task :app:mergeCiReleaseStartupProfile UP-TO-DATE
+> Task :xposed:mergeReleaseAssets UP-TO-DATE
+> Task :common:mergeReleaseAssets UP-TO-DATE
+> Task :app:extractCiReleaseVersionControlInfo UP-TO-DATE
+> Task :xposed:extractProguardFiles UP-TO-DATE
+> Task :xposed:stripReleaseDebugSymbols NO-SOURCE
+> Task :xposed:checkReleaseAarMetadata UP-TO-DATE
+> Task :xposed:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :xposed:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :common:checkReleaseAarMetadata UP-TO-DATE
+> Task :common:stripReleaseDebugSymbols NO-SOURCE
+> Task :common:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :common:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :common:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :xposed:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :app:collectCiReleaseDependencies UP-TO-DATE
+> Task :app:sdkCiReleaseDependencyData UP-TO-DATE
+> Task :app:writeCiReleaseAppMetadata UP-TO-DATE
+> Task :app:writeCiReleaseSigningConfigVersions UP-TO-DATE
+> Task :verifier:preDebugBuild UP-TO-DATE
+> Task :verifier:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :common:compileDebugKotlin UP-TO-DATE
+> Task :common:compileDebugJavaWithJavac NO-SOURCE
+> Task :common:processDebugJavaRes UP-TO-DATE
+> Task :common:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :common:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :verifier:generateDebugResources UP-TO-DATE
+> Task :common:compileReleaseKotlin UP-TO-DATE
+> Task :common:compileReleaseJavaWithJavac NO-SOURCE
+> Task :common:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :verifier:packageDebugResources UP-TO-DATE
+> Task :common:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :common:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :common:extractReleaseAnnotations UP-TO-DATE
+> Task :common:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :common:processReleaseJavaRes UP-TO-DATE
+> Task :common:createFullJarRelease UP-TO-DATE
+> Task :common:generateReleaseLintModel UP-TO-DATE
+> Task :common:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :common:mergeReleaseJavaResource UP-TO-DATE
+> Task :common:syncReleaseLibJars UP-TO-DATE
+> Task :xposed:compileDebugKotlin UP-TO-DATE
+> Task :common:bundleReleaseLocalLintAar UP-TO-DATE
+> Task :xposed:compileDebugJavaWithJavac NO-SOURCE
+> Task :xposed:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :xposed:processDebugJavaRes UP-TO-DATE
+> Task :xposed:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :common:lintVitalAnalyzeRelease UP-TO-DATE
+> Task :common:generateReleaseLintVitalModel UP-TO-DATE
+> Task :verifier:processDebugNavigationResources UP-TO-DATE
+> Task :verifier:parseDebugLocalResources UP-TO-DATE
+> Task :verifier:generateDebugRFile UP-TO-DATE
+> Task :xposed:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :xposed:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :xposed:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :verifier:compileDebugKotlin UP-TO-DATE
+> Task :xposed:extractReleaseAnnotations
+> Task :verifier:mergeDebugAssets UP-TO-DATE
+> Task :verifier:javaPreCompileDebug UP-TO-DATE
+> Task :verifier:compressDebugAssets UP-TO-DATE
+> Task :verifier:generateDebugGlobalSynthetics UP-TO-DATE
+> Task :verifier:compileDebugJavaWithJavac NO-SOURCE
+> Task :verifier:processDebugJavaRes UP-TO-DATE
+> Task :verifier:checkDebugDuplicateClasses UP-TO-DATE
+> Task :verifier:mergeDebugJavaResource UP-TO-DATE
+> Task :verifier:mergeLibDexDebug UP-TO-DATE
+> Task :verifier:desugarDebugFileDependencies UP-TO-DATE
+> Task :verifier:checkDebugAarMetadata UP-TO-DATE
+> Task :xposed:testDebugUnitTest UP-TO-DATE
+> Task :verifier:mapDebugSourceSetPaths UP-TO-DATE
+> Task :verifier:compileDebugNavigationResources UP-TO-DATE
+> Task :verifier:mergeDebugResources UP-TO-DATE
+> Task :verifier:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :verifier:extractDeepLinksDebug UP-TO-DATE
+> Task :verifier:mergeDebugJniLibFolders UP-TO-DATE
+> Task :verifier:mergeExtDexDebug UP-TO-DATE
+> Task :verifier:validateSigningDebug UP-TO-DATE
+> Task :verifier:processDebugMainManifest UP-TO-DATE
+> Task :verifier:writeDebugAppMetadata UP-TO-DATE
+> Task :verifier:processDebugManifest UP-TO-DATE
+> Task :verifier:processDebugManifestForPackage UP-TO-DATE
+> Task :verifier:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :verifier:mergeDebugNativeLibs NO-SOURCE
+> Task :verifier:stripDebugDebugSymbols NO-SOURCE
+> Task :verifier:processDebugResources UP-TO-DATE
+> Task :verifier:dexBuilderDebug UP-TO-DATE
+> Task :verifier:mergeProjectDexDebug UP-TO-DATE
+> Task :verifier:packageDebug UP-TO-DATE
+> Task :verifier:createDebugApkListingFileRedirect UP-TO-DATE
+> Task :verifier:assembleDebug UP-TO-DATE
+> Task :app:checkCiReleaseDuplicateClasses UP-TO-DATE
+> Task :app:processCiReleaseNavigationResources UP-TO-DATE
+> Task :app:parseCiReleaseLocalResources UP-TO-DATE
+> Task :app:checkCiReleaseAarMetadata UP-TO-DATE
+> Task :app:generateCiReleaseRFile UP-TO-DATE
+> Task :app:compileCiReleaseNavigationResources UP-TO-DATE
+> Task :app:mergeCiReleaseArtProfile UP-TO-DATE
+> Task :app:mergeCiReleaseAssets UP-TO-DATE
+> Task :app:compressCiReleaseAssets UP-TO-DATE
+> Task :app:mergeCiReleaseResources UP-TO-DATE
+> Task :app:mergeCiReleaseNativeLibs UP-TO-DATE
+> Task :app:stripCiReleaseDebugSymbols UP-TO-DATE
+> Task :app:extractCiReleaseNativeSymbolTables UP-TO-DATE
+> Task :app:processCiReleaseMainManifest UP-TO-DATE
+> Task :app:mergeCiReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:processCiReleaseManifest UP-TO-DATE
+> Task :app:processCiReleaseManifestForPackage UP-TO-DATE
+> Task :app:processCiReleaseResources UP-TO-DATE
+> Task :verifier:detekt
+> Task :xposed:detekt
+> Task :spotlessKotlinGradle UP-TO-DATE
+> Task :spotlessKotlinGradleCheck UP-TO-DATE
+> Task :spotlessKotlin
+> Task :spotlessKotlinCheck
+> Task :spotlessCheck
+> Task :xposed:compileReleaseKotlin
+> Task :xposed:compileReleaseJavaWithJavac NO-SOURCE
+> Task :xposed:processReleaseJavaRes UP-TO-DATE
+> Task :xposed:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :xposed:mergeReleaseJavaResource UP-TO-DATE
+> Task :xposed:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :xposed:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :xposed:bundleLibRuntimeToJarRelease
+> Task :xposed:bundleLibCompileToJarRelease
+> Task :xposed:createFullJarRelease
+> Task :xposed:syncReleaseLibJars
+> Task :xposed:generateReleaseLintModel
+> Task :xposed:generateReleaseLintVitalModel
+> Task :xposed:bundleReleaseLocalLintAar
+> Task :app:compileCiReleaseKotlin
+> Task :app:processCiReleaseJavaRes UP-TO-DATE
+> Task :app:mergeCiReleaseJavaResource UP-TO-DATE
+> Task :app:compileCiReleaseJavaWithJavac UP-TO-DATE
+> Task :app:mergeCiReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :app:generateCiReleaseLintVitalReportModel
+> Task :app:expandCiReleaseArtProfileWildcards
+> Task :app:produceCiReleaseComposeMapping
+> Task :app:reportCiReleaseComposeMappingErrors
+> Task :xposed:lintVitalAnalyzeRelease
+> Task :app:minifyCiReleaseWithR8
+> Task :app:lintVitalAnalyzeCiRelease
+> Task :app:lintVitalReportCiRelease
+> Task :app:lintVitalCiRelease
+> Task :app:convertShrunkResourcesToBinaryCiRelease UP-TO-DATE
+> Task :app:optimizeCiReleaseResources UP-TO-DATE
+> Task :app:mergeCiReleaseComposeMapping
+> Task :app:compileCiReleaseArtProfile
+> Task :app:packageCiRelease
+> Task :app:assembleCiRelease
+> Task :app:createCiReleaseApkListingFileRedirect UP-TO-DATE
+
+BUILD SUCCESSFUL in 2m 37s
+190 actionable tasks: 26 executed, 164 up-to-date
+Configuration cache entry stored.

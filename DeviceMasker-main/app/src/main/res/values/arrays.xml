@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 
+    Xposed/LSPosed module scope configuration.
+    
+    Recommended scope for device spoofing modules:
+    - android: System Framework - framework identifier hooks
+    - com.android.providers.settings: Settings Storage - hook Settings.Secure/Global
+    
+    Additional apps are selected by user in LSPosed Manager.
+    -->
+    <string-array name="xposed_scope">
+        <!-- System Framework: Required for framework identifier hooks -->
+        <item>android</item>
+
+        <!-- Settings Storage: Hook Settings.Secure.ANDROID_ID and similar -->
+        <item>com.android.providers.settings</item>
+    </string-array>
+</resources>

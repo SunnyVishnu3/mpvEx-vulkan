@@ -1,0 +1,4 @@
+-keep interface io.github.libxposed.helper.HookBuilder { *; }
+-keep interface io.github.libxposed.helper.HookBuilder$* { *; }
+-keepattributes *
+-repackageclasses "libxposed.helper"

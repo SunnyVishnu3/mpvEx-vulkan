@@ -1,0 +1,255 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag, example: v0.1.1"
+        required: true
+        type: string
+      draft:
+        description: "Create as draft release"
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.inputs.tag_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  attestations: write
+  id-token: write
+
+env:
+  JAVA_VERSION: "17"
+
+jobs:
+  release:
+    name: Build And Draft GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag_name }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: false
+
+      - name: Ensure Gradle wrapper is executable
+        run: chmod +x ./gradlew
+
+      - name: Verify release version
+        env:
+          TAG_NAME: ${{ github.event.inputs.tag_name }}
+        run: |
+          VERSION_NAME=$(grep '^VERSION_NAME=' gradle.properties | cut -d= -f2)
+          VERSION_CODE=$(grep '^VERSION_CODE=' gradle.properties | cut -d= -f2)
+          EXPECTED_TAG="v${VERSION_NAME}"
+
+          if [ "$TAG_NAME" != "$EXPECTED_TAG" ]; then
+            echo "Tag $TAG_NAME does not match gradle.properties VERSION_NAME=$VERSION_NAME"
+            exit 1
+          fi
+
+          git rev-parse "$TAG_NAME" >/dev/null
+          {
+            echo "VERSION_NAME=$VERSION_NAME"
+            echo "VERSION_CODE=$VERSION_CODE"
+            echo "SHORT_SHA=${GITHUB_SHA::7}"
+          } >> "$GITHUB_ENV"
+
+      - name: Check release signing secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KEY_PASS }}
+        run: |
+          missing=()
+          [ -n "$KEYSTORE_BASE64" ] || missing+=("KEYSTORE_BASE64")
+          [ -n "$KEYSTORE_PASS" ] || missing+=("KEYSTORE_PASS")
+          [ -n "$KEY_ALIAS" ] || missing+=("KEY_ALIAS")
+          [ -n "$KEY_PASS" ] || missing+=("KEY_PASS")
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "Release signing secrets are incomplete: ${missing[*]}"
+            echo "Add KEYSTORE_BASE64, KEYSTORE_PASS, KEY_ALIAS, and KEY_PASS as repository Actions secrets."
+            exit 1
+          fi
+
+      - name: Decode release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KEY_PASS }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          {
+            echo "KEYSTORE_PATH=$RUNNER_TEMP/release.keystore"
+            echo "KEYSTORE_PASS=$KEYSTORE_PASS"
+            echo "KEY_ALIAS=$KEY_ALIAS"
+            echo "KEY_PASS=$KEY_PASS"
+          } >> "$GITHUB_ENV"
+
+      - name: Spotless check
+        run: ./gradlew spotlessCheck --build-cache --stacktrace
+
+      - name: Detekt
+        run: ./gradlew detekt --build-cache --stacktrace
+
+      - name: Lint
+        run: ./gradlew lint --build-cache --stacktrace
+
+      - name: Unit tests
+        run: ./gradlew test --build-cache --stacktrace
+
+      - name: Assemble release builds
+        run: ./gradlew assembleDebug assembleRelease :app:assembleCiRelease --build-cache --stacktrace
+
+      - name: Prepare release artifacts
+        run: |
+          mkdir -p dist/public dist/actions/release dist/actions/debug dist/actions/source dist/actions/mapping dist/actions/metadata
+
+          release_apks=(app/build/outputs/apk/release/*.apk)
+          if [ "${#release_apks[@]}" -ne 1 ]; then
+            echo "Expected exactly one release APK, found ${#release_apks[@]}"
+            printf '%s\n' "${release_apks[@]}"
+            exit 1
+          fi
+
+          debug_apks=(app/build/outputs/apk/debug/*.apk)
+          if [ "${#debug_apks[@]}" -ne 1 ]; then
+            echo "Expected exactly one debug APK, found ${#debug_apks[@]}"
+            printf '%s\n' "${debug_apks[@]}"
+            exit 1
+          fi
+
+          release_apk_name="DeviceMasker-v${VERSION_NAME}-code${VERSION_CODE}-release-signed.apk"
+          debug_apk_name="DeviceMasker-v${VERSION_NAME}-code${VERSION_CODE}-debug.apk"
+
+          cp "${release_apks[0]}" "dist/public/${release_apk_name}"
+          cp "${release_apks[0]}" "dist/actions/release/${release_apk_name}"
+          cp "${debug_apks[0]}" "dist/actions/debug/${debug_apk_name}"
+
+          if [ -d app/build/outputs/mapping/release ]; then
+            (cd app/build/outputs/mapping/release && zip -r "$GITHUB_WORKSPACE/dist/actions/mapping/DeviceMasker-v${VERSION_NAME}-code${VERSION_CODE}-mapping-release.zip" .)
+          fi
+
+          git archive --format=zip \
+            --output "dist/actions/source/DeviceMasker-v${VERSION_NAME}-code${VERSION_CODE}-source-${SHORT_SHA}.zip" \
+            HEAD
+
+          cat > dist/actions/metadata/build-metadata.json <<EOF
+          {
+            "project": "DeviceMasker",
+            "versionName": "${VERSION_NAME}",
+            "versionCode": ${VERSION_CODE},
+            "gitSha": "${GITHUB_SHA}",
+            "shortSha": "${SHORT_SHA}",
+            "tag": "${{ github.event.inputs.tag_name }}",
+            "ref": "${GITHUB_REF}",
+            "workflow": "${GITHUB_WORKFLOW}",
+            "workflowRunId": "${GITHUB_RUN_ID}",
+            "workflowRunNumber": "${GITHUB_RUN_NUMBER}",
+            "publicReleaseAssets": ["${release_apk_name}"]
+          }
+          EOF
+
+          echo "Public GitHub Release assets:"
+          ls -la dist/public
+          echo "Actions-only artifacts:"
+          find dist/actions -maxdepth 2 -type f -print
+
+      - name: Upload signed release APK artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: DeviceMasker-release-signed-${{ github.event.inputs.tag_name }}-${{ github.run_id }}
+          path: |
+            dist/actions/release/**
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: DeviceMasker-debug-${{ github.event.inputs.tag_name }}-${{ github.run_id }}
+          path: |
+            dist/actions/debug/**
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload source archive artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: DeviceMasker-source-${{ github.event.inputs.tag_name }}-${{ github.run_id }}
+          path: |
+            dist/actions/source/**
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload mapping artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: DeviceMasker-mapping-${{ github.event.inputs.tag_name }}-${{ github.run_id }}
+          path: |
+            dist/actions/mapping/**
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload build metadata artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: DeviceMasker-build-metadata-${{ github.event.inputs.tag_name }}-${{ github.run_id }}
+          path: |
+            dist/actions/metadata/**
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload quality reports artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: DeviceMasker-quality-reports-${{ github.event.inputs.tag_name }}-${{ github.run_id }}
+          path: |
+            app/build/reports/**
+            common/build/reports/**
+            xposed/build/reports/**
+            verifier/build/reports/**
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Attest public signed release APK
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: dist/public/*.apk
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.event.inputs.tag_name }}
+          DRAFT_RELEASE: ${{ github.event.inputs.draft }}
+        run: |
+          draft_arg=""
+          if [ "$DRAFT_RELEASE" = "true" ]; then
+            draft_arg="--draft"
+          fi
+
+          gh release create "$TAG_NAME" dist/public/* \
+            --title "Device Masker $TAG_NAME" \
+            --generate-notes \
+            --verify-tag \
+            $draft_arg

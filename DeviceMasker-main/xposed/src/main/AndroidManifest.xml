@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest>
+    <!-- 
+    Xposed module: Contains hook logic and service implementation
+    Note: Xposed metadata is in the :app module's manifest since that's the installed APK
+    -->
+</manifest>

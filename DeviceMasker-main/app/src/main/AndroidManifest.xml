@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Permissions for UI functionality -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <!-- Storage permissions for log export -->
+    <!-- Android 9 and below: Direct file access -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"
+        tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.QUERY_ADVANCED_PROTECTION_MODE" />
+    <!-- Android 10+: Uses MediaStore API (no permission needed for Downloads) -->
+
+    <application
+        android:name=".DeviceMaskerApp"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.DeviceMasker">
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- LSPosed/Xposed Module Metadata -->
+        <!-- CRITICAL: These MUST be inside <application> tag! -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- LSPosed/Xposed Module Metadata — backward-compat tags kept for older LSPosed versions -->
+        <meta-data
+            android:name="xposedmodule"
+            android:value="true" />
+        <!-- Updated to API 101 for libxposed modern API -->
+        <meta-data
+            android:name="xposedminversion"
+            android:value="101" />
+        <meta-data
+            android:name="xposeddescription"
+            android:value="@string/xposed_description" />
+        <meta-data
+            android:name="xposedscope"
+            android:resource="@array/xposed_scope" />
+        <!-- Required for RemotePreferences cross-process bridge (libxposed API 101) -->
+        <meta-data
+            android:name="xposedsharedprefs"
+            android:value="true" />
+
+
+        <!-- MainActivity -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.DeviceMasker"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="open"
+                    android:scheme="devicemasker" />
+            </intent-filter>
+        </activity>
+
+        <!-- FileProvider for sharing log files -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!-- libxposed-service XposedProvider — bridges RemotePreferences.
+             LSPosed queries this ContentProvider to read module preferences in hooked processes.
+             Required when using io.github.libxposed:service and XposedInterface.getRemotePreferences(). -->
+        <provider
+            android:name="io.github.libxposed.service.XposedProvider"
+            android:authorities="${applicationId}.XposedService"
+            android:exported="true"
+            tools:ignore="ExportedContentProvider" />
+
+        <receiver
+            android:name=".service.diagnostics.BootCaptureReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name=".service.diagnostics.RootLogCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Local root diagnostics capture for LSPosed module validation and support bundles" />
+        </service>
+
+        <service
+            android:name=".service.logmonitor.LiveLogCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User-started live logcat monitor for local LSPosed module debugging" />
+        </service>
+
+    </application>
+
+</manifest>

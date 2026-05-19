@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Exclude non-project folders from all lint checks -->
+    <issue id="all">
+        <ignore path="memory-bank/**" />
+        <ignore path="openspec/**" />
+        <ignore path="scripts/**" />
+        <ignore path=".agents/**" />
+        <ignore path=".claude/**" />
+        <ignore path="docs/**" />
+        <ignore path="local.properties" />
+    </issue>
+    <issue id="UnusedResources">
+        <ignore path="app/src/main/res/drawable/ic_launcher_foreground.xml" />
+    </issue>
+    <issue id="OldTargetApi">
+        <ignore path="app/build.gradle.kts" />
+    </issue>
+    <issue id="GradleDependency">
+        <ignore path="gradle/libs.versions.toml" />
+    </issue>
+    <issue id="NewerVersionAvailable">
+        <ignore path="gradle/libs.versions.toml" />
+    </issue>
+</lint>

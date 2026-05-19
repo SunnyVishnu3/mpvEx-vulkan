@@ -1,0 +1,4 @@
+interface:
+  display_name: "Device Masker Review"
+  short_description: "Device Masker review/audit report"
+  default_prompt: "Use $device-masker-review to review or audit Device Masker for correctness, architecture, UI/UX, accessibility, hook safety, validation gaps, and stale documentation, then write one internal report file only."

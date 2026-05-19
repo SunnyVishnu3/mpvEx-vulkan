@@ -3,6 +3,7 @@ package app.gyrolet.mpvrx.ui.browser.cards
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -35,6 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -50,6 +53,8 @@ import app.gyrolet.mpvrx.preferences.AppearancePreferences
 import app.gyrolet.mpvrx.preferences.BrowserPreferences
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import androidx.compose.foundation.combinedClickable
+import app.gyrolet.mpvrx.ui.theme.AppMotion
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.withContext
@@ -124,19 +129,40 @@ fun VideoCard(
   val showSizeChip = overrideShowSizeChip ?: resolvedUiConfig.showSizeChip
   val showResolutionChip = overrideShowResolutionChip ?: resolvedUiConfig.showResolutionChip
 
-  val cardShape = RoundedCornerShape(16.dp)
+  val cardShape = AppShapeScale.large
+
+  var isPressed by remember { mutableStateOf(false) }
+  val targetScale = if (isPressed) 0.98f else 1.0f
+  val scale by animateFloatAsState(
+    targetValue = targetScale,
+    animationSpec = AppMotion.Spatial.Expressive,
+    label = "VideoCardScale",
+  )
 
   Card(
     modifier = modifier
       .then(
         if (isGridMode) Modifier.fillMaxWidth() else Modifier.fillMaxWidth()
       )
+      .graphicsLayer(scaleX = scale, scaleY = scale)
+      .pointerInput(Unit) {
+        awaitPointerEventScope {
+          while (true) {
+            val event = awaitPointerEvent()
+            if (event.changes.any { it.pressed }) {
+              isPressed = true
+            } else {
+              isPressed = false
+            }
+          }
+        }
+      }
       .combinedClickable(
         onClick = onClick,
         onLongClick = onLongClick,
       ),
     shape = cardShape,
-    colors = CardDefaults. cardColors(containerColor = Color. Transparent),
+    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
   ) {
     Box(modifier = Modifier.fillMaxWidth()) {
       if (isSelected) {
@@ -201,7 +227,7 @@ fun VideoCard(
           modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(aspect)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShapeScale.medium)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .combinedClickable(
               onClick = onThumbClick,
@@ -248,7 +274,7 @@ fun VideoCard(
                   Modifier
                     .align(Alignment.TopStart)
                     .padding(6.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(AppShapeScale.extraSmall)
                     .background(Color(0xFFD32F2F)) // Warning red color
                     .padding(horizontal = 8.dp, vertical = 3.dp),
               ) {
@@ -268,7 +294,7 @@ fun VideoCard(
             modifier = Modifier
               .align(Alignment. BottomEnd)
               .padding(6.dp)
-              .clip(RoundedCornerShape(4.dp))
+              .clip(AppShapeScale.extraSmall)
               .background(Color.Black.copy(alpha = 0.65f))
               .padding(horizontal = 6.dp, vertical = 2.dp),
           ) {
@@ -340,7 +366,7 @@ fun VideoCard(
                     modifier = Modifier
                       .background(
                         MaterialTheme.colorScheme.primary,
-                        RoundedCornerShape(8.dp),
+                        AppShapeScale.small,
                       )
                       .padding(horizontal = 8.dp, vertical = 4.dp),
                     color = MaterialTheme.colorScheme.onPrimary,
@@ -355,7 +381,7 @@ fun VideoCard(
                 modifier = Modifier
                   .background(
                     MaterialTheme.colorScheme.surfaceContainerHigh,
-                    RoundedCornerShape(8.dp),
+                    AppShapeScale.small,
                   )
                   .padding(horizontal = 8.dp, vertical = 4.dp),
                 color = MaterialTheme.colorScheme.onSurface,
@@ -379,7 +405,7 @@ fun VideoCard(
                    modifier = Modifier
                      .background(
                        MaterialTheme.colorScheme.surfaceContainerHigh,
-                       RoundedCornerShape(8.dp),
+                       AppShapeScale.small,
                      )
                      .padding(horizontal = 8.dp, vertical = 4.dp),
                    color = MaterialTheme.colorScheme.onSurface,
@@ -392,7 +418,7 @@ fun VideoCard(
                    modifier = Modifier
                      .background(
                        MaterialTheme.colorScheme.surfaceContainerHigh,
-                       RoundedCornerShape(8.dp),
+                       AppShapeScale.small,
                      )
                      .padding(horizontal = 8.dp, vertical = 4.dp),
                    color = MaterialTheme.colorScheme.onSurface,
@@ -406,7 +432,7 @@ fun VideoCard(
                 modifier = Modifier
                   .background(
                     MaterialTheme.colorScheme.surfaceContainerHigh,
-                    RoundedCornerShape(8.dp),
+                    AppShapeScale.small,
                   )
                   .padding(horizontal = 8.dp, vertical = 4.dp),
                 color = MaterialTheme.colorScheme.onSurface,
@@ -470,7 +496,7 @@ fun VideoCard(
             Modifier
               .width(thumbWidthDp)
               .aspectRatio(aspect)
-              .clip(RoundedCornerShape(12.dp))
+              .clip(AppShapeScale.medium)
               .background(MaterialTheme.colorScheme.surfaceContainerHigh)
               .combinedClickable(
                 onClick = onThumbClick,
@@ -517,7 +543,7 @@ fun VideoCard(
                   Modifier
                     .align(Alignment.TopStart)
                     .padding(6.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(AppShapeScale.extraSmall)
                     .background(Color(0xFFD32F2F)) // Warning red color
                     .padding(horizontal = 8.dp, vertical = 3.dp),
               ) {
@@ -538,7 +564,7 @@ fun VideoCard(
               Modifier
                 .align(Alignment.BottomEnd)
                 .padding(6.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .clip(AppShapeScale.extraSmall)
                 .background(Color.Black.copy(alpha = 0.65f))
                 .padding(horizontal = 6.dp, vertical = 2.dp),
           ) {
@@ -613,7 +639,7 @@ fun VideoCard(
                     modifier = Modifier
                       .background(
                         MaterialTheme.colorScheme.primary,
-                        RoundedCornerShape(8.dp),
+                        AppShapeScale.small,
                       )
                       .padding(horizontal = 8.dp, vertical = 4.dp),
                     color = MaterialTheme.colorScheme.onPrimary,
@@ -629,7 +655,7 @@ fun VideoCard(
                   Modifier
                     .background(
                       MaterialTheme.colorScheme.surfaceContainerHigh,
-                      RoundedCornerShape(8.dp),
+                      AppShapeScale.small,
                     )
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 color = MaterialTheme.colorScheme.onSurface,
@@ -654,7 +680,7 @@ fun VideoCard(
                     Modifier
                       .background(
                         MaterialTheme.colorScheme.surfaceContainerHigh,
-                        RoundedCornerShape(8.dp),
+                        AppShapeScale.small,
                       )
                       .padding(horizontal = 8.dp, vertical = 4.dp),
                   color = MaterialTheme.colorScheme.onSurface,
@@ -669,7 +695,7 @@ fun VideoCard(
                   Modifier
                     .background(
                       MaterialTheme.colorScheme.surfaceContainerHigh,
-                      RoundedCornerShape(8.dp),
+                      AppShapeScale.small,
                     )
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 color = MaterialTheme.colorScheme.onSurface,
@@ -684,7 +710,7 @@ fun VideoCard(
                   Modifier
                     .background(
                       MaterialTheme.colorScheme.surfaceContainerHigh,
-                      RoundedCornerShape(8.dp),
+                      AppShapeScale.small,
                     )
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 color = MaterialTheme.colorScheme.onSurface,
