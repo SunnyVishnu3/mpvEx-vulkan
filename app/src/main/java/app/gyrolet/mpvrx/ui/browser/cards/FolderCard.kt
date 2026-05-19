@@ -30,7 +30,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
@@ -121,16 +121,18 @@ fun FolderCard(
     modifier = modifier
       .fillMaxWidth()
       .graphicsLayer(scaleX = scale, scaleY = scale)
-      .pointerInput(Unit) {
-        awaitPointerEventScope {
-          while (true) {
-            val event = awaitPointerEvent()
-            if (event.changes.any { it.pressed }) {
-              isPressed = true
-            } else {
-              isPressed = false
-            }
+      .pointerInteropFilter { event ->
+        when (event.action) {
+          android.view.MotionEvent.ACTION_DOWN -> {
+            isPressed = true
+            false
           }
+          android.view.MotionEvent.ACTION_UP,
+          android.view.MotionEvent.ACTION_CANCEL -> {
+            isPressed = false
+            false
+          }
+          else -> false
         }
       }
       .combinedClickable(
