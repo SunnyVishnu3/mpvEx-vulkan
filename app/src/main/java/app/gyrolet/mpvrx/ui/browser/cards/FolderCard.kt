@@ -1,5 +1,6 @@
 package app.gyrolet.mpvrx.ui.browser.cards
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -20,12 +20,17 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +43,8 @@ import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.ui.icons.AppIcon
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
+import app.gyrolet.mpvrx.ui.theme.AppMotion
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import org.koin.compose.koinInject
 import kotlin.math.pow
 
@@ -84,7 +91,7 @@ fun FolderCard(
     modifier: Modifier = Modifier,
   ) {
     Surface(
-      shape = RoundedCornerShape(999.dp),
+      shape = AppShapeScale.full,
       color = MaterialTheme.colorScheme.primary.copy(alpha = 0.94f),
       contentColor = MaterialTheme.colorScheme.onPrimary,
       modifier = modifier.rotate(-18f),
@@ -100,17 +107,38 @@ fun FolderCard(
     }
   }
 
-  val cardShape = RoundedCornerShape(16.dp)
+  val cardShape = AppShapeScale.large
+
+  var isPressed by remember { mutableStateOf(false) }
+  val targetScale = if (isPressed) 0.98f else 1.0f
+  val scale by animateFloatAsState(
+    targetValue = targetScale,
+    animationSpec = AppMotion.Spatial.Expressive,
+    label = "FolderCardScale",
+  )
 
   Card(
     modifier = modifier
       .fillMaxWidth()
+      .graphicsLayer(scaleX = scale, scaleY = scale)
+      .pointerInput(Unit) {
+        awaitPointerEventScope {
+          while (true) {
+            val event = awaitPointerEvent()
+            if (event.changes.any { it.pressed }) {
+              isPressed = true
+            } else {
+              isPressed = false
+            }
+          }
+        }
+      }
       .combinedClickable(
         onClick = onClick,
         onLongClick = onLongClick,
       ),
     shape = cardShape,
-    colors = CardDefaults. cardColors(containerColor = Color. Transparent),
+    colors = CardDefaults.cardColors(containerColor = Color.Transparent),
   ) {
     Box(modifier = Modifier.fillMaxWidth()) {
       if (isSelected) {
@@ -156,7 +184,7 @@ fun FolderCard(
             modifier = Modifier
               .width(thumbWidthDp)
               .height(thumbHeightDp)
-              .clip(RoundedCornerShape(12.dp))
+              .clip(AppShapeScale.medium)
               .background(MaterialTheme.colorScheme.surfaceContainerHigh)
               .combinedClickable(
                 onClick = onThumbClick,
@@ -186,7 +214,7 @@ fun FolderCard(
                   Modifier
                     .align(Alignment.TopEnd)
                     .padding(6.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(AppShapeScale.extraSmall)
                     .background(Color(0xFFD32F2F))
                     .padding(horizontal = 6.dp, vertical = 2.dp),
               ) {
@@ -214,7 +242,7 @@ fun FolderCard(
                 modifier = Modifier
                   .align(Alignment.BottomEnd)
                   .padding(6.dp)
-                  .clip(RoundedCornerShape(4.dp))
+                  .clip(AppShapeScale.extraSmall)
                   .background(Color.Black.copy(alpha = 0.65f))
                   .padding(horizontal = 6.dp, vertical = 2.dp),
               ) {
@@ -258,7 +286,7 @@ fun FolderCard(
             modifier =
               Modifier
                 .size(64.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(AppShapeScale.medium)
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .combinedClickable(
                   onClick = onThumbClick,
@@ -289,7 +317,7 @@ fun FolderCard(
                   Modifier
                     .align(Alignment.TopEnd)
                     .padding(4.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(AppShapeScale.extraSmall)
                     .background(Color(0xFFD32F2F)) // Warning red color
                     .padding(horizontal = 6.dp, vertical = 2.dp),
               ) {
@@ -355,7 +383,7 @@ fun FolderCard(
                     Modifier
                       .background(
                         MaterialTheme.colorScheme.surfaceContainerHigh,
-                        RoundedCornerShape(8.dp),
+                        AppShapeScale.small,
                       )
                       .padding(horizontal = 8.dp, vertical = 4.dp),
                   color = MaterialTheme.colorScheme.onSurface,
@@ -371,7 +399,7 @@ fun FolderCard(
                     Modifier
                       .background(
                         MaterialTheme.colorScheme.surfaceContainerHigh,
-                        RoundedCornerShape(8.dp),
+                        AppShapeScale.small,
                       )
                       .padding(horizontal = 8.dp, vertical = 4.dp),
                   color = MaterialTheme.colorScheme.onSurface,
@@ -387,7 +415,7 @@ fun FolderCard(
                     Modifier
                       .background(
                         MaterialTheme.colorScheme.surfaceContainerHigh,
-                        RoundedCornerShape(8.dp),
+                        AppShapeScale.small,
                       )
                       .padding(horizontal = 8.dp, vertical = 4.dp),
                   color = MaterialTheme.colorScheme.onSurface,
@@ -403,7 +431,7 @@ fun FolderCard(
                     Modifier
                       .background(
                         MaterialTheme.colorScheme.surfaceContainerHigh,
-                        RoundedCornerShape(8.dp),
+                        AppShapeScale.small,
                       )
                       .padding(horizontal = 8.dp, vertical = 4.dp),
                   color = MaterialTheme.colorScheme.onSurface,

@@ -2,10 +2,10 @@ package app.gyrolet.mpvrx.ui.player.controls.components
 
 import android.graphics.Paint as AndroidPaint
 import android.graphics.Typeface
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.updateTransition
+import app.gyrolet.mpvrx.ui.theme.AppMotion
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,28 +38,28 @@ fun AnimatedPlayPauseIcon(
 ) {
   val transition = updateTransition(targetState = isPlaying, label = "play_pause_icon")
   val playAlpha = transition.animateFloat(
-    transitionSpec = { tween(durationMillis = 260, easing = FastOutSlowInEasing) },
+    transitionSpec = { spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness) },
     label = "play_alpha",
   ) { playing -> if (playing) 0f else 1f }
   val playScale = transition.animateFloat(
-    transitionSpec = { tween(durationMillis = 260, easing = FastOutSlowInEasing) },
+    transitionSpec = { spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness) },
     label = "play_scale",
   ) { playing -> if (playing) 0.82f else 1f }
   val playRotation = transition.animateFloat(
-    transitionSpec = { tween(durationMillis = 260, easing = FastOutSlowInEasing) },
+    transitionSpec = { spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness) },
     label = "play_rotation",
   ) { playing -> if (playing) -12f else 0f }
 
   val pauseAlpha = transition.animateFloat(
-    transitionSpec = { tween(durationMillis = 260, easing = FastOutSlowInEasing) },
+    transitionSpec = { spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness) },
     label = "pause_alpha",
   ) { playing -> if (playing) 1f else 0f }
   val pauseScale = transition.animateFloat(
-    transitionSpec = { tween(durationMillis = 260, easing = FastOutSlowInEasing) },
+    transitionSpec = { spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness) },
     label = "pause_scale",
   ) { playing -> if (playing) 1f else 0.82f }
   val barSpread = transition.animateFloat(
-    transitionSpec = { tween(durationMillis = 260, easing = FastOutSlowInEasing) },
+    transitionSpec = { spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness) },
     label = "pause_spread",
   ) { playing -> if (playing) 1f else 0f }
 

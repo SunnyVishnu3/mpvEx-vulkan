@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import androidx.compose.material3.Surface
 import app.gyrolet.mpvrx.ui.player.controls.panelCardsColors
 import androidx.compose.runtime.Composable
@@ -107,7 +108,7 @@ fun DraggablePanel(
                              .height(4.dp)
                              .background(
                                  color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                 shape = RoundedCornerShape(2.dp)
+                                 shape = AppShapeScale.extraSmall
                              )
                      )
                  }

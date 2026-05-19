@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -59,6 +58,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.BuildConfig
 import app.gyrolet.mpvrx.R
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 
 @SuppressLint("UseKtx")
 @Composable
@@ -108,10 +108,10 @@ fun PermissionDeniedState(
         Surface(
           modifier =
             Modifier
-              .size(152.dp) // Increased size to compensate for padding (120dp + 32dp padding)
-              .padding(16.dp) // Added padding around the icon to prevent cutoff
+              .size(152.dp)
+              .padding(16.dp)
               .scale(scale),
-          shape = RoundedCornerShape(32.dp),
+          shape = AppShapeScale.extraLargeIncreased,
           color = MaterialTheme.colorScheme.errorContainer,
           tonalElevation = 3.dp,
         ) {
@@ -146,7 +146,7 @@ fun PermissionDeniedState(
             CardDefaults.cardColors(
               containerColor = MaterialTheme.colorScheme.surfaceContainer,
             ),
-          shape = RoundedCornerShape(20.dp),
+          shape = AppShapeScale.largeIncreased,
         ) {
           Column(
             modifier = Modifier.padding(20.dp),
@@ -199,7 +199,7 @@ fun PermissionDeniedState(
             Modifier
               .fillMaxWidth()
               .height(56.dp),
-          shape = RoundedCornerShape(16.dp),
+          shape = AppShapeScale.large,
         ) {
           Text(
             text = "ALLOW ACCESS",
@@ -365,12 +365,12 @@ fun PermissionDeniedState(
       confirmButton = {
         FilledTonalButton(
           onClick = { showExplanationDialog = false },
-          shape = RoundedCornerShape(12.dp),
+          shape = AppShapeScale.medium,
         ) {
           Text(stringResource(R.string.got_it))
         }
       },
-      shape = RoundedCornerShape(24.dp),
+      shape = AppShapeScale.extraLarge,
     )
   }
 }

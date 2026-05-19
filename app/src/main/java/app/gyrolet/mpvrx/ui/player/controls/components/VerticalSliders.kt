@@ -11,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -54,7 +55,7 @@ fun VerticalSlider(
       modifier
         .height(130.dp)
         .width(36.dp)
-        .clip(RoundedCornerShape(18.dp))
+        .clip(AppShapeScale.largeIncreased)
         .background(Color.Black.copy(alpha = 0.3f)),
     contentAlignment = Alignment.BottomCenter,
   ) {
@@ -67,7 +68,7 @@ fun VerticalSlider(
       Modifier
         .fillMaxWidth()
         .fillMaxHeight(targetHeight.coerceAtLeast(0.05f)) // Keep a tiny amount visible
-        .clip(RoundedCornerShape(18.dp))
+        .clip(AppShapeScale.largeIncreased)
         .background(Brush.verticalGradient(listOf(colorStart, colorEnd))),
     )
     if (overflowRange != null && overflowValue != null) {
@@ -79,7 +80,7 @@ fun VerticalSlider(
         Modifier
           .fillMaxWidth()
           .fillMaxHeight(overflowHeight)
-          .clip(RoundedCornerShape(18.dp))
+          .clip(AppShapeScale.largeIncreased)
           .background(MaterialTheme.colorScheme.errorContainer),
       )
     }
@@ -102,7 +103,7 @@ fun VerticalSlider(
       modifier
         .height(130.dp)
         .width(36.dp)
-        .clip(RoundedCornerShape(18.dp))
+        .clip(AppShapeScale.largeIncreased)
         .background(Color.Black.copy(alpha = 0.3f)),
     contentAlignment = Alignment.BottomCenter,
   ) {
@@ -115,7 +116,7 @@ fun VerticalSlider(
       Modifier
         .fillMaxWidth()
         .fillMaxHeight(targetHeight.coerceAtLeast(0.05f))
-        .clip(RoundedCornerShape(18.dp))
+        .clip(AppShapeScale.largeIncreased)
         .background(Brush.verticalGradient(listOf(colorStart, colorEnd))),
     )
     if (overflowRange != null && overflowValue != null) {
@@ -127,7 +128,7 @@ fun VerticalSlider(
         Modifier
           .fillMaxWidth()
           .fillMaxHeight(overflowHeight)
-          .clip(RoundedCornerShape(18.dp))
+          .clip(AppShapeScale.largeIncreased)
           .background(MaterialTheme.colorScheme.errorContainer),
       )
     }
@@ -143,7 +144,7 @@ fun BrightnessSlider(
   val coercedBrightness = brightness.coerceIn(range)
   Surface(
     modifier = modifier,
-    shape = RoundedCornerShape(24.dp),
+    shape = AppShapeScale.extraLarge,
     color = Color.Black.copy(alpha = 0.5f),
     contentColor = Color.White,
   ) {
@@ -192,7 +193,7 @@ fun VolumeSlider(
   val percentage = volumePercentage.coerceIn(0, 100)
   Surface(
     modifier = modifier,
-    shape = RoundedCornerShape(24.dp),
+    shape = AppShapeScale.extraLarge,
     color = Color.Black.copy(alpha = 0.5f),
     contentColor = Color.White,
   ) {

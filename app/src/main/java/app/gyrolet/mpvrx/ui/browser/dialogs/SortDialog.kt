@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.IconButton
@@ -211,7 +212,7 @@ private fun SortTypeSelector(
     ) {
       types.forEachIndexed { index, type ->
         val selected = sortType == type
-        val shape = RoundedCornerShape(16.dp)
+        val shape = AppShapeScale.large
 
         Column(
           horizontalAlignment = Alignment.CenterHorizontally,
@@ -336,7 +337,7 @@ private fun ViewModeSelectorComponent(
     ) {
       options.forEachIndexed { index, label ->
         val selected = index == selectedIndex
-        val shape = RoundedCornerShape(12.dp)
+        val shape = AppShapeScale.medium
 
         Column(
           horizontalAlignment = Alignment.CenterHorizontally,

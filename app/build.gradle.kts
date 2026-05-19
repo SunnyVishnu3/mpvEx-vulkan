@@ -17,8 +17,8 @@ android {
     applicationId = "app.gyrolet.mpvrx"
     minSdk = 26
     targetSdk = 36
-    versionCode = 136
-    versionName = "1.3.6"
+    versionCode = 137
+    versionName = "1.3.7"
 
     vectorDrawables {
       useSupportLibrary = true
@@ -140,7 +140,8 @@ kotlin {
       "-Xcontext-parameters",
       "-Xannotation-default-target=param-property",
       "-opt-in=com.google.accompanist.permissions.ExperimentalPermissionsApi",
-      "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+      "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+      "-opt-in=androidx.compose.material3.ExperimentalMaterial3ExpressiveApi"
     )
     jvmTarget.set(JvmTarget.JVM_17)
   }

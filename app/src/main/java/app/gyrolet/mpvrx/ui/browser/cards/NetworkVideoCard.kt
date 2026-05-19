@@ -4,6 +4,7 @@ import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
 
 import android.graphics.Bitmap
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -33,6 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +46,8 @@ import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.domain.network.NetworkConnection
 import app.gyrolet.mpvrx.domain.network.NetworkFile
 import androidx.compose.foundation.combinedClickable
+import app.gyrolet.mpvrx.ui.theme.AppMotion
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
@@ -102,10 +106,31 @@ fun NetworkVideoCard(
     }
   }
 
+  var isPressed by remember { mutableStateOf(false) }
+  val targetScale = if (isPressed) 0.98f else 1.0f
+  val scale by animateFloatAsState(
+    targetValue = targetScale,
+    animationSpec = AppMotion.Spatial.Expressive,
+    label = "NetworkVideoCardScale",
+  )
+
   Card(
     modifier =
       modifier
         .fillMaxWidth()
+        .graphicsLayer(scaleX = scale, scaleY = scale)
+        .pointerInput(Unit) {
+          awaitPointerEventScope {
+            while (true) {
+              val event = awaitPointerEvent()
+              if (event.changes.any { it.pressed }) {
+                isPressed = true
+              } else {
+                isPressed = false
+              }
+            }
+          }
+        }
         .combinedClickable(
           onClick = onClick,
           onLongClick = onLongClick,
@@ -131,7 +156,7 @@ fun NetworkVideoCard(
         modifier =
           Modifier
             .size(thumbSizeDp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShapeScale.medium)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .combinedClickable(
               onClick = onClick,
@@ -179,7 +204,7 @@ fun NetworkVideoCard(
                 Modifier
                   .background(
                     MaterialTheme.colorScheme.surfaceContainerHigh,
-                    RoundedCornerShape(8.dp),
+                    AppShapeScale.small,
                   )
                   .padding(horizontal = 8.dp, vertical = 4.dp),
               color = MaterialTheme.colorScheme.onSurface,
@@ -193,7 +218,7 @@ fun NetworkVideoCard(
                 Modifier
                   .background(
                     MaterialTheme.colorScheme.surfaceContainerHigh,
-                    RoundedCornerShape(8.dp),
+                    AppShapeScale.small,
                   )
                   .padding(horizontal = 8.dp, vertical = 4.dp),
               color = MaterialTheme.colorScheme.onSurface,

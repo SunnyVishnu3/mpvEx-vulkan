@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -73,7 +74,7 @@ fun SpeedControlSlider(
   val onSurfaceColor = MaterialTheme.colorScheme.onSurface
   // Use a Surface with less rounded corners instead of CircleShape
   Surface(
-    shape = RoundedCornerShape(12.dp),
+    shape = AppShapeScale.medium,
     color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
     contentColor = MaterialTheme.colorScheme.onSurface,
     tonalElevation = 0.dp,
@@ -202,11 +203,11 @@ fun CompactSpeedIndicator(
     modifier = modifier
       .background(
         color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
-        shape = RoundedCornerShape(100.dp)
+        shape = AppShapeScale.full
       )
       .border(
         BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-        shape = RoundedCornerShape(100.dp)
+        shape = AppShapeScale.full
       )
       .padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small)
   ) {

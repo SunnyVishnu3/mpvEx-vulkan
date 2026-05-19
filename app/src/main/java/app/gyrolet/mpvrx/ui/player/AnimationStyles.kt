@@ -6,7 +6,6 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -31,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import app.gyrolet.mpvrx.ui.theme.AppMotion
 import kotlinx.coroutines.delay
 
 /** Which style to use when player controls appear/disappear. */
@@ -88,26 +88,25 @@ fun buildControlsEnterH(
   style == ControlsAnimationStyle.None -> EnterTransition.None
 
   style == ControlsAnimationStyle.Minimal ->
-    fadeIn(tween(50))
+    fadeIn(spring(stiffness = AppMotion.Spatial.Snappy.stiffness))
 
   style == ControlsAnimationStyle.Cinematic ->
-    scaleIn(tween(enterMs), initialScale = 0.94f) + fadeIn(tween(enterMs))
+    scaleIn(spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness), initialScale = 0.94f) + fadeIn(spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness))
 
   style == ControlsAnimationStyle.SlideUp ->
     slideInVertically(spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = 420f)) { it } +
-      fadeIn(tween(100))
+      fadeIn(spring(stiffness = AppMotion.Spatial.Snappy.stiffness))
 
   style == ControlsAnimationStyle.Elastic ->
     slideInHorizontally(
       spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = 420f),
       offsetX,
-    ) + fadeIn(tween(80))
+    ) + fadeIn(spring(stiffness = AppMotion.Spatial.Snappy.stiffness))
 
-  // Default style — respect the existing reduceMotion flag
   !reduceMotion ->
-    slideInHorizontally(tween(enterMs), offsetX) + fadeIn(tween(enterMs))
+    slideInHorizontally(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness), offsetX) + fadeIn(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness))
 
-  else -> fadeIn(tween(enterMs))
+  else -> fadeIn(spring(stiffness = AppMotion.Spatial.Standard.stiffness))
 }
 
 fun buildControlsExitH(
@@ -119,21 +118,21 @@ fun buildControlsExitH(
   style == ControlsAnimationStyle.None -> ExitTransition.None
 
   style == ControlsAnimationStyle.Minimal ->
-    fadeOut(tween(50))
+    fadeOut(spring(stiffness = AppMotion.Spatial.Snappy.stiffness))
 
   style == ControlsAnimationStyle.Cinematic ->
-    scaleOut(tween(exitMs), targetScale = 0.94f) + fadeOut(tween(exitMs))
+    scaleOut(spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness), targetScale = 0.94f) + fadeOut(spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness))
 
   style == ControlsAnimationStyle.SlideUp ->
-    slideOutVertically(tween(exitMs)) { -it } + fadeOut(tween(exitMs))
+    slideOutVertically(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness)) { -it } + fadeOut(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness))
 
   style == ControlsAnimationStyle.Elastic ->
-    slideOutHorizontally(tween(exitMs), offsetX) + fadeOut(tween((exitMs * 0.8f).toInt()))
+    slideOutHorizontally(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness), offsetX) + fadeOut(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness))
 
   !reduceMotion ->
-    slideOutHorizontally(tween(exitMs), offsetX) + fadeOut(tween(exitMs))
+    slideOutHorizontally(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness), offsetX) + fadeOut(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness))
 
-  else -> fadeOut(tween(exitMs))
+  else -> fadeOut(spring(stiffness = AppMotion.Spatial.Standard.stiffness))
 }
 
 /**
@@ -150,26 +149,26 @@ fun buildControlsEnterV(
   style == ControlsAnimationStyle.None -> EnterTransition.None
 
   style == ControlsAnimationStyle.Minimal ->
-    fadeIn(tween(50))
+    fadeIn(spring(stiffness = AppMotion.Spatial.Snappy.stiffness))
 
   style == ControlsAnimationStyle.Cinematic ->
-    scaleIn(tween(enterMs), initialScale = 0.94f) + fadeIn(tween(enterMs))
+    scaleIn(spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness), initialScale = 0.94f) + fadeIn(spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness))
 
   style == ControlsAnimationStyle.SlideUp ->
     slideInVertically(
       spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = 420f),
-    ) { it } + fadeIn(tween(80))
+    ) { it } + fadeIn(spring(stiffness = AppMotion.Spatial.Snappy.stiffness))
 
   style == ControlsAnimationStyle.Elastic ->
     slideInVertically(
       spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = 420f),
       offsetY,
-    ) + fadeIn(tween(80))
+    ) + fadeIn(spring(stiffness = AppMotion.Spatial.Snappy.stiffness))
 
   !reduceMotion ->
-    slideInVertically(tween(enterMs), offsetY) + fadeIn(tween(enterMs))
+    slideInVertically(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness), offsetY) + fadeIn(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness))
 
-  else -> fadeIn(tween(enterMs))
+  else -> fadeIn(spring(stiffness = AppMotion.Spatial.Standard.stiffness))
 }
 
 fun buildControlsExitV(
@@ -181,21 +180,21 @@ fun buildControlsExitV(
   style == ControlsAnimationStyle.None -> ExitTransition.None
 
   style == ControlsAnimationStyle.Minimal ->
-    fadeOut(tween(50))
+    fadeOut(spring(stiffness = AppMotion.Spatial.Snappy.stiffness))
 
   style == ControlsAnimationStyle.Cinematic ->
-    scaleOut(tween(exitMs), targetScale = 0.94f) + fadeOut(tween(exitMs))
+    scaleOut(spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness), targetScale = 0.94f) + fadeOut(spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness))
 
   style == ControlsAnimationStyle.SlideUp ->
-    slideOutVertically(tween(exitMs)) { -it } + fadeOut(tween(exitMs))
+    slideOutVertically(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness)) { -it } + fadeOut(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness))
 
   style == ControlsAnimationStyle.Elastic ->
-    slideOutVertically(tween(exitMs), offsetY) + fadeOut(tween((exitMs * 0.8f).toInt()))
+    slideOutVertically(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness), offsetY) + fadeOut(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness))
 
   !reduceMotion ->
-    slideOutVertically(tween(exitMs), offsetY) + fadeOut(tween(exitMs))
+    slideOutVertically(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness), offsetY) + fadeOut(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness))
 
-  else -> fadeOut(tween(exitMs))
+  else -> fadeOut(spring(stiffness = AppMotion.Spatial.Standard.stiffness))
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -237,7 +236,7 @@ fun VideoOpenAnimationOverlay(
         AnimatedVisibility(
           visible = overlayVisible,
           enter = EnterTransition.None,
-          exit = fadeOut(tween(durationMs)),
+          exit = fadeOut(spring(dampingRatio = AppMotion.Effect.Alpha.dampingRatio, stiffness = AppMotion.Effect.Alpha.stiffness)),
         ) {
           Box(
             Modifier
@@ -248,14 +247,13 @@ fun VideoOpenAnimationOverlay(
       }
 
       VideoOpenAnimation.ZoomBurst -> {
-        // Black mask that scales up + fades out so the video appears to "burst" in from behind.
         AnimatedVisibility(
           visible = overlayVisible,
           enter = EnterTransition.None,
           exit = scaleOut(
-            tween(durationMs),
+            spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness),
             targetScale = 1.18f,
-          ) + fadeOut(tween(durationMs)),
+          ) + fadeOut(spring(dampingRatio = AppMotion.Effect.Alpha.dampingRatio, stiffness = AppMotion.Effect.Alpha.stiffness)),
         ) {
           Box(
             Modifier
@@ -271,7 +269,7 @@ fun VideoOpenAnimationOverlay(
           enter = EnterTransition.None,
           exit = slideOutVertically(
             spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 200f),
-          ) { -it } + fadeOut(tween(durationMs)),
+          ) { -it } + fadeOut(spring(dampingRatio = AppMotion.Effect.Alpha.dampingRatio, stiffness = AppMotion.Effect.Alpha.stiffness)),
         ) {
           Box(
             Modifier

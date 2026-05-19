@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -58,7 +59,7 @@ fun BrowserBottomBar(
       modifier = Modifier
         .windowInsetsPadding(WindowInsets.systemBars)
         .padding(horizontal = 20.dp, vertical = 8.dp),
-      shape = RoundedCornerShape(32.dp),
+      shape = AppShapeScale.extraLargeIncreased,
       color = MaterialTheme.colorScheme.surfaceContainerHigh,
       tonalElevation = 3.dp,
       shadowElevation = 8.dp

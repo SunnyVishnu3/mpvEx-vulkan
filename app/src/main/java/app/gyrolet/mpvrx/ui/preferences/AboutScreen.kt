@@ -383,46 +383,6 @@ object AboutScreen : Screen {
                         )
                     }
                 }
-                Spacer(Modifier.height(8.dp))
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = cs.surfaceVariant.copy(alpha = 0.5f),
-                    border = BorderStroke(1.dp, cs.outlineVariant.copy(alpha = 0.5f)),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                clipboardManager.setText(AnnotatedString("panditritesh@hdfc"))
-                                Toast.makeText(context, "UPI ID copied!", Toast.LENGTH_SHORT).show()
-                            }
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Secondary UPI ID",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = cs.outline,
-                            )
-                            Spacer(Modifier.height(2.dp))
-                            Text(
-                                text = "panditritesh@hdfc",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Medium,
-                                color = cs.onSurface,
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "Copy UPI ID",
-                            modifier = Modifier.size(20.dp),
-                            tint = cs.primary,
-                        )
-                    }
-                }
                 Spacer(Modifier.height(12.dp))
                 Button(
                     onClick = {

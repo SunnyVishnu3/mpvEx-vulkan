@@ -9,10 +9,11 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import app.gyrolet.mpvrx.utils.media.OpenDocumentTreeContract
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import app.gyrolet.mpvrx.ui.theme.AppMotion
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -371,11 +372,11 @@ data class VideoListScreen(
         AnimatedVisibility(
           visible = showFloatingBottomBar,
           enter = slideInVertically(
-            animationSpec = tween(durationMillis = animationDuration),
+            animationSpec = spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness),
             initialOffsetY = { fullHeight -> fullHeight }
           ),
           exit = slideOutVertically(
-            animationSpec = tween(durationMillis = animationDuration),
+            animationSpec = spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness),
             targetOffsetY = { fullHeight -> fullHeight }
           ),
           modifier = Modifier.align(Alignment.BottomCenter)
@@ -767,7 +768,10 @@ private fun VideoListContent(
 
       val scrollbarAlpha by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (isAtTop || !hasEnoughItems) 0f else 1f,
-        animationSpec = androidx.compose.animation.core.tween(durationMillis = 200),
+        animationSpec = androidx.compose.animation.core.spring(
+          dampingRatio = app.gyrolet.mpvrx.ui.theme.AppMotion.Effect.Alpha.dampingRatio,
+          stiffness = app.gyrolet.mpvrx.ui.theme.AppMotion.Effect.Alpha.stiffness,
+        ),
         label = "scrollbarAlpha",
       )
 

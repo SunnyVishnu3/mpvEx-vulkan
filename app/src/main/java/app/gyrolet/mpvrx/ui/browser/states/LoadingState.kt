@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.ui.icons.AppIcon
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 
 @Composable
 fun LoadingState(
@@ -69,7 +69,7 @@ fun LoadingState(
           Modifier
             .size(96.dp)
             .alpha(alpha),
-        shape = RoundedCornerShape(28.dp),
+        shape = AppShapeScale.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
         tonalElevation = 0.dp,
       ) {

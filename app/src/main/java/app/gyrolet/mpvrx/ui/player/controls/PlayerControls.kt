@@ -12,7 +12,6 @@ import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -21,6 +20,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import app.gyrolet.mpvrx.ui.theme.AppMotion
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.basicMarquee
@@ -159,15 +159,15 @@ import kotlin.math.roundToInt
 val LocalPlayerButtonsClickEvent = staticCompositionLocalOf { {} }
 
 fun <T> playerControlsExitAnimationSpec(): FiniteAnimationSpec<T> =
-  tween(
-    durationMillis = 300,
-    easing = FastOutSlowInEasing,
+  spring(
+    dampingRatio = AppMotion.Spatial.Standard.dampingRatio,
+    stiffness = AppMotion.Spatial.Standard.stiffness,
   )
 
 fun <T> playerControlsEnterAnimationSpec(): FiniteAnimationSpec<T> =
-  tween(
-    durationMillis = 100,
-    easing = LinearOutSlowInEasing,
+  spring(
+    dampingRatio = AppMotion.Spatial.Expressive.dampingRatio,
+    stiffness = AppMotion.Spatial.Expressive.stiffness,
   )
 
 @OptIn(

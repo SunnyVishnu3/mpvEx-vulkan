@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -96,7 +97,7 @@ private fun HdrPipelineUnavailableStatus(
 
   Surface(
     modifier = modifier.fillMaxWidth(),
-    shape = RoundedCornerShape(18.dp),
+    shape = AppShapeScale.largeIncreased,
     color = containerColor,
     contentColor = contentColor,
     border = BorderStroke(1.dp, contentColor.copy(alpha = 0.16f)),
@@ -164,9 +165,9 @@ private fun HdrModeOption(
   Surface(
     modifier = modifier
       .fillMaxWidth()
-      .clip(RoundedCornerShape(18.dp))
+      .clip(AppShapeScale.largeIncreased)
       .clickable(enabled = enabled, onClick = onClick),
-    shape = RoundedCornerShape(18.dp),
+    shape = AppShapeScale.largeIncreased,
     color = containerColor,
     contentColor = contentColor,
     border = BorderStroke(1.dp, borderColor),

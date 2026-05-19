@@ -1,6 +1,8 @@
 package app.gyrolet.mpvrx.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -78,4 +80,47 @@ val AppTypography = SystemTypography.run {
     labelSmall = labelSmall.copy(fontFamily = RobotoFlex),
   )
 }
+
+// ═══════════════════════════════════════════════════════════
+// Material 3 Expressive Typography Extensions
+// Bumps font weights one step heavier for expressive emphasis
+// ═══════════════════════════════════════════════════════════
+
+data class EmphasizedTypography(
+  val displayLarge: TextStyle,
+  val displayMedium: TextStyle,
+  val displaySmall: TextStyle,
+  val headlineLarge: TextStyle,
+  val headlineMedium: TextStyle,
+  val headlineSmall: TextStyle,
+  val titleLarge: TextStyle,
+  val titleMedium: TextStyle,
+  val titleSmall: TextStyle,
+  val bodyLarge: TextStyle,
+  val bodyMedium: TextStyle,
+  val bodySmall: TextStyle,
+  val labelLarge: TextStyle,
+  val labelMedium: TextStyle,
+  val labelSmall: TextStyle,
+)
+
+val AppEmphasizedTypography = EmphasizedTypography(
+  displayLarge = AppTypography.displayLarge.copy(fontWeight = FontWeight.Black),
+  displayMedium = AppTypography.displayMedium.copy(fontWeight = FontWeight.Black),
+  displaySmall = AppTypography.displaySmall.copy(fontWeight = FontWeight.ExtraBold),
+  headlineLarge = AppTypography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold),
+  headlineMedium = AppTypography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
+  headlineSmall = AppTypography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+  titleLarge = AppTypography.titleLarge.copy(fontWeight = FontWeight.Bold),
+  titleMedium = AppTypography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+  titleSmall = AppTypography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+  bodyLarge = AppTypography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+  bodyMedium = AppTypography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+  bodySmall = AppTypography.bodySmall.copy(fontWeight = FontWeight.Medium),
+  labelLarge = AppTypography.labelLarge.copy(fontWeight = FontWeight.Bold),
+  labelMedium = AppTypography.labelMedium.copy(fontWeight = FontWeight.Bold),
+  labelSmall = AppTypography.labelSmall.copy(fontWeight = FontWeight.Bold),
+)
+
+val LocalEmphasizedTypography = staticCompositionLocalOf { AppEmphasizedTypography }
 

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -56,9 +57,9 @@ fun CurrentChapter(
       modifier
         .height(45.dp)
         .widthIn(max = 220.dp)
-        .clip(RoundedCornerShape(50))
+        .clip(AppShapeScale.full)
         .clickable(onClick = onClick),
-    shape = RoundedCornerShape(50),
+    shape = AppShapeScale.full,
     color =
         MaterialTheme.colorScheme.surfaceContainer.copy(
           alpha = 0.55f,

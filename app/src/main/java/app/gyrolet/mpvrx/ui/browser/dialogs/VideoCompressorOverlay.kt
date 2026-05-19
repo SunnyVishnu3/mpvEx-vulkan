@@ -49,6 +49,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
@@ -516,7 +517,7 @@ private fun CompressorDestinationCard(
   ElevatedCard(
     modifier = Modifier.fillMaxWidth(),
     colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-    shape = RoundedCornerShape(24.dp),
+    shape = AppShapeScale.extraLarge,
   ) {
     Column(
       modifier = Modifier.padding(20.dp),
@@ -592,7 +593,7 @@ private fun CompressorBottomBar(
           Modifier
             .fillMaxWidth()
             .height(56.dp),
-        shape = RoundedCornerShape(18.dp),
+        shape = AppShapeScale.largeIncreased,
       ) {
         Text(if (isBatch) "Start Batch Compression" else "Start Compression")
       }
@@ -605,7 +606,7 @@ private fun CompressorInfoCard(state: VideoCompressorUiState) {
   ElevatedCard(
     modifier = Modifier.fillMaxWidth(),
     colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-    shape = RoundedCornerShape(24.dp),
+    shape = AppShapeScale.extraLarge,
   ) {
     Row(
       modifier = Modifier.padding(20.dp),
@@ -748,7 +749,7 @@ private fun CompressorPresetsTab(
                 MaterialTheme.colorScheme.surface
               },
           ),
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShapeScale.largeIncreased,
       ) {
         Row(
           modifier = Modifier.padding(16.dp),
@@ -1032,7 +1033,7 @@ private fun CompressorProgressSurface(
           Modifier
             .fillMaxWidth()
             .aspectRatio(16f / 9f)
-            .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(24.dp)),
+            .background(MaterialTheme.colorScheme.surfaceContainer, AppShapeScale.extraLarge),
       ) {
         thumbnail?.let {
           Image(
@@ -1047,7 +1048,7 @@ private fun CompressorProgressSurface(
       ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        shape = RoundedCornerShape(24.dp),
+        shape = AppShapeScale.extraLarge,
       ) {
         Column(
           modifier = Modifier.padding(20.dp),
@@ -1111,7 +1112,7 @@ private fun CompressorProgressSurface(
             containerColor = MaterialTheme.colorScheme.errorContainer,
             contentColor = MaterialTheme.colorScheme.onErrorContainer,
           ),
-        shape = RoundedCornerShape(18.dp),
+        shape = AppShapeScale.largeIncreased,
       ) {
         Text("Cancel")
       }
@@ -1164,7 +1165,7 @@ private fun CompressorResultSurface(
         Surface(
           color = MaterialTheme.colorScheme.primaryContainer,
           contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-          shape = RoundedCornerShape(999.dp),
+          shape = AppShapeScale.full,
         ) {
           Icon(
             Icons.Default.Check,
@@ -1236,7 +1237,7 @@ private fun CompressorResultSurface(
             Button(
               onClick = onShare,
               modifier = Modifier.weight(1f),
-              shape = RoundedCornerShape(18.dp),
+              shape = AppShapeScale.largeIncreased,
             ) {
               Icon(Icons.Default.Share, contentDescription = null)
               Spacer(modifier = Modifier.width(8.dp))
@@ -1245,7 +1246,7 @@ private fun CompressorResultSurface(
             FilledTonalButton(
               onClick = onSave,
               modifier = Modifier.weight(1f),
-              shape = RoundedCornerShape(18.dp),
+              shape = AppShapeScale.largeIncreased,
             ) {
               Text("Save copy")
             }
@@ -1293,7 +1294,7 @@ private fun CompressorIssueSurface(
       ElevatedCard(
         modifier = Modifier.fillMaxWidth().widthIn(max = 720.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        shape = RoundedCornerShape(24.dp),
+        shape = AppShapeScale.extraLarge,
       ) {
         Column(
           modifier = Modifier.padding(20.dp),

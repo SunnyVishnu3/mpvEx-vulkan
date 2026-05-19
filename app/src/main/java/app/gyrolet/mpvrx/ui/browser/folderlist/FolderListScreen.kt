@@ -655,7 +655,10 @@ private fun FolderListContent(
   val hasEnoughItems = folders.size > 20
   val scrollbarAlpha by androidx.compose.animation.core.animateFloatAsState(
     targetValue = if (isAtTop || !hasEnoughItems) 0f else 1f,
-    animationSpec = androidx.compose.animation.core.tween(durationMillis = 200),
+    animationSpec = androidx.compose.animation.core.spring(
+      dampingRatio = app.gyrolet.mpvrx.ui.theme.AppMotion.Effect.Alpha.dampingRatio,
+      stiffness = app.gyrolet.mpvrx.ui.theme.AppMotion.Effect.Alpha.stiffness,
+    ),
     label = "scrollbarAlpha",
   )
 

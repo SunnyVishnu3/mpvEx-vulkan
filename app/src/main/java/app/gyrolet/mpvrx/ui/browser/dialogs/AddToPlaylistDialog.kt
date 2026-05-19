@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -220,7 +221,7 @@ private fun PlaylistItemCard(
     modifier = Modifier
       .fillMaxWidth()
       .clickable(onClick = onClick),
-    shape = RoundedCornerShape(12.dp),
+    shape = AppShapeScale.medium,
     colors = CardDefaults.cardColors(
       containerColor = MaterialTheme.colorScheme.surfaceVariant,
     ),
@@ -263,7 +264,7 @@ private fun PlaylistItemCard(
 private fun EmptyPlaylistsMessage() {
   Card(
     modifier = Modifier.fillMaxWidth(),
-    shape = RoundedCornerShape(12.dp),
+    shape = AppShapeScale.medium,
     colors = CardDefaults.cardColors(
       containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
     ),

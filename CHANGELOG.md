@@ -2,36 +2,47 @@
 
 These notes are written in plain English and focus on what changed for real use.
 
+## 1.3.7
+
+- **Material 3 Expressive Design** — Complete visual overhaul using Material 3 Expressive design system for a more modern, fluid, and engaging experience
+- **Smoother Animations** — Replaced rigid linear transitions with spring-based physics animations throughout the app (navigation, controls, browser, dialogs)
+- **Expressive Shapes** — Introduced an 8-level shape scale system for consistent, polished corner radii across all cards, dialogs, and panels
+- **Enhanced Typography** — Added emphasized heading styles for better visual hierarchy and readability
+- **Improved Player Controls** — Smoother gesture responses, spring-based seekbar animations, and refined play/pause morph transitions
+- **Refined Browser Cards** — Added subtle press-scale feedback (0.98x) on all video, folder, and network cards for tactile interaction feel
+- **Polished Sheets & Dialogs** — Redesigned ambient sheet sections with expandable headers and expressive preset buttons
+- **Better State Screens** — Updated loading, empty, and permission states with consistent shape tokens and refined pulsing animations
+
 ## 1.3.6
 
-- **Six AI providers, one gorgeous settings page** — OpenAI, Anthropic, OpenRouter, and Together joined Groq and Gemini in a completely redesigned UI. Every provider gets its own API key, every single model is visible (free ones get a bold green badge), and the new searchable model picker sorts free models to the top. The offline model experience got a premium card-based overhaul too — tiers, speed/translation badges, device recommendations, DeepSeek-R1 support, reasoning toggles, and a benchmark button for downloaded models. One-tap download, delete, and switch between models without ever leaving the screen.
+- **Six AI providers, one gorgeous settings page**  OpenAI, Anthropic, OpenRouter, and Together joined Groq and Gemini in a completely redesigned UI. Every provider gets its own API key, every single model is visible (free ones get a bold green badge), and the new searchable model picker sorts free models to the top. The offline model experience got a premium card-based overhaul too  tiers, speed/translation badges, device recommendations, DeepSeek-R1 support, reasoning toggles, and a benchmark button for downloaded models. One-tap download, delete, and switch between models without ever leaving the screen.
 
-- **Subtitle translation** — SUPPORTS ASS Subs Translation tooooooooo..... , you can now configure your target languages once in settings. One language means one tap to translate. Two or more means a clean picker showing only the languages you chose. Translation progress appears right on the video screen (even with the sheet closed), partially translated subs survive restarts, and a red X lets you cancel mid-translation instantly. When using local models, the system automatically picks the best downloaded model for each language, keeps it warm between chunks, and never runs two local AI jobs at once.
+- **Subtitle translation**  SUPPORTS ASS Subs Translation tooooooooo..... , you can now configure your target languages once in settings. One language means one tap to translate. Two or more means a clean picker showing only the languages you chose. Translation progress appears right on the video screen (even with the sheet closed), partially translated subs survive restarts, and a red X lets you cancel mid-translation instantly. When using local models, the system automatically picks the best downloaded model for each language, keeps it warm between chunks, and never runs two local AI jobs at once.
 
-- **Generate subtitles from video audio** — **_(EXPERIMENTAL)_** This is work in progress might not work Don't baby Cry that this shit aint working ,i ain't getting paid enough to implement this whole heartedly , so what it does is -> one tap generates subtitles using the audio you're already playing. Media3 extraction feeds Groq, Gemini, or offline Whisper, and the resulting SRT/VTT saves automatically.
+- **Generate subtitles from video audio**  **_(EXPERIMENTAL)_** This is work in progress might not work Don't baby Cry that this shit aint working ,i ain't getting paid enough to implement this whole heartedly , so what it does is -> one tap generates subtitles using the audio you're already playing. Media3 extraction feeds Groq, Gemini, or offline Whisper, and the resulting SRT/VTT saves automatically.
 
-- **Smarter AI across the board** — reasoning tags are automatically stripped from final results, token limits prevent stalls in heavy tasks, and every AI feature (rename, formatting, translation) comes with customizable prompts that fall back gracefully to built-in instructions.
+- **Smarter AI across the board**  reasoning tags are automatically stripped from final results, token limits prevent stalls in heavy tasks, and every AI feature (rename, formatting, translation) comes with customizable prompts that fall back gracefully to built-in instructions.
 
-- **Real-time subtitle toggle** — new on/off switch in AI settings to control real-time subtitle generation from audio. When off, the indicator and generate button are hidden from the player.
+- **Real-time subtitle toggle**  new on/off switch in AI settings to control real-time subtitle generation from audio. When off, the indicator and generate button are hidden from the player.
 
-- **AI features respect the master switch** — turning off AI Integration now hides all AI indicators (translation, real-time subs) and buttons (generate, translate, format) from the player view. Renamed "AI Subtitle Search Formatting" to "AI Search" for clarity.
+- **AI features respect the master switch**  turning off AI Integration now hides all AI indicators (translation, real-time subs) and buttons (generate, translate, format) from the player view. Renamed "AI Subtitle Search Formatting" to "AI Search" for clarity.
 
-- **Settings export now stores app version** — exported XML files include the app version, so import dialogs show the correct version instead of "unknown".
+- **Settings export now stores app version**  exported XML files include the app version, so import dialogs show the correct version instead of "unknown".
 
-- **HEVC 10bit thumbnails** — added a software-decoder fallback using Android's MediaCodec API. When the system can't decode a video frame (e.g. HEVC 10bit on devices without hardware support), the app now tries Google's software decoder before giving up. This means more thumbnails will show up on devices with limited codec support.
+- **HEVC 10bit thumbnails**  added a software-decoder fallback using Android's MediaCodec API. When the system can't decode a video frame (e.g. HEVC 10bit on devices without hardware support), the app now tries Google's software decoder before giving up. This means more thumbnails will show up on devices with limited codec support.
 
-- **Fixed app icon on Android 16** — changed the adaptive icon background from transparent to opaque black so the icon doesn't disappear on launchers that don't handle transparency well.
+- **Fixed app icon on Android 16**  changed the adaptive icon background from transparent to opaque black so the icon doesn't disappear on launchers that don't handle transparency well.
 
-- **User mpv.conf now has highest priority** — during player startup, your mpv.conf settings are re-applied after all app defaults so they always take precedence. Whatever you put in mpv.conf will override everything else.
+- **User mpv.conf now has highest priority**  during player startup, your mpv.conf settings are re-applied after all app defaults so they always take precedence. Whatever you put in mpv.conf will override everything else.
 
 ## 1.3.5
 
-- **Removed Play Store and F-Droid build variants** — streamlined to a single `standard` flavor with full update support and all features enabled.
-- **Revamped README** — comprehensive feature documentation organized by category, UPI QR code and Buy Me a Coffee links in the Support section.
-- **SMB Network Thumbnail Generation** — fixed thumbnail generation for SMB shares through Codex AI (Beta).
-- **Bulk AI Rename** — rename multiple files at once using Gemini or Groq with concurrency limiting and edge case handling.
-- **AI Subtitle Translation** — translate subtitles using AI providers with custom prompts, progress indication, and user preference management.
-- **AI Subtitle Translation Enhancements** — in-house developed translation pipeline with fully customizable prompts and per-user preference overrides.
+- **Removed Play Store and F-Droid build variants**  streamlined to a single `standard` flavor with full update support and all features enabled.
+- **Revamped README**  comprehensive feature documentation organized by category, UPI QR code and Buy Me a Coffee links in the Support section.
+- **SMB Network Thumbnail Generation**  fixed thumbnail generation for SMB shares through Codex AI (Beta).
+- **Bulk AI Rename**  rename multiple files at once using Gemini or Groq with concurrency limiting and edge case handling.
+- **AI Subtitle Translation**  translate subtitles using AI providers with custom prompts, progress indication, and user preference management.
+- **AI Subtitle Translation Enhancements**  in-house developed translation pipeline with fully customizable prompts and per-user preference overrides.
 
 ## 1.3.4
 
@@ -66,11 +77,11 @@ These notes are written in plain English and focus on what changed for real use.
 
 ## 1.3.2
 
-### HDR — hdr-toys Pipeline
+### HDR hdr-toys Pipeline
 
 - Replaced the old 3-mode HDR system (Off / SDR with HDR / Normal HDR) with a proper shader-based pipeline powered by [hdr-toys](https://github.com/natural-harmonia-gropius/hdr-toys).
 - Four HDR modes are now available: **BT.2100 PQ** (HDR10), **BT.2100 HLG**, **BT.2020**, and **Linear HDR** (mpv-native, no shaders).
-- 77 GLSL shaders are bundled in the app and copied to the mpv config directory on first use — no manual setup required.
+- 77 GLSL shaders are bundled in the app and copied to the mpv config directory on first use  no manual setup required.
 - The HDR panel no longer shows an "Off" option. Off is the default and is toggled by the HDR button; the panel only presents the four active modes.
 - Selecting a mode while GPU Next + Vulkan is unavailable shows a clear error pill and falls back to Off safely.
 - Added `boostSdrToHdr` preference (used by the Linear HDR path).
@@ -78,16 +89,16 @@ These notes are written in plain English and focus on what changed for real use.
 
 ### Thermal & Battery Improvements
 
-- Added `ThermalMonitor` — samples `PowerManager.getThermalHeadroom()` (Android 11+) every 10 seconds during playback.
+- Added `ThermalMonitor`  samples `PowerManager.getThermalHeadroom()` (Android 11+) every 10 seconds during playback.
 - Ambient shader sample budget is automatically capped based on thermal headroom: 8 samples (severe), 12 (moderate), 18 (mild), uncapped (cool).
 - Anime4K is proactively downgraded to C/Fast when thermal headroom drops below 40%, before frame drops even start.
-- Ambient shader recompilation is now skipped when all parameters are identical to the last compiled version — reduces unnecessary GPU stutter on orientation changes and no-op callbacks.
+- Ambient shader recompilation is now skipped when all parameters are identical to the last compiled version  reduces unnecessary GPU stutter on orientation changes and no-op callbacks.
 - Removed redundant dual position polling: the event-driven `time-pos` observer and the polling loop were both updating the same StateFlow, causing double seek-bar recompositions on every MPV event.
 - Background playback position poll interval halved from 250 ms to 500 ms when controls are not visible, cutting idle JNI wake-ups by 50%.
 
-### Stats Page 6 — Fixes
+### Stats Page 6  Fixes
 
-- **GPU estimate bar fixed**: was using cumulative drop + delay totals that drifted to 100% after long sessions and added a fixed FPS-proportional baseline (120fps with zero drops showed 70% GPU load). Now uses per-second delta counts relative to the current frame rate — 0 drops = 0%, all frames dropped = 100%.
+- **GPU estimate bar fixed**: was using cumulative drop + delay totals that drifted to 100% after long sessions and added a fixed FPS-proportional baseline (120fps with zero drops showed 70% GPU load). Now uses per-second delta counts relative to the current frame rate  0 drops = 0%, all frames dropped = 100%.
 - **CPU label corrected**: relabelled from "CPU Usage" to "App CPU (this process)" to accurately reflect that `getElapsedCpuTime()` measures only MpvRx's own process, not the whole device.
 - **Frame drop text now shows per-second deltas** alongside the all-time totals, so you can tell current rendering pressure at a glance.
 - **Pause-aware poll backoff**: the stats loop backs off from 1 s to 2 s intervals when playback is paused, cutting pointless JNI calls when metrics are static.
@@ -95,15 +106,15 @@ These notes are written in plain English and focus on what changed for real use.
 ### Gesture & Action Overlay Toggles
 
 - Added a new **"Gesture & Action Overlays"** section in Player Settings with seven independent on/off switches:
-  - **Volume slider overlay** — vertical pill shown during volume swipe
-  - **Brightness slider overlay** — vertical pill shown during brightness swipe
-  - **Hold speed overlay** — speed badge and slider shown during long-press speed boost
-  - **Aspect ratio feedback** — pill shown when cycling aspect ratio
-  - **Zoom level feedback** — pill shown when pinching to zoom
-  - **Repeat & shuffle feedback** — pill shown when toggling repeat or shuffle
-  - **Action feedback pills** — brief text pills from custom buttons, ambient toggle, subtitle drag, and Lua/JS scripts
+  - **Volume slider overlay**  vertical pill shown during volume swipe
+  - **Brightness slider overlay**  vertical pill shown during brightness swipe
+  - **Hold speed overlay**  speed badge and slider shown during long-press speed boost
+  - **Aspect ratio feedback**  pill shown when cycling aspect ratio
+  - **Zoom level feedback**  pill shown when pinching to zoom
+  - **Repeat & shuffle feedback**  pill shown when toggling repeat or shuffle
+  - **Action feedback pills**  brief text pills from custom buttons, ambient toggle, subtitle drag, and Lua/JS scripts
 - All overlays default to **on**, so existing behaviour is unchanged until the user opts out.
-- Disabling an overlay suppresses only the visual pill — the underlying gesture action (volume change, speed change, etc.) still happens normally.
+- Disabling an overlay suppresses only the visual pill  the underlying gesture action (volume change, speed change, etc.) still happens normally.
 
 ## 1.3.1
 

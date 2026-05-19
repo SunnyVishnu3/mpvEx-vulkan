@@ -10,10 +10,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -21,6 +19,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import app.gyrolet.mpvrx.ui.theme.AppMotion
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -65,8 +64,6 @@ private fun screenNavTransition(
   style: NavigationAnimStyle,
   speed: Float = 1f,
 ): ContentTransform {
-  val dur = (250 * speed).toInt().coerceAtLeast(60)
-  val half = (dur / 2).coerceAtLeast(30)
   val dir = if (forward) 1 else -1
 
   return when (style) {
@@ -74,39 +71,39 @@ private fun screenNavTransition(
       EnterTransition.None togetherWith ExitTransition.None
 
     NavigationAnimStyle.Minimal ->
-      fadeIn(tween(dur)) togetherWith fadeOut(tween(half))
+      fadeIn(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness)) togetherWith fadeOut(spring(stiffness = AppMotion.Spatial.Standard.stiffness))
 
     NavigationAnimStyle.FlipFade ->
-      (scaleIn(tween(dur), initialScale = 0.94f) + fadeIn(tween(dur))) togetherWith
-        (scaleOut(tween(half), targetScale = 1.06f) + fadeOut(tween(half)))
+      (scaleIn(spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness), initialScale = 0.94f) + fadeIn(spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness))) togetherWith
+        (scaleOut(spring(stiffness = AppMotion.Spatial.Standard.stiffness), targetScale = 1.06f) + fadeOut(spring(stiffness = AppMotion.Spatial.Standard.stiffness)))
 
     NavigationAnimStyle.Depth ->
-      (slideInHorizontally(tween(dur, easing = FastOutSlowInEasing)) { it * dir } +
-        fadeIn(tween(dur))) togetherWith
-        (slideOutHorizontally(tween(half, easing = FastOutSlowInEasing)) { (-it * 0.25f * dir).toInt() } +
-          scaleOut(tween(half), targetScale = 0.92f) +
-          fadeOut(tween(half)))
+      (slideInHorizontally(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness)) { it * dir } +
+        fadeIn(spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness))) togetherWith
+        (slideOutHorizontally(spring(stiffness = AppMotion.Spatial.Standard.stiffness)) { (-it * 0.25f * dir).toInt() } +
+          scaleOut(spring(stiffness = AppMotion.Spatial.Standard.stiffness), targetScale = 0.92f) +
+          fadeOut(spring(stiffness = AppMotion.Spatial.Standard.stiffness)))
 
     NavigationAnimStyle.Elastic ->
       (slideInHorizontally(
         spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = 380f),
-      ) { it * dir } + fadeIn(tween(80))) togetherWith
-        (slideOutHorizontally(tween(half)) { (-it / 3 * dir) } + fadeOut(tween(half)))
+      ) { it * dir } + fadeIn(spring(stiffness = AppMotion.Spatial.Snappy.stiffness))) togetherWith
+        (slideOutHorizontally(spring(stiffness = AppMotion.Spatial.Standard.stiffness)) { (-it / 3 * dir) } + fadeOut(spring(stiffness = AppMotion.Spatial.Standard.stiffness)))
 
     NavigationAnimStyle.Default ->
       if (forward) {
         slideInHorizontally(
-          tween(dur, easing = FastOutSlowInEasing),
+          spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness),
         ) { it } togetherWith
           slideOutHorizontally(
-            tween(dur, easing = FastOutSlowInEasing),
+            spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness),
           ) { -it / 8 }
       } else {
         slideInHorizontally(
-          tween(dur, easing = FastOutSlowInEasing),
+          spring(dampingRatio = AppMotion.Spatial.Expressive.dampingRatio, stiffness = AppMotion.Spatial.Expressive.stiffness),
         ) { -it / 5 } togetherWith
           slideOutHorizontally(
-            tween(dur, easing = FastOutSlowInEasing),
+            spring(dampingRatio = AppMotion.Spatial.Standard.dampingRatio, stiffness = AppMotion.Spatial.Standard.stiffness),
           ) { it }
       }
   }
