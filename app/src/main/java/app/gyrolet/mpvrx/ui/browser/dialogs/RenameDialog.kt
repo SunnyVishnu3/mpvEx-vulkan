@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.preferences.AiPreferences
 import app.gyrolet.mpvrx.repository.ai.AiService
 import app.gyrolet.mpvrx.ui.icons.Icons
+import app.gyrolet.mpvrx.presentation.components.LiquidDialog
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -86,7 +86,7 @@ fun RenameDialog(
     }
   }
 
-  AlertDialog(
+  LiquidDialog(
     onDismissRequest = onDismiss,
     title = {
       Text(
@@ -201,7 +201,6 @@ fun RenameDialog(
       }
     },
     containerColor = MaterialTheme.colorScheme.surface,
-    tonalElevation = 6.dp,
     shape = MaterialTheme.shapes.extraLarge,
   )
 }

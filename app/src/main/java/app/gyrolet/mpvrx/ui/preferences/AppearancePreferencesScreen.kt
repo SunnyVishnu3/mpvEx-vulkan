@@ -37,6 +37,17 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.R
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.Color
+import app.gyrolet.mpvrx.ui.components.LiquidToggle
+import app.gyrolet.mpvrx.ui.preferences.components.AdaptiveSwitchPreference
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import app.gyrolet.mpvrx.domain.thumbnail.ThumbnailRepository
 import app.gyrolet.mpvrx.preferences.AppearancePreferences
 import app.gyrolet.mpvrx.preferences.BrowserPreferences
@@ -230,7 +241,7 @@ object AppearancePreferencesScreen : Screen {
 
                                     PreferenceDivider()
 
-                                    SwitchPreference(
+                                    AdaptiveSwitchPreference(
                                         value = amoledMode,
                                         onValueChange = { newValue ->
                                             preferences.amoledMode.set(newValue)
@@ -248,7 +259,7 @@ object AppearancePreferencesScreen : Screen {
                                     PreferenceDivider()
 
                                     val useSystemFont by preferences.useSystemFont.collectAsState()
-                                    SwitchPreference(
+                                    AdaptiveSwitchPreference(
                                         value = useSystemFont,
                                         onValueChange = preferences.useSystemFont::set,
                                         title = { Text(text = stringResource(id = R.string.pref_appearance_system_font_title)) },
@@ -271,7 +282,7 @@ object AppearancePreferencesScreen : Screen {
                     item {
                         PreferenceCard {
                             val unlimitedNameLines by preferences.unlimitedNameLines.collectAsState()
-                            SwitchPreference(
+                            AdaptiveSwitchPreference(
                                 value = unlimitedNameLines,
                                 onValueChange = { preferences.unlimitedNameLines.set(it) },
                                 title = {
@@ -290,7 +301,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val showUnplayedOldVideoLabel by preferences.showUnplayedOldVideoLabel.collectAsState()
-                            SwitchPreference(
+                            AdaptiveSwitchPreference(
                                 value = showUnplayedOldVideoLabel,
                                 onValueChange = { preferences.showUnplayedOldVideoLabel.set(it) },
                                 title = {
@@ -331,7 +342,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val autoScrollToLastPlayed by browserPreferences.autoScrollToLastPlayed.collectAsState()
-                            SwitchPreference(
+                            AdaptiveSwitchPreference(
                                 value = autoScrollToLastPlayed,
                                 onValueChange = { browserPreferences.autoScrollToLastPlayed.set(it) },
                                 title = {
@@ -376,7 +387,7 @@ object AppearancePreferencesScreen : Screen {
                     item {
                         PreferenceCard {
                             val showVideoThumbnails by browserPreferences.showVideoThumbnails.collectAsState()
-                            SwitchPreference(
+                            AdaptiveSwitchPreference(
                                 value = showVideoThumbnails,
                                 onValueChange = { browserPreferences.showVideoThumbnails.set(it) },
                                 title = {
@@ -444,7 +455,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val tapThumbnailToSelect by gesturePreferences.tapThumbnailToSelect.collectAsState()
-                            SwitchPreference(
+                            AdaptiveSwitchPreference(
                                 value = tapThumbnailToSelect,
                                 onValueChange = { gesturePreferences.tapThumbnailToSelect.set(it) },
                                 title = {
@@ -464,7 +475,7 @@ object AppearancePreferencesScreen : Screen {
                             PreferenceDivider()
 
                             val showNetworkThumbnails by preferences.showNetworkThumbnails.collectAsState()
-                            SwitchPreference(
+                            AdaptiveSwitchPreference(
                                 value = showNetworkThumbnails,
                                 onValueChange = { preferences.showNetworkThumbnails.set(it) },
                                 title = {
@@ -494,7 +505,7 @@ object AppearancePreferencesScreen : Screen {
                             val showPlaylistsTab by preferences.showPlaylistsTab.collectAsState()
                             val showNetworkTab by preferences.showNetworkTab.collectAsState()
 
-                            SwitchPreference(
+                            AdaptiveSwitchPreference(
                                 value = showHomeTab,
                                 onValueChange = preferences.showHomeTab::set,
                                 title = { Text(text = stringResource(id = R.string.pref_nav_home_title)) },
@@ -508,7 +519,7 @@ object AppearancePreferencesScreen : Screen {
 
                             PreferenceDivider()
 
-                            SwitchPreference(
+                            AdaptiveSwitchPreference(
                                 value = showRecentsTab,
                                 onValueChange = preferences.showRecentsTab::set,
                                 title = { Text(text = stringResource(id = R.string.pref_nav_recents_title)) },
@@ -522,7 +533,7 @@ object AppearancePreferencesScreen : Screen {
 
                             PreferenceDivider()
 
-                            SwitchPreference(
+                            AdaptiveSwitchPreference(
                                 value = showPlaylistsTab,
                                 onValueChange = preferences.showPlaylistsTab::set,
                                 title = { Text(text = stringResource(id = R.string.pref_nav_playlists_title)) },
@@ -536,7 +547,7 @@ object AppearancePreferencesScreen : Screen {
 
                             PreferenceDivider()
 
-                            SwitchPreference(
+                            AdaptiveSwitchPreference(
                                 value = showNetworkTab,
                                 onValueChange = preferences.showNetworkTab::set,
                                 title = { Text(text = stringResource(id = R.string.pref_nav_network_title)) },
@@ -605,29 +616,446 @@ object AppearancePreferencesScreen : Screen {
 
                             PreferenceDivider()
 
-                            val animSpeed by playerPreferences.animationSpeed.collectAsState()
-                            SliderPreference(
-                                value = animSpeed,
-                                onValueChange = { playerPreferences.animationSpeed.set(it) },
-                                title = { Text(stringResource(R.string.pref_anim_speed_title)) },
-                                valueRange = 0.25f..2.5f,
-                                summary = {
-                                    val label = when {
-                                        animSpeed < 0.6f -> stringResource(R.string.pref_anim_speed_very_fast, animSpeed)
-                                        animSpeed < 0.9f -> stringResource(R.string.pref_anim_speed_fast, animSpeed)
-                                        animSpeed < 1.1f -> stringResource(R.string.pref_anim_speed_normal, animSpeed)
-                                        animSpeed < 1.6f -> stringResource(R.string.pref_anim_speed_slow, animSpeed)
-                                        else             -> stringResource(R.string.pref_anim_speed_very_slow, animSpeed)
+                            val enableLiquidGlass by preferences.enableLiquidGlass.collectAsState()
+                            val liquidToggleColor by preferences.liquidToggleColor.collectAsState()
+                            
+                            AdaptiveSwitchPreference(
+                                value = enableLiquidGlass,
+                                onValueChange = { enabled ->
+                                    if (enabled &&
+                                        preferences.liquidButtonBlur.get() <= 0f &&
+                                        preferences.liquidButtonLensRadius.get() <= 0f &&
+                                        preferences.liquidButtonLensDepth.get() <= 0f
+                                    ) {
+                                        preferences.liquidButtonBlur.set(26f)
+                                        preferences.liquidButtonLensRadius.set(42f)
+                                        preferences.liquidButtonLensDepth.set(72f)
+                                        preferences.liquidDialogBlur.set(32f)
+                                        preferences.liquidDialogSaturation.set(1.3f)
+                                        preferences.liquidDialogBrightness.set(0.08f)
+                                        preferences.liquidDialogLensRadius.set(55f)
+                                        preferences.liquidDialogLensDepth.set(85f)
+                                        preferences.liquidDialogContainerAlpha.set(0.35f)
                                     }
-                                    Text(label, color = MaterialTheme.colorScheme.outline)
+                                    preferences.enableLiquidGlass.set(enabled)
                                 },
-                                onSliderValueChange = { playerPreferences.animationSpeed.set(it) },
-                                sliderValue = animSpeed,
+                                title = { Text(text = stringResource(id = R.string.pref_anim_liquid_glass_title)) },
+                                summary = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_anim_liquid_glass_summary),
+                                        color = MaterialTheme.colorScheme.outline,
+                                    )
+                                }
                             )
+
+                            PreferenceDivider()
+
+                            var showLiquidDialogSettings by remember { mutableStateOf(false) }
+                            if (enableLiquidGlass) {
+                                PreferenceCard(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { showLiquidDialogSettings = !showLiquidDialogSettings }
+                                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "Liquid Dialog Parameters",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                            )
+                                            Text(
+                                                text = "Adjust blur, saturation, and lens effects for dialogs",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.outline,
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = if (showLiquidDialogSettings) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+
+                                    AnimatedVisibility(visible = showLiquidDialogSettings) {
+                                        Column(modifier = Modifier.padding(top = 16.dp)) {
+                                            var showPreview by remember { mutableStateOf(false) }
+
+                                            if (showPreview) {
+                                                ConfirmDialog(
+                                                    title = "Liquid Dialog Preview",
+                                                    subtitle = "This is how your dialogs and sheets will look with the current parameters.",
+                                                    onConfirm = { showPreview = false },
+                                                    onCancel = { showPreview = false }
+                                                )
+                                            }
+
+                                            Button(
+                                                onClick = { showPreview = true },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                shape = MaterialTheme.shapes.extraLarge
+                                            ) {
+                                                Text("Show Live Preview")
+                                            }
+
+                                            Spacer(Modifier.height(16.dp))
+
+                                            val liquidBlur by preferences.liquidDialogBlur.collectAsState()
+                                            SliderPreference(
+                                                value = liquidBlur,
+                                                onValueChange = { preferences.liquidDialogBlur.set(it) },
+                                                title = { Text("Blur Intensity") },
+                                                valueRange = 0f..64f,
+                                                sliderValue = liquidBlur,
+                                                onSliderValueChange = { preferences.liquidDialogBlur.set(it) },
+                                                summary = { Text("${liquidBlur.roundToInt()} dp") }
+                                            )
+
+                                            val liquidSaturation by preferences.liquidDialogSaturation.collectAsState()
+                                            SliderPreference(
+                                                value = liquidSaturation,
+                                                onValueChange = { preferences.liquidDialogSaturation.set(it) },
+                                                title = { Text("Saturation") },
+                                                valueRange = 0f..3f,
+                                                sliderValue = liquidSaturation,
+                                                onSliderValueChange = { preferences.liquidDialogSaturation.set(it) },
+                                                summary = { Text("%.2f".format(liquidSaturation)) }
+                                            )
+
+                                            val liquidBrightness by preferences.liquidDialogBrightness.collectAsState()
+                                            SliderPreference(
+                                                value = liquidBrightness,
+                                                onValueChange = { preferences.liquidDialogBrightness.set(it) },
+                                                title = { Text("Brightness Offset") },
+                                                valueRange = -1f..1f,
+                                                sliderValue = liquidBrightness,
+                                                onSliderValueChange = { preferences.liquidDialogBrightness.set(it) },
+                                                summary = { Text("%.2f".format(liquidBrightness)) }
+                                            )
+
+                                            val liquidLensRadius by preferences.liquidDialogLensRadius.collectAsState()
+                                            SliderPreference(
+                                                value = liquidLensRadius,
+                                                onValueChange = { preferences.liquidDialogLensRadius.set(it) },
+                                                title = { Text("Lens Radius") },
+                                                valueRange = 0f..100f,
+                                                sliderValue = liquidLensRadius,
+                                                onSliderValueChange = { preferences.liquidDialogLensRadius.set(it) },
+                                                summary = { Text("${liquidLensRadius.roundToInt()} dp") }
+                                            )
+
+                                            val liquidLensDepth by preferences.liquidDialogLensDepth.collectAsState()
+                                            SliderPreference(
+                                                value = liquidLensDepth,
+                                                onValueChange = { preferences.liquidDialogLensDepth.set(it) },
+                                                title = { Text("Lens Depth") },
+                                                valueRange = 0f..200f,
+                                                sliderValue = liquidLensDepth,
+                                                onSliderValueChange = { preferences.liquidDialogLensDepth.set(it) },
+                                                summary = { Text("${liquidLensDepth.roundToInt()} dp") }
+                                            )
+
+                                            val liquidAlpha by preferences.liquidDialogContainerAlpha.collectAsState()
+                                            SliderPreference(
+                                                value = liquidAlpha,
+                                                onValueChange = { preferences.liquidDialogContainerAlpha.set(it) },
+                                                title = { Text("Container Alpha") },
+                                                valueRange = 0f..1f,
+                                                sliderValue = liquidAlpha,
+                                                onSliderValueChange = { preferences.liquidDialogContainerAlpha.set(it) },
+                                                summary = { Text("%.2f".format(liquidAlpha)) }
+                                            )
+
+                                            TextButton(
+                                                onClick = {
+                                                    preferences.liquidDialogBlur.set(32f)
+                                                    preferences.liquidDialogSaturation.set(1.3f)
+                                                    preferences.liquidDialogBrightness.set(0.08f)
+                                                    preferences.liquidDialogLensRadius.set(55f)
+                                                    preferences.liquidDialogLensDepth.set(85f)
+                                                    preferences.liquidDialogContainerAlpha.set(0.35f)
+                                                },
+                                                modifier = Modifier.align(Alignment.End)
+                                            ) {
+                                                Text(stringResource(R.string.generic_reset))
+                                            }
+                                        }
+                                    }
+                                }
+                                PreferenceDivider()
+
+                                var showLiquidButtonSettings by remember { mutableStateOf(false) }
+                                PreferenceCard(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { showLiquidButtonSettings = !showLiquidButtonSettings }
+                                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "Liquid Button Parameters",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                            )
+                                            Text(
+                                                text = "Adjust blur and lens effects for liquid buttons",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.outline,
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = if (showLiquidButtonSettings) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+
+                                    AnimatedVisibility(visible = showLiquidButtonSettings) {
+                                        Column(modifier = Modifier.padding(top = 16.dp)) {
+                                            val liquidBlur by preferences.liquidButtonBlur.collectAsState()
+                                            SliderPreference(
+                                                value = liquidBlur,
+                                                onValueChange = { preferences.liquidButtonBlur.set(it) },
+                                                title = { Text("Blur Intensity") },
+                                                valueRange = 0f..64f,
+                                                sliderValue = liquidBlur,
+                                                onSliderValueChange = { preferences.liquidButtonBlur.set(it) },
+                                                summary = { Text("${liquidBlur.roundToInt()} dp") }
+                                            )
+
+                                            val liquidLensRadius by preferences.liquidButtonLensRadius.collectAsState()
+                                            SliderPreference(
+                                                value = liquidLensRadius,
+                                                onValueChange = { preferences.liquidButtonLensRadius.set(it) },
+                                                title = { Text("Lens Radius") },
+                                                valueRange = 0f..100f,
+                                                sliderValue = liquidLensRadius,
+                                                onSliderValueChange = { preferences.liquidButtonLensRadius.set(it) },
+                                                summary = { Text("${liquidLensRadius.roundToInt()} dp") }
+                                            )
+
+                                            val liquidLensDepth by preferences.liquidButtonLensDepth.collectAsState()
+                                            SliderPreference(
+                                                value = liquidLensDepth,
+                                                onValueChange = { preferences.liquidButtonLensDepth.set(it) },
+                                                title = { Text("Lens Depth") },
+                                                valueRange = 0f..200f,
+                                                sliderValue = liquidLensDepth,
+                                                onSliderValueChange = { preferences.liquidButtonLensDepth.set(it) },
+                                                summary = { Text("${liquidLensDepth.roundToInt()} dp") }
+                                            )
+
+                                            TextButton(
+                                                onClick = {
+                                                    preferences.liquidButtonBlur.set(26f)
+                                                    preferences.liquidButtonLensRadius.set(42f)
+                                                    preferences.liquidButtonLensDepth.set(72f)
+                                                },
+                                                modifier = Modifier.align(Alignment.End)
+                                            ) {
+                                                Text(stringResource(R.string.generic_reset))
+                                            }
+                                        }
+                                    }
+                                }
+                                PreferenceDivider()
+                            }
+
+                            var showLiquidColorPicker by remember { mutableStateOf(false) }
+                            
+                            PreferenceCard(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showLiquidColorPicker = !showLiquidColorPicker }
+                                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = stringResource(id = R.string.pref_anim_liquid_toggle_color_title),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                        )
+                                        Text(
+                                            text = stringResource(id = R.string.pref_anim_liquid_toggle_color_summary),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.outline,
+                                        )
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .background(
+                                                color = Color(liquidToggleColor),
+                                                shape = CircleShape
+                                            )
+                                    )
+                                }
+                                
+                                AnimatedVisibility(visible = showLiquidColorPicker) {
+                                    Column(modifier = Modifier.padding(top = 16.dp)) {
+                                        // Preview of LiquidToggle
+                                        val toggleBackdrop = rememberLayerBackdrop()
+                                        var previewSelected by remember { mutableStateOf(true) }
+                                        
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(bottom = 16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            LiquidToggle(
+                                                selected = { previewSelected },
+                                                onSelect = { previewSelected = it },
+                                                backdrop = toggleBackdrop,
+                                                accentColor = Color(liquidToggleColor)
+                                            )
+                                        }
+
+                                        LiquidColorPicker(
+                                            color = liquidToggleColor,
+                                            onColorChange = { preferences.liquidToggleColor.set(it) }
+                                        )
+                                        
+                                        TextButton(
+                                            onClick = { preferences.liquidToggleColor.set(0xFF000080.toInt()) },
+                                            modifier = Modifier.align(Alignment.End)
+                                        ) {
+                                            Text(stringResource(R.string.generic_reset))
+                                        }
+                                    }
+                                }
+                            }
+
+                            PreferenceDivider()
+
+                            var showLiquidSeekbarColorPicker by remember { mutableStateOf(false) }
+                            val liquidSeekbarColor by preferences.liquidSeekbarColor.collectAsState()
+
+                            PreferenceCard(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showLiquidSeekbarColorPicker = !showLiquidSeekbarColorPicker }
+                                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = stringResource(id = R.string.pref_anim_liquid_seekbar_color_title),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                        )
+                                        Text(
+                                            text = stringResource(id = R.string.pref_anim_liquid_seekbar_color_summary),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.outline,
+                                        )
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .background(
+                                                color = Color(liquidSeekbarColor),
+                                                shape = CircleShape
+                                            )
+                                    )
+                                }
+
+                                AnimatedVisibility(visible = showLiquidSeekbarColorPicker) {
+                                    Column(modifier = Modifier.padding(top = 16.dp)) {
+                                        LiquidColorPicker(
+                                            color = liquidSeekbarColor,
+                                            onColorChange = { preferences.liquidSeekbarColor.set(it) }
+                                        )
+
+                                        TextButton(
+                                            onClick = { preferences.liquidSeekbarColor.set(0xFFFF4500.toInt()) },
+                                            modifier = Modifier.align(Alignment.End)
+                                        ) {
+                                            Text(stringResource(R.string.generic_reset))
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun LiquidColorPicker(
+    color: Int,
+    onColorChange: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier) {
+        val r = (color shr 16) and 0xFF
+        val g = (color shr 8) and 0xFF
+        val b = color and 0xFF
+        val a = (color shr 24) and 0xFF
+
+        fun updateColor(nr: Int = r, ng: Int = g, nb: Int = b, na: Int = a) {
+            onColorChange((na shl 24) or (nr shl 16) or (ng shl 8) or nb)
+        }
+
+        SliderPreference(
+            value = r.toFloat(),
+            onValueChange = { updateColor(nr = it.roundToInt()) },
+            title = { Text("Red") },
+            valueRange = 0f..255f,
+            sliderValue = r.toFloat(),
+            onSliderValueChange = { updateColor(nr = it.roundToInt()) },
+            summary = { Text(r.toString()) }
+        )
+        SliderPreference(
+            value = g.toFloat(),
+            onValueChange = { updateColor(ng = it.roundToInt()) },
+            title = { Text("Green") },
+            valueRange = 0f..255f,
+            sliderValue = g.toFloat(),
+            onSliderValueChange = { updateColor(ng = it.roundToInt()) },
+            summary = { Text(g.toString()) }
+        )
+        SliderPreference(
+            value = b.toFloat(),
+            onValueChange = { updateColor(nb = it.roundToInt()) },
+            title = { Text("Blue") },
+            valueRange = 0f..255f,
+            sliderValue = b.toFloat(),
+            onSliderValueChange = { updateColor(nb = it.roundToInt()) },
+            summary = { Text(b.toString()) }
+        )
+        SliderPreference(
+            value = a.toFloat(),
+            onValueChange = { updateColor(na = it.roundToInt()) },
+            title = { Text("Alpha") },
+            valueRange = 0f..255f,
+            sliderValue = a.toFloat(),
+            onSliderValueChange = { updateColor(na = it.roundToInt()) },
+            summary = { Text(a.toString()) }
+        )
     }
 }

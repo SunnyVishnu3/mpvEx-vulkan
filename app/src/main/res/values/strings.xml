@@ -520,6 +520,13 @@
   <string name="pref_anim_speed_slow">Slow (%.1f×)</string>
   <string name="pref_anim_speed_very_slow">Very slow (%.1f×)</string>
 
+  <string name="pref_anim_liquid_glass_title">Liquid Glass (Experimental)</string>
+  <string name="pref_anim_liquid_glass_summary">Enable interactive glass effects for the navigation bar</string>
+  <string name="pref_anim_liquid_toggle_color_title">Liquid Toggle Color</string>
+  <string name="pref_anim_liquid_toggle_color_summary">Customize the active color of the liquid toggle</string>
+  <string name="pref_anim_liquid_seekbar_color_title">Liquid Seekbar Color</string>
+  <string name="pref_anim_liquid_seekbar_color_summary">Customize the active color of the liquid seekbar</string>
+
   <!-- ═══════════════════════════════════════════════════════════ -->
   <!-- Player - General Section                                   -->
   <!-- ═══════════════════════════════════════════════════════════ -->

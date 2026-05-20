@@ -54,6 +54,31 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.ui.player.controls.LocalPlayerButtonsClickEvent
+import app.gyrolet.mpvrx.ui.utils.DampedDragAnimation
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.rememberBackdrop
+import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.shadow.InnerShadow
+import com.kyant.backdrop.shadow.Shadow
+import com.kyant.shapes.Capsule
+import org.koin.compose.koinInject
+import app.gyrolet.mpvrx.preferences.AppearancePreferences
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import com.kyant.backdrop.backdrops.layerBackdrop
+import app.gyrolet.mpvrx.preferences.preference.collectAsState
+import androidx.compose.ui.util.fastCoerceIn
+import androidx.compose.ui.util.lerp
+import androidx.compose.foundation.layout.size
 import app.gyrolet.mpvrx.preferences.SeekbarStyle
 import app.gyrolet.mpvrx.ui.player.SkipSegment
 import app.gyrolet.mpvrx.ui.player.SkipSegmentType
@@ -85,6 +110,7 @@ fun SeekbarWithTimers(
   bufferEnd: Float? = null,
   isPortrait: Boolean = false,
   modifier: Modifier = Modifier,
+  videoBackdrop: Backdrop = rememberLayerBackdrop(),
 ) {
   val clickEvent = LocalPlayerButtonsClickEvent.current
   var isUserInteracting by remember { mutableStateOf(false) }
@@ -134,6 +160,7 @@ fun SeekbarWithTimers(
         onValueChangeFinished = onValueChangeFinished,
         scope = scope,
         animatedPosition = animatedPosition,
+        videoBackdrop = videoBackdrop,
         modifier = Modifier.fillMaxWidth().height(44.dp) // Taller for visibility
       )
 
@@ -195,6 +222,7 @@ fun SeekbarWithTimers(
         onValueChangeFinished = onValueChangeFinished,
         scope = scope,
         animatedPosition = animatedPosition,
+        videoBackdrop = videoBackdrop,
         modifier = Modifier.weight(1f).height(48.dp)
       )
 
@@ -230,7 +258,8 @@ private fun SeekbarContent(
   onValueChangeFinished: () -> Unit,
   scope: kotlinx.coroutines.CoroutineScope,
   animatedPosition: Animatable<Float, *>,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  videoBackdrop: Backdrop = rememberLayerBackdrop(),
 ) {
   val touchAreaHeight = if (isPortrait) 64.dp else 52.dp
   val overlayTrackHeight =
@@ -244,7 +273,10 @@ private fun SeekbarContent(
       SeekbarStyle.Thick -> 16.dp
       SeekbarStyle.Standard -> 8.dp
       SeekbarStyle.Wavy -> 8.dp
+      SeekbarStyle.Liquid -> 8.dp
     }
+
+  val primaryColor = MaterialTheme.colorScheme.primary
 
   Box(
     modifier = modifier,
@@ -255,49 +287,54 @@ private fun SeekbarContent(
       modifier = Modifier
         .fillMaxWidth()
         .height(touchAreaHeight)
-        .pointerInput(Unit) {
-          detectTapGestures(
-            onTap = { offset ->
-              val newPosition = (offset.x / size.width) * duration
-              onUserInteractionChange(true)
-              val targetPos = newPosition.coerceIn(0f, duration)
-              onUserPositionChange(targetPos)
-              onValueChange(targetPos)
-              scope.launch {
-                animatedPosition.snapTo(targetPos)
-                onUserInteractionChange(false)
-                onValueChangeFinished()
-              }
-            }
-          )
-        }
-        .pointerInput(Unit) {
-          detectDragGestures(
-            onDragStart = {
-              onUserInteractionChange(true)
-            },
-            onDragEnd = {
-              scope.launch {
-                delay(50)
-                onUserInteractionChange(false)
-                onValueChangeFinished()
-              }
-            },
-            onDragCancel = {
-              scope.launch {
-                delay(50)
-                onUserInteractionChange(false)
-                onValueChangeFinished()
-              }
-            },
-          ) { change, _ ->
-            change.consume()
-            val newPosition = (change.position.x / size.width) * duration
-            val targetPos = newPosition.coerceIn(0f, duration)
-            onUserPositionChange(targetPos)
-            onValueChange(targetPos)
-          }
-        }
+        .then(
+            if (seekbarStyle != SeekbarStyle.Liquid) {
+                Modifier
+                    .pointerInput(Unit) {
+                      detectTapGestures(
+                        onTap = { offset ->
+                          val newPosition = (offset.x / size.width) * duration
+                          onUserInteractionChange(true)
+                          val targetPos = newPosition.coerceIn(0f, duration)
+                          onUserPositionChange(targetPos)
+                          onValueChange(targetPos)
+                          scope.launch {
+                            animatedPosition.snapTo(targetPos)
+                            onUserInteractionChange(false)
+                            onValueChangeFinished()
+                          }
+                        }
+                      )
+                    }
+                    .pointerInput(Unit) {
+                      detectDragGestures(
+                        onDragStart = {
+                          onUserInteractionChange(true)
+                        },
+                        onDragEnd = {
+                          scope.launch {
+                            delay(50)
+                            onUserInteractionChange(false)
+                            onValueChangeFinished()
+                          }
+                        },
+                        onDragCancel = {
+                          scope.launch {
+                            delay(50)
+                            onUserInteractionChange(false)
+                            onValueChangeFinished()
+                          }
+                        },
+                      ) { change, _ ->
+                        change.consume()
+                        val newPosition = (change.position.x / size.width) * duration
+                        val targetPos = newPosition.coerceIn(0f, duration)
+                        onUserPositionChange(targetPos)
+                        onValueChange(targetPos)
+                      }
+                    }
+            } else Modifier
+        )
     )
 
     // Visual seekbar (smaller, centered)
@@ -380,6 +417,29 @@ private fun SeekbarContent(
             loopStart   = loopStart,
             loopEnd     = loopEnd,
             bufferEnd   = bufferEnd,
+          )
+        }
+        SeekbarStyle.Liquid -> {
+          LiquidSeekbar(
+            position = position,
+            duration = duration,
+            chapters = chapters,
+            isPaused = paused,
+            isScrubbing = isUserInteracting,
+            loopStart = loopStart,
+            loopEnd = loopEnd,
+            onSeek = { newPosition ->
+              onUserInteractionChange(true)
+              onUserPositionChange(newPosition)
+              onValueChange(newPosition)
+            },
+            onSeekFinished = {
+              scope.launch { animatedPosition.snapTo(position) }
+              onUserInteractionChange(false)
+              onValueChangeFinished()
+            },
+            videoBackdrop = videoBackdrop,
+            modifier = Modifier.fillMaxWidth().height(touchAreaHeight)
           )
         }
       }
@@ -1016,6 +1076,33 @@ fun SeekbarStylePreview(
                     cornerRadius = CornerRadius(thumbW / 2f),
                 )
             }
+            SeekbarStyle.Liquid -> {
+                val height = 8.dp.toPx()
+                val radius = height / 2f
+                // Unplayed
+                drawRoundRect(
+                    color = primaryColor.copy(alpha = 0.3f),
+                    topLeft = Offset(0f, centerY - radius),
+                    size = Size(size.width, height),
+                    cornerRadius = CornerRadius(radius),
+                )
+                // Played
+                drawRoundRect(
+                    color = primaryColor,
+                    topLeft = Offset(0f, centerY - radius),
+                    size = Size(playedPx, height),
+                    cornerRadius = CornerRadius(radius),
+                )
+                // Thumb bar
+                val thumbW = 40.dp.toPx()
+                val thumbH = 24.dp.toPx()
+                drawRoundRect(
+                    color = primaryColor.copy(alpha = 0.8f),
+                    topLeft = Offset(playedPx - thumbW / 2f, centerY - thumbH / 2f),
+                    size = Size(thumbW, thumbH),
+                    cornerRadius = CornerRadius(thumbH / 2f),
+                )
+            }
         }
     }
 }
@@ -1041,8 +1128,179 @@ fun VideoTimer(
     text = Utils.prettyTime(value.toInt(), isInverted),
     color = Color.White,
     textAlign = TextAlign.Center,
-    style = MaterialTheme.typography.labelSmall
+    style = MaterialTheme.typography.labelSmall.copy(
+      shadow = androidx.compose.ui.graphics.Shadow(
+        color = Color.Black.copy(alpha = 0.8f),
+        offset = Offset(2f, 2f),
+        blurRadius = 4f
+      )
+    )
   )
+}
+
+@Composable
+fun LiquidSeekbar(
+    position: Float,
+    duration: Float,
+    chapters: ImmutableList<Segment>,
+    isPaused: Boolean,
+    isScrubbing: Boolean,
+    loopStart: Float? = null,
+    loopEnd: Float? = null,
+    onSeek: (Float) -> Unit,
+    onSeekFinished: () -> Unit,
+    modifier: Modifier = Modifier,
+    videoBackdrop: Backdrop = rememberLayerBackdrop(),
+) {
+    val appearancePreferences = koinInject<AppearancePreferences>()
+    val liquidSeekbarColor by appearancePreferences.liquidSeekbarColor.collectAsState()
+    val accentColor = Color(liquidSeekbarColor)
+    val trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+
+    val trackBackdrop = rememberLayerBackdrop()
+
+    BoxWithConstraints(
+        modifier,
+        contentAlignment = Alignment.CenterStart
+    ) {
+        val trackWidth = constraints.maxWidth.toFloat()
+        val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
+        val animationScope = rememberCoroutineScope()
+        
+        val progress = if (duration > 0f) (position / duration).coerceIn(0f, 1f) else 0f
+        
+        val dampedDragAnimation = remember(animationScope) {
+            DampedDragAnimation(
+                animationScope = animationScope,
+                initialValue = progress,
+                valueRange = 0f..1f,
+                visibilityThreshold = 0.001f,
+                initialScale = 1f,
+                pressedScale = 1.5f,
+                onDragStarted = {},
+                onDragStopped = {
+                    onSeekFinished()
+                },
+                onDrag = { _, dragAmount ->
+                    val delta = dragAmount.x / trackWidth
+                    val newProgress = if (isLtr) (value + delta).coerceIn(0f, 1f)
+                                     else (value - delta).coerceIn(0f, 1f)
+                    onSeek(newProgress * duration)
+                }
+            )
+        }
+
+        LaunchedEffect(position) {
+            if (isScrubbing) {
+                dampedDragAnimation.snapToValue(progress)
+            } else {
+                dampedDragAnimation.updateValue(progress)
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { offset ->
+                            val newProgress = (offset.x / trackWidth).coerceIn(0f, 1f)
+                            onSeek(newProgress * duration)
+                            onSeekFinished()
+                        }
+                    )
+                }
+                .layerBackdrop(trackBackdrop),
+            contentAlignment = Alignment.Center
+        ) {
+            // Track
+            Box(
+                Modifier
+                    .clip(Capsule())
+                    .background(trackColor)
+                    .height(8.dp)
+                    .fillMaxWidth()
+            )
+
+            // Played part
+            Box(
+                Modifier
+                    .clip(Capsule())
+                    .background(accentColor)
+                    .height(8.dp)
+                    .align(Alignment.CenterStart)
+                    .fillMaxWidth(dampedDragAnimation.value)
+            )
+        }
+
+        // Thumb
+        Box(
+            Modifier
+                .graphicsLayer {
+                    val thumbWidth = 40.dp.toPx()
+                    translationX = ((trackWidth * dampedDragAnimation.value) - thumbWidth / 2f)
+                        .coerceIn(0f, (trackWidth - thumbWidth).coerceAtLeast(0f))
+                }
+                .then(dampedDragAnimation.modifier)
+                .drawBackdrop(
+                    backdrop = rememberCombinedBackdrop(
+                        videoBackdrop,
+                        rememberBackdrop(trackBackdrop) { drawBackdrop ->
+                            val pressProgress = dampedDragAnimation.pressProgress
+                            val scaleX = lerp(2f / 3f, 1f, pressProgress)
+                            val scaleY = lerp(0f, 1f, pressProgress)
+                            scale(scaleX, scaleY) {
+                                drawBackdrop()
+                            }
+                        }
+                    ),
+                    shape = { Capsule() },
+                    effects = {
+                        val pressProgress = dampedDragAnimation.pressProgress
+                        blur(8f.dp.toPx() * (1f - pressProgress))
+                        lens(
+                            10f.dp.toPx() * pressProgress,
+                            14f.dp.toPx() * pressProgress,
+                            chromaticAberration = true
+                        )
+                    },
+                    highlight = {
+                        val pressProgress = dampedDragAnimation.pressProgress
+                        Highlight.Ambient.copy(
+                            width = Highlight.Ambient.width / 1.5f,
+                            blurRadius = Highlight.Ambient.blurRadius / 1.5f,
+                            alpha = pressProgress
+                        )
+                    },
+                    shadow = {
+                        Shadow(
+                            radius = 4f.dp,
+                            color = Color.Black.copy(alpha = 0.05f)
+                        )
+                    },
+                    innerShadow = {
+                        val pressProgress = dampedDragAnimation.pressProgress
+                        InnerShadow(
+                            radius = 4f.dp * pressProgress,
+                            alpha = pressProgress
+                        )
+                    },
+                    layerBlock = {
+                        scaleX = dampedDragAnimation.scaleX
+                        scaleY = dampedDragAnimation.scaleY
+                        val velocity = dampedDragAnimation.velocity / 10f
+                        scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
+                        scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
+                    },
+                    onDrawSurface = {
+                        val pressProgress = dampedDragAnimation.pressProgress
+                        drawRect(Color.White.copy(alpha = 1f - pressProgress))
+                    }
+                )
+                .size(40.dp, 24.dp)
+        )
+    }
 }
 
 @Composable

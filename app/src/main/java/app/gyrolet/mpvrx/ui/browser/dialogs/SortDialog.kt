@@ -15,12 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
@@ -40,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import app.gyrolet.mpvrx.presentation.components.LiquidDialog
 import app.gyrolet.mpvrx.ui.icons.AppIcon
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
@@ -70,7 +67,7 @@ fun SortDialog(
 
   val (ascLabel, descLabel) = getLabelForType(sortType, sortOrderAsc)
 
-  AlertDialog(
+  LiquidDialog(
     onDismissRequest = onDismiss,
     title = {
       Text(
@@ -152,7 +149,6 @@ fun SortDialog(
     },
     confirmButton = {},
     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-    tonalElevation = 6.dp,
     shape = MaterialTheme.shapes.extraLarge,
     modifier = modifier,
   )
@@ -212,7 +208,7 @@ private fun SortTypeSelector(
     ) {
       types.forEachIndexed { index, type ->
         val selected = sortType == type
-        val shape = AppShapeScale.large
+        val shape = MaterialTheme.shapes.large
 
         Column(
           horizontalAlignment = Alignment.CenterHorizontally,
@@ -337,7 +333,7 @@ private fun ViewModeSelectorComponent(
     ) {
       options.forEachIndexed { index, label ->
         val selected = index == selectedIndex
-        val shape = AppShapeScale.medium
+        val shape = MaterialTheme.shapes.medium
 
         Column(
           horizontalAlignment = Alignment.CenterHorizontally,
@@ -427,7 +423,7 @@ private fun VisibilityTogglesSection(
         onClick = { expanded = !expanded },
       ) {
         Icon(
-          imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.ArrowDropDown,
+          imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.ArrowDropDown,
           contentDescription = if (expanded) "Collapse" else "Expand",
           tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -570,4 +566,3 @@ private fun GridColumnsSection(
     }
   }
 }
-

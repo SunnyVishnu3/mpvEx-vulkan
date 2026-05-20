@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -26,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.gyrolet.mpvrx.presentation.components.LiquidDialog
 import app.gyrolet.mpvrx.utils.media.CopyPasteOps
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -48,7 +48,7 @@ fun FileOperationProgressDialog(
 
   val isOperationComplete = progress.isComplete || progress.isCancelled || progress.error != null
 
-  AlertDialog(
+  LiquidDialog(
     onDismissRequest = {
       if (isOperationComplete) {
         onDismiss()
@@ -179,7 +179,6 @@ fun FileOperationProgressDialog(
       }
     },
     containerColor = MaterialTheme.colorScheme.surface,
-    tonalElevation = 6.dp,
     shape = MaterialTheme.shapes.extraLarge,
     modifier = modifier,
   )
@@ -194,7 +193,7 @@ fun LoadingDialog(
 ) {
   if (!isOpen) return
 
-  AlertDialog(
+  LiquidDialog(
     onDismissRequest = onDismissRequest,
     title = null,
     text = {
@@ -215,9 +214,8 @@ fun LoadingDialog(
         )
       }
     },
-    confirmButton = {},
+    confirmButton = null,
     containerColor = MaterialTheme.colorScheme.surface,
-    tonalElevation = 6.dp,
     shape = MaterialTheme.shapes.extraLarge,
   )
 }
@@ -312,7 +310,3 @@ private fun SummaryRow(
     )
   }
 }
-
-
-
-

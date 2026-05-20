@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -38,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.gyrolet.mpvrx.presentation.components.LiquidDialog
 import app.gyrolet.mpvrx.utils.storage.StorageVolumeUtils
 import java.io.File
 
@@ -99,7 +99,7 @@ fun FolderPickerDialog(
 
   if (showCreateFolderDialog && selectedPath != null) {
     CreateFolderDialog(
-      parentPath = selectedPath!!,
+      parentPath = selectedPath ?: return,
       onDismiss = { showCreateFolderDialog = false },
       onFolderCreated = { newFolderPath ->
         selectedPath = newFolderPath
@@ -109,7 +109,7 @@ fun FolderPickerDialog(
     return
   }
 
-  AlertDialog(
+  LiquidDialog(
     onDismissRequest = onDismiss,
     title = {
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -215,7 +215,7 @@ fun FolderPickerDialog(
         ) {
           if (showStorageRoot) {
             // Show storage volumes
-            items(storageVolumes) { volume ->
+            items(storageVolumes, key = { it.hashCode() }) { volume ->
               val volumePath = StorageVolumeUtils.getVolumePath(volume)
               if (volumePath != null) {
                 StorageVolumeItem(
@@ -240,7 +240,7 @@ fun FolderPickerDialog(
             }
           } else {
             // Show folders
-            items(folders) { folder ->
+            items(folders, key = { it.absolutePath }) { folder ->
               FolderItem(
                 folder = folder,
                 onClick = { selectedPath = folder.absolutePath },
@@ -284,7 +284,6 @@ fun FolderPickerDialog(
       }
     },
     containerColor = MaterialTheme.colorScheme.surface,
-    tonalElevation = 6.dp,
     shape = MaterialTheme.shapes.extraLarge,
     modifier = modifier,
   )
@@ -387,7 +386,7 @@ private fun CreateFolderDialog(
   var folderName by remember { mutableStateOf("") }
   var error by remember { mutableStateOf<String?>(null) }
 
-  AlertDialog(
+  LiquidDialog(
     onDismissRequest = onDismiss,
     title = {
       Text(
@@ -417,7 +416,7 @@ private fun CreateFolderDialog(
         )
         if (error != null) {
           Text(
-            text = error!!,
+            text = error ?: "",
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.error,
@@ -468,11 +467,6 @@ private fun CreateFolderDialog(
       }
     },
     containerColor = MaterialTheme.colorScheme.surface,
-    tonalElevation = 6.dp,
     shape = MaterialTheme.shapes.extraLarge,
   )
 }
-
-
-
-

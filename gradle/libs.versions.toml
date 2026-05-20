@@ -26,6 +26,8 @@ androidxConstraintLayout = "2.2.1"
 coil = "3.4.0"
 media3 = "1.10.0"
 soraEditor = "0.24.5"
+kyant = "2.0.0-alpha03"
+kyant-shapes = "1.2.0"
 androidxMaterial3 = "1.5.0-alpha19"
 androidxAppcompat = "1.7.1"
 composeConstraintLayout = "1.1.1"
@@ -77,6 +79,9 @@ sora-editor-bom = { module = "io.github.rosemoe:editor-bom", version.ref = "sora
 sora-editor = { module = "io.github.rosemoe:editor" }
 sora-language-textmate = { module = "io.github.rosemoe:language-textmate" }
 # sora-oniguruma-native = { module = "io.github.rosemoe:oniguruma-native" }
+
+kyant-backdrop = { module = "io.github.kyant0:backdrop-android", version.ref = "kyant" }
+kyant-shapes = { module = "io.github.kyant0:shapes-android", version.ref = "kyant-shapes" }
 
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
 koin-core = { module = "io.insert-koin:koin-core" }
