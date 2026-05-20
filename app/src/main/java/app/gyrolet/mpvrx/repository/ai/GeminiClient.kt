@@ -31,7 +31,13 @@ private data class GeminiContent(
 
 @Serializable
 private data class GeminiPart(
-  val text: String = "",
+  val data: GeminiPartData? = null,
+  val text: String? = null,
+)
+
+@Serializable
+private data class GeminiPartData(
+  val text: String? = null,
 )
 
 @Serializable
@@ -125,11 +131,11 @@ class GeminiClient(
         GeminiGenerateRequest.serializer(),
         GeminiGenerateRequest(
           systemInstruction = GeminiContent(
-            parts = listOf(GeminiPart(text = instruction)),
+            parts = listOf(GeminiPart(data = GeminiPartData(text = instruction))),
           ),
           contents = listOf(
             GeminiContent(
-              parts = listOf(GeminiPart(text = userInput)),
+              parts = listOf(GeminiPart(data = GeminiPartData(text = userInput))),
             ),
           ),
           generationConfig = GeminiGenerationConfig(
@@ -159,6 +165,13 @@ class GeminiClient(
         ?.parts
         ?.firstOrNull()
         ?.text
+        ?: parsed.candidates
+          ?.firstOrNull()
+          ?.content
+          ?.parts
+          ?.firstOrNull()
+          ?.data
+          ?.text
         ?.trim()
 
       text ?: throw Exception("No response from Gemini")
