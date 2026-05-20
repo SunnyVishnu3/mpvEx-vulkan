@@ -1,0 +1,367 @@
+{
+  "packageName": "com.astrixforge.devicemasker.verifier",
+  "capturedAtMillis": 1778436797180,
+  "build": {
+    "BRAND": "samsung",
+    "MANUFACTURER": "samsung",
+    "MODEL": "SM-S928B",
+    "DEVICE": "dm3q",
+    "PRODUCT": "dm3qxxx",
+    "BOARD": "pineapple",
+    "HARDWARE": "pineapple",
+    "FINGERPRINT": "samsung\/dm3qxxx\/dm3q:14\/UP1A.231005.007\/S928BXXS2AXL5:user\/release-keys",
+    "ID": "UP1A.231005.007",
+    "TIME": 1733011200000,
+    "SERIAL": "R37Z63804219",
+    "SUPPORTED_ABIS": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "armeabi"
+    ],
+    "SUPPORTED_32_BIT_ABIS": [
+      "armeabi-v7a",
+      "armeabi"
+    ],
+    "SUPPORTED_64_BIT_ABIS": [
+      "arm64-v8a"
+    ],
+    "VERSION": {
+      "RELEASE": "16",
+      "SDK_INT": 36,
+      "INCREMENTAL": "S928BXXS2AXL5",
+      "SECURITY_PATCH": "2024-12-01"
+    }
+  },
+  "settings": {
+    "android_id": "0a59bff3890b2e72"
+  },
+  "telephony": {
+    "deviceId": "352798117087133",
+    "deviceIdSlot0": "352798117087133",
+    "imei": "352798117087133",
+    "imeiSlot0": "352798117087133",
+    "subscriberId": "310200146134894",
+    "subscriberIdSlot0": "ERROR:NoSuchMethodException:android.telephony.TelephonyManager.getSubscriberId [int]",
+    "simSerialNumber": "8901206824170650549",
+    "simSerialNumberSlot0": "8901206824170650549",
+    "simCountryIso": "us",
+    "networkCountryIso": "us",
+    "simOperatorName": "T-Mobile",
+    "networkOperator": "310200",
+    "line1Number": "+17064971337",
+    "simCount": 2,
+    "phoneCount": 2,
+    "activeModemCount": 2,
+    "networkOperatorName": "T-Mobile"
+  },
+  "subscription": {
+    "activeSubscriptionInfoCount": 2,
+    "activeSubscriptionInfoCountMax": 2
+  },
+  "features": {
+    "android.hardware.nfc": true,
+    "android.hardware.nfc.hce": true,
+    "android.hardware.telephony": true,
+    "android.hardware.telephony.data": true,
+    "android.hardware.telephony.radio.access": true,
+    "android.hardware.telephony.subscription": true
+  },
+  "systemProperties": {
+    "ro.serialno": "R37Z63804219",
+    "ro.product.model": "SM-S928B",
+    "ro.product.manufacturer": "samsung",
+    "ro.product.brand": "samsung",
+    "ro.product.device": "dm3q",
+    "ro.product.name": "dm3qxxx",
+    "ro.product.board": "pineapple",
+    "ro.build.fingerprint": "samsung\/dm3qxxx\/dm3q:14\/UP1A.231005.007\/S928BXXS2AXL5:user\/release-keys",
+    "ro.build.id": "UP1A.231005.007",
+    "ro.build.version.incremental": "S928BXXS2AXL5",
+    "ro.build.version.security_patch": "2024-12-01",
+    "ro.product.cpu.abilist": "arm64-v8a,armeabi-v7a,armeabi",
+    "ro.build.date.utc": 1733011200
+  },
+  "localeTime": {
+    "timezoneId": "America\/Phoenix",
+    "localeTag": "es-US",
+    "localeString": "es_US"
+  },
+  "procMaps": {
+    "javaBufferedReader": {
+      "lineCount": 2315,
+      "suspiciousLineCount": 0
+    },
+    "javaFileInputStream": {
+      "byteCount": 249908,
+      "lineCount": 2318,
+      "suspiciousLineCount": 2
+    },
+    "javaRandomAccessFile": {
+      "lineCount": 2316,
+      "suspiciousLineCount": 0
+    }
+  },
+  "packageVisibility": {
+    "packages": [
+      {
+        "packageName": "com.astrixforge.devicemasker",
+        "getPackageInfoVisible": false,
+        "getApplicationInfoVisible": false
+      },
+      {
+        "packageName": "org.lsposed.manager",
+        "getPackageInfoVisible": false,
+        "getApplicationInfoVisible": false
+      },
+      {
+        "packageName": "com.topjohnwu.magisk",
+        "getPackageInfoVisible": true,
+        "getApplicationInfoVisible": true
+      },
+      {
+        "packageName": "flar2.devcheck",
+        "getPackageInfoVisible": true,
+        "getApplicationInfoVisible": true
+      }
+    ]
+  },
+  "runtime": {
+    "sdkInt": 36,
+    "release": "16",
+    "previewSdkInt": 0,
+    "codename": "REL",
+    "supportedAbis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "armeabi"
+    ],
+    "vmVersion": "2.1.0",
+    "vmName": "Dalvik"
+  },
+  "wifi": {
+    "macAddress": "BE:C1:74:76:48:A1",
+    "ssid": "\"eero-AE1D\"",
+    "bssid": "32:EB:54:2D:94:31"
+  },
+  "bluetooth": {
+    "address": "7E:09:85:98:B6:A0"
+  },
+  "networkInterfaces": {
+    "interfaces": []
+  },
+  "advertising": {
+    "advertisingIdClientInfoId": "96b6bba2-10db-4fdb-87f5-09be422d985f",
+    "gservicesAndroidIdString": "461b38855b8b8900",
+    "gservicesAndroidIdLongHex": "461b38855b8b8900",
+    "mediaDrmDeviceUniqueIdHex": "98297181f41374bc2edf7fc3ec849c05a895e2717928c142e7e7f3fea1919d06"
+  },
+  "location": {
+    "syntheticLocationLatitude": 41.700052,
+    "syntheticLocationLongitude": 62.377687,
+    "gpsLastKnown": null
+  },
+  "sensors": {
+    "allSensorCount": 6,
+    "firstSensorName": "Accelerometer",
+    "firstSensorVendor": "samsung",
+    "firstSensorVersion": 1,
+    "defaultAccelerometerName": "Accelerometer",
+    "defaultAccelerometerVendor": "samsung",
+    "defaultAccelerometerVersion": 1
+  },
+  "webView": {
+    "defaultUserAgent": "Mozilla\/5.0 (Linux; Android 16; SM-S928B Build\/BE4B.251210.005; wv) AppleWebKit\/537.36 (KHTML, like Gecko) Version\/4.0 Chrome\/147.0.7727.137 Mobile Safari\/537.36",
+    "instanceUserAgent": "Mozilla\/5.0 (Linux; Android 16; SM-S928B Build\/BE4B.251210.005; wv) AppleWebKit\/537.36 (KHTML, like Gecko) Version\/4.0 Chrome\/147.0.7727.137 Mobile Safari\/537.36"
+  },
+  "checks": [
+    {
+      "name": "ANDROID_ID",
+      "path": "settings.android_id",
+      "actual": "0a59bff3890b2e72",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "SERIAL",
+      "path": "build.SERIAL",
+      "actual": "R37Z63804219",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "IMEI",
+      "path": "telephony.imei",
+      "actual": "352798117087133",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "IMEI_SLOT_0",
+      "path": "telephony.imeiSlot0",
+      "actual": "352798117087133",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "IMSI",
+      "path": "telephony.subscriberId",
+      "actual": "310200146134894",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "ICCID",
+      "path": "telephony.simSerialNumber",
+      "actual": "8901206824170650549",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "PHONE_NUMBER",
+      "path": "telephony.line1Number",
+      "actual": "+17064971337",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "SIM_COUNTRY_ISO",
+      "path": "telephony.simCountryIso",
+      "actual": "us",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "NETWORK_COUNTRY_ISO",
+      "path": "telephony.networkCountryIso",
+      "actual": "us",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "SIM_OPERATOR_NAME",
+      "path": "telephony.simOperatorName",
+      "actual": "T-Mobile",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "NETWORK_OPERATOR",
+      "path": "telephony.networkOperator",
+      "actual": "310200",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "DEVICE_MODEL",
+      "path": "build.MODEL",
+      "actual": "SM-S928B",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "WIFI_MAC",
+      "path": "wifi.macAddress",
+      "actual": "BE:C1:74:76:48:A1",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "WIFI_SSID",
+      "path": "wifi.ssid",
+      "actual": "\"eero-AE1D\"",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "WIFI_BSSID",
+      "path": "wifi.bssid",
+      "actual": "32:EB:54:2D:94:31",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "BLUETOOTH_MAC",
+      "path": "bluetooth.address",
+      "actual": "7E:09:85:98:B6:A0",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "ADVERTISING_ID",
+      "path": "advertising.advertisingIdClientInfoId",
+      "actual": "96b6bba2-10db-4fdb-87f5-09be422d985f",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "GSF_ID",
+      "path": "advertising.gservicesAndroidIdString",
+      "actual": "461b38855b8b8900",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "MEDIA_DRM_ID",
+      "path": "advertising.mediaDrmDeviceUniqueIdHex",
+      "actual": "98297181f41374bc2edf7fc3ec849c05a895e2717928c142e7e7f3fea1919d06",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "LOCATION_LATITUDE",
+      "path": "location.syntheticLocationLatitude",
+      "actual": 41.700052,
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "LOCATION_LONGITUDE",
+      "path": "location.syntheticLocationLongitude",
+      "actual": 62.377687,
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "LOCATION_LAST_KNOWN",
+      "path": "location.gpsLastKnown",
+      "actual": null,
+      "status": "UNSUPPORTED",
+      "error": null
+    },
+    {
+      "name": "SENSOR_DEFAULT_ACCELEROMETER",
+      "path": "sensors.defaultAccelerometerName",
+      "actual": "Accelerometer",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "WEBVIEW_DEFAULT_UA",
+      "path": "webView.defaultUserAgent",
+      "actual": "Mozilla\/5.0 (Linux; Android 16; SM-S928B Build\/BE4B.251210.005; wv) AppleWebKit\/537.36 (KHTML, like Gecko) Version\/4.0 Chrome\/147.0.7727.137 Mobile Safari\/537.36",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "WEBVIEW_INSTANCE_UA",
+      "path": "webView.instanceUserAgent",
+      "actual": "Mozilla\/5.0 (Linux; Android 16; SM-S928B Build\/BE4B.251210.005; wv) AppleWebKit\/537.36 (KHTML, like Gecko) Version\/4.0 Chrome\/147.0.7727.137 Mobile Safari\/537.36",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "TIMEZONE",
+      "path": "localeTime.timezoneId",
+      "actual": "America\/Phoenix",
+      "status": "OBSERVED",
+      "error": null
+    },
+    {
+      "name": "LOCALE",
+      "path": "localeTime.localeString",
+      "actual": "es_US",
+      "status": "OBSERVED",
+      "error": null
+    }
+  ]
+}

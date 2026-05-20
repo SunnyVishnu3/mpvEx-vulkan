@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Device Masker</string>
+    <string name="xposed_description">Device Masker - Comprehensive device spoofing with
+        anti-detection</string>
+
+    <!-- Module Status -->
+    <string name="module_active">Module Active</string>
+    <string name="module_inactive">Module Inactive</string>
+
+    <!-- Navigation -->
+
+    <!-- Home Screen -->
+    <string name="home_module_not_injected">Module Not Injected</string>
+    <string name="home_protection_active">Protection Active</string>
+    <string name="home_protection_disabled">Protection Disabled</string>
+    <string name="home_enable_instruction">Enable in LSPosed Manager and reboot</string>
+    <string name="home_protected_apps_label">Protected Apps</string>
+    <string name="home_masked_ids_label">Masked IDs</string>
+    <string name="home_active_group_label">Select Group</string>
+    <string name="home_no_group">No Group</string>
+    <string name="home_group_disabled_tag">(Disabled)</string>
+    <plurals name="home_apps_count">
+        <item quantity="one">%d app</item>
+        <item quantity="other">%d apps</item>
+    </plurals>
+    <string name="home_no_groups_available">No groups available</string>
+    <string name="home_quick_actions">Quick Actions</string>
+    <string name="home_action_configure">Configure</string>
+    <string name="home_select_group">Select group</string>
+    <string name="home_view_group">View group</string>
+    <string name="home_selected">Selected</string>
+
+    <!-- Groups Screen -->
+    <string name="group_screen_title">Groups</string>
+    <string name="group_list_empty">No groups found</string>
+    <string name="group_new">New Group</string>
+    <string name="group_create_new">Create New Group</string>
+    <string name="group_edit_dialog_title">Edit Group</string>
+    <string name="group_name_hint">Group name</string>
+    <string name="group_name_exists">A group with this name already exists</string>
+    <string name="group_description_hint">Description (optional)</string>
+    <string name="group_delete_dialog_title">Delete Group</string>
+    <string name="group_delete_confirm">Delete this group?</string>
+    <string name="group_delete_warning">This action cannot be undone. All assigned apps will use
+        their default settings.</string>
+    <string name="group_import_groups">Import Groups</string>
+    <string name="group_export_groups">Export Groups</string>
+    <string name="group_name_example">e.g., Samsung</string>
+    <string name="group_description_example">e.g., For banking apps</string>
+    <string name="group_name_length">%1$d/%2$d</string>
+    <string name="group_empty_title">No groups found</string>
+
+    <!-- Actions -->
+    <string name="action_more_options">More options</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_build_type">Build Type</string>
+    <string name="settings_build_type_debug">Debug</string>
+    <string name="settings_build_type_release">Release</string>
+    <string name="settings_module_info">Module Info</string>
+    <string name="settings_module_info_value">libxposed API 101 • LSPosed module</string>
+    <string name="settings_export_logs_share_chooser">Share Logs</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme_mode">Theme Mode</string>
+    <string name="settings_amoled_mode">AMOLED mode</string>
+    <string name="settings_amoled_description">Pure black for OLED screens</string>
+    <string name="settings_dynamic_colors">Dynamic colors</string>
+    <string name="settings_dynamic_description">Material You dynamic colors</string>
+    <string name="settings_debug">Debug</string>
+    <string name="settings_export_logs">Logs</string>
+    <string name="settings_export_logs_description">Save or share in-memory diagnostics logs</string>
+    <plurals name="settings_export_logs_success">
+        <item quantity="one">Logs exported successfully (%1$d entry)&#10;&#10;Saved to: %2$s</item>
+        <item quantity="other">Logs exported successfully (%1$d entries)&#10;&#10;Saved to: %2$s</item>
+    </plurals>
+    <string name="settings_export_logs_error">Failed to export logs: %1$s</string>
+    <string name="settings_exporting">Exporting…</string>
+    <string name="settings_export_sheet_title">Logs</string>
+    <string name="settings_export_save">Save</string>
+    <string name="settings_export_save_desc">Save logs to device</string>
+    <string name="settings_export_share">Share</string>
+    <string name="settings_export_share_desc">Share logs</string>
+    <string name="settings_logs_monitor">Logs Monitor</string>
+    <string name="settings_logs_monitor_description">Watch live Device Masker, LSPosed, and hook evidence while debugging a target app.</string>
+    <string name="logs_monitor_title">Logs Monitor</string>
+    <string name="logs_monitor_status">Capture: %s</string>
+    <string name="logs_monitor_start">Start capture</string>
+    <string name="logs_monitor_stop">Stop capture</string>
+    <string name="logs_monitor_clear">Clear logs</string>
+    <string name="logs_monitor_empty">No matching logs captured yet.</string>
+    <string name="logs_monitor_search">Search</string>
+    <string name="logs_monitor_notification_channel">Live logs monitor</string>
+    <string name="logs_monitor_notification_title">Monitoring diagnostic logs</string>
+    <string name="logs_monitor_notification_text">Capturing local logcat evidence.</string>
+    <string name="root_access_warning_title">Root access required for maximum diagnostics</string>
+    <string name="root_access_denied_message">Root access was not granted. Configuration can still be edited, but privileged diagnostics and root log capture will not work.</string>
+    <string name="root_access_unavailable_message">Root access is unavailable on this device. Configuration can still be edited, but privileged diagnostics and root log capture will not work.</string>
+    <string name="root_access_retry">Grant root</string>
+    <string name="root_access_status_title">Root Access</string>
+    <string name="root_access_status_unknown">Unknown</string>
+    <string name="root_access_status_requesting">Requesting</string>
+    <string name="root_access_status_granted">Granted</string>
+    <string name="root_access_status_denied">Denied</string>
+    <string name="root_access_status_unavailable">Unavailable</string>
+    <string name="root_capture_notification_channel">Root diagnostics capture</string>
+    <string name="root_capture_notification_title">Capturing diagnostic logs</string>
+    <string name="root_capture_notification_text">Collecting local LSPosed and Device Masker diagnostics.</string>
+    <string name="settings_diagnostics">Diagnostics</string>
+    <string name="settings_diagnostics_description">Check module health and hook status</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_version_info">Version %s</string>
+    <string name="settings_theme_system">System Default</string>
+    <string name="settings_theme_light">Light Mode</string>
+    <string name="settings_theme_dark">Dark Mode</string>
+    <string name="settings_theme_follow_system">Follow system dark/light mode settings</string>
+
+    <!-- Diagnostics Screen -->
+    <string name="diagnostics_title">Diagnostics</string>
+    <string name="diagnostics_pull_refresh">Pull down to refresh</string>
+    <string name="diagnostics_module_active_desc">Hooks are being applied to target apps</string>
+    <string name="diagnostics_module_inactive_desc">Enable module in LSPosed Manager</string>
+    <string name="diagnostics_hook_success">Spoofed</string>
+    <string name="diagnostics_hook_failure">Not Spoofed</string>
+    <string name="diagnostics_hook_inactive">Inactive</string>
+    <string name="diagnostics_real_label">Real</string>
+    <string name="diagnostics_spoofed_label">Spoofed</string>
+    <string name="diagnostics_unknown">Unknown</string>
+    <plurals name="diagnostics_tests_passed">
+        <item quantity="one">%d test passed</item>
+        <item quantity="other">%1$d/%2$d tests passed</item>
+    </plurals>
+    <plurals name="diagnostics_items_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <string name="diagnostics_anti_detection">Anti-Detection</string>
+
+    <string name="diagnostics_test_stack_trace">Stack Trace Filtering</string>
+    <string name="diagnostics_test_stack_trace_desc">Xposed classes hidden from stack traces</string>
+    <string name="diagnostics_test_class_loading">Class Loading Protection</string>
+    <string name="diagnostics_test_class_loading_desc">XposedBridge class not loadable</string>
+    <string name="diagnostics_test_native_hiding">Native Library Hiding</string>
+    <string name="diagnostics_test_native_hiding_desc">/proc/maps filtered</string>
+    <string name="diagnostics_test_package_hiding">Package Hiding</string>
+    <string name="diagnostics_test_package_hiding_desc">LSPosed package not visible</string>
+
+    <!-- Config Sync Info -->
+    <string name="diagnostics_config_sync_title">Configuration Sync</string>
+    <string name="diagnostics_config_sync_desc">Configuration updates apply immediately when the live module service is available. If the service is unavailable, the app falls back to cached preferences and some target apps may need a restart.</string>
+
+    <string name="group_card_default">Default</string>
+    <string name="group_card_created">Created %1$s</string>
+    <string name="group_card_set_default">Set as default</string>
+    <string name="group_card_edit">Edit group</string>
+    <string name="group_card_delete">Delete group</string>
+    <string name="group_card_selected">Selected</string>
+
+    <string name="content_country_picker">Country picker</string>
+    <string name="content_timezone_picker">Timezone picker</string>
+
+    <string name="group_app_selected_state">Assigned</string>
+    <string name="group_app_unselected_state">Not assigned</string>
+
+    <string name="picker_selected_state">Selected</string>
+    <string name="picker_not_selected_state">Not selected</string>
+
+    <string name="bottom_nav_home">Home</string>
+    <string name="bottom_nav_groups">Groups</string>
+    <string name="bottom_nav_settings">Settings</string>
+
+    <string name="state_expanded">Expanded</string>
+    <string name="state_collapsed">Collapsed</string>
+
+    <string name="group_card_enabled_state">Group enabled</string>
+    <string name="group_card_disabled_state">Group disabled</string>
+
+    <string name="action_edit_item">Edit</string>
+
+    <string name="bottom_nav_open_home">Open Home tab</string>
+    <string name="bottom_nav_open_groups">Open Groups tab</string>
+    <string name="bottom_nav_open_settings">Open Settings tab</string>
+
+    <string name="home_scoped_apps">Scoped Apps</string>
+    <string name="home_scoped_apps_empty">No scoped apps found</string>
+    <string name="home_scoped_apps_empty_subtitle">Select target apps in LSPosed scope to control spoofing here.</string>
+    <string name="home_scoped_app_disabled">Disabled. Enable to apply spoofing.</string>
+    <string name="home_scoped_app_group_disabled">%1$s disabled. Enable the group to apply spoofing.</string>
+    <string name="home_scoped_app_not_configured">Not assigned to a spoof group.</string>
+
+    <string name="picker_search_country_hint">Search countries…</string>
+    <string name="picker_search_timezone_hint">Search timezones…</string>
+
+    <string name="section_expand_final">Expand section</string>
+    <string name="section_collapse_final">Collapse section</string>
+
+    <string name="group_spoofing_back">Back</string>
+    <string name="group_spoofing_tab_spoof">Spoof Values</string>
+    <string name="group_spoofing_tab_apps">Apps</string>
+    <string name="group_spoofing_desc">Configure which identifiers to spoof for this
+        group.</string>
+    <string name="group_spoofing_not_set">Not set</string>
+    <string name="group_spoofing_search_hint">Search apps…</string>
+    <string name="group_spoofing_clear_search">Clear app search</string>
+    <string name="group_spoofing_show_system_apps">System apps</string>
+    <string name="group_spoofing_loading_apps">Loading apps…</string>
+    <string name="group_spoofing_no_apps_found">No apps found</string>
+    <string name="group_spoofing_adjust_search">Try adjusting your search or filter</string>
+    <string name="group_spoofing_assigned_to">Assigned to: %s</string>
+    <string name="group_spoofing_app_disabled_by_home">Disabled on Home. Enable to apply spoofing.</string>
+    <string name="group_spoofing_locked">Assigned to another group</string>
+    <plurals name="group_spoofing_apps_assigned_stats">
+        <item quantity="one">%1$d app • %2$d assigned</item>
+        <item quantity="other">%1$d apps • %2$d assigned</item>
+    </plurals>
+
+    <plurals name="group_card_apps_count">
+        <item quantity="one">%d app</item>
+        <item quantity="other">%d apps</item>
+    </plurals>
+
+    <!-- Actions -->
+    <string name="action_back">Back</string>
+    <string name="action_regenerate">Regenerate</string>
+    <string name="action_regenerate_all">Regenerate All</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_create">Create</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="action_expand">Expand</string>
+    <string name="action_collapse">Collapse</string>
+
+    <!-- UI Display Categories (organized by correlation) -->
+    <string name="category_sim_card">SIM Card</string>
+    <string name="category_sim_card_desc">Synced: IMSI, ICCID, Carrier match together</string>
+    <string name="category_device_hardware">Device Hardware</string>
+    <string name="category_device_hardware_desc">Synced: IMEI, Serial match device profile</string>
+    <string name="category_network">Network</string>
+    <string name="category_network_desc">Independent: WiFi and Bluetooth identifiers</string>
+    <string name="category_advertising">Advertising</string>
+    <string name="category_advertising_desc">Independent: Tracking and ad identifiers</string>
+    <string name="category_location">Location</string>
+    <string name="category_location_desc">Synced: Timezone and locale match country</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_delete_title">Delete Item</string>
+    <string name="dialog_delete_message">Are you sure you want to delete \"%s\"? This action cannot
+        be undone.</string>
+
+    <!-- Validation -->
+
+    <!-- Misc -->
+    <string name="label_choose_sim">Choose Sim</string>
+    <string name="label_choose_location">Choose Location</string>
+    <string name="group_spoofing_country">Country</string>
+    <string name="group_spoofing_carrier">Carrier</string>
+    <string name="group_spoofing_timezone">Timezone</string>
+    <string name="group_spoofing_locale">Locale</string>
+    <string name="group_spoofing_manufacturer">Manufacturer</string>
+    <string name="group_spoofing_brand">Brand</string>
+    <string name="group_spoofing_model">Model</string>
+    <string name="group_spoofing_device">Device</string>
+    <string name="group_spoofing_product">Product</string>
+    <string name="group_spoofing_board">Board</string>
+    <string name="group_spoofing_fingerprint">Fingerprint</string>
+    <string name="group_spoofing_security_patch">Security Patch</string>
+    <string name="group_export_success">Groups exported successfully.</string>
+    <string name="group_export_error">Failed to export groups.</string>
+    <string name="group_import_success">Groups imported successfully.</string>
+    <string name="group_import_error">Failed to import groups.</string>
+    <string name="group_import_empty_error">Selected file is empty or unreadable.</string>
+</resources>

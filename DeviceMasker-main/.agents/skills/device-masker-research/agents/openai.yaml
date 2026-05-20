@@ -1,0 +1,4 @@
+interface:
+  display_name: "Device Masker Research"
+  short_description: "Device Masker research report"
+  default_prompt: "Use $device-masker-research to research Android 16 compatibility for Device Masker and write one source-backed internal report file only."

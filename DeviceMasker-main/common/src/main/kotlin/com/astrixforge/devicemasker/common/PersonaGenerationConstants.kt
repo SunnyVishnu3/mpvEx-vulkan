@@ -1,0 +1,32 @@
+package com.astrixforge.devicemasker.common
+
+internal const val TAC_VALIDATION_PREFIX_LENGTH = 6
+internal const val TAC_LENGTH = 8
+internal const val MAC_BYTES = 6
+internal const val MIN_DISTINCT_TRACKING_IDS = 4
+internal const val SHORT_HEX_BYTES = 2
+internal const val MEDIUM_HEX_BYTES = 3
+internal const val ID_BYTES = 8
+internal const val MEDIA_DRM_BYTES = 32
+internal const val DIGEST_LONG_BYTES = 8
+internal const val IMEI_SERIAL_LENGTH = 6
+internal const val ICCID_LENGTH = 19
+internal const val IMSI_LENGTH = 15
+internal const val SAMSUNG_YEAR_LETTERS_LENGTH = 21
+internal const val SAMSUNG_BODY_LENGTH = 8
+internal const val PIXEL_SERIAL_BYTES = 8
+internal const val XIAOMI_SERIAL_LENGTH = 14
+internal const val GENERIC_SERIAL_LENGTH = 12
+internal const val UUID_BYTES = 16
+internal const val UUID_VERSION_INDEX = 6
+internal const val UUID_VARIANT_INDEX = 8
+internal const val UUID_VERSION_CLEAR_MASK = 0x0F
+internal const val UUID_VERSION_4_BITS = 0x40
+internal const val UUID_VARIANT_CLEAR_MASK = 0x3F
+internal const val UUID_VARIANT_BITS = 0x80
+internal const val BYTE_MASK = 0xFF
+internal const val BYTE_MASK_LONG = 0xFFL
+internal const val LOCAL_MAC_MASK = 0xFC
+internal const val DECIMAL_RADIX = 10
+internal const val DEFAULT_ANDROID_RELEASE = "16"
+internal const val DEFAULT_PHONE_LENGTH = 10

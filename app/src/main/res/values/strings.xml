@@ -196,6 +196,10 @@
   <string name="pref_gesture_media_custom_info">You can bind custom actions to media controls in input.conf using the following key codes:\n\nPrevious: PREV\nPlay/Pause: PLAYPAUSE\nNext: NEXT</string>
   <string name="pref_gesture_tap_thumbnail_to_select_title">Tap thumbnail to select</string>
   <string name="pref_gesture_tap_thumbnail_to_select_summary">When enabled, tapping on thumbnails enters selection mode. When disabled, tapping thumbnails plays the video.</string>
+  <string name="pref_enable_ytdl_title">Enable ytdl</string>
+  <string name="pref_ytdl_format_title">ytdl format</string>
+  <string name="toast_need_ytdl">YouTube-DL/yt-dlp is required to play this URL. Please install it in Advanced settings.</string>
+
   <string name="pref_decoder">Decoder</string>
   <string name="pref_decoder_summary">Hardware decoding, pixel format, debanding</string>
   <string name="pref_decoder_profile_title">MPV Profile</string>

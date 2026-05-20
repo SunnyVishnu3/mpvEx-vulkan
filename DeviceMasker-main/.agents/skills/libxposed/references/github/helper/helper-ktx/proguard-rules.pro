@@ -1,0 +1,11 @@
+-keep class io.github.libxposed.helper.ktx.*Kt { public <methods>; }
+-keep class io.github.libxposed.helper.ktx.DexAnalysis
+-keep class io.github.libxposed.helper.ktx.AnnotationAnalysis
+-keep class io.github.libxposed.helper.ktx.DummyHooker
+-keep class io.github.libxposed.helper.ktx.HookBuilderKtKt { public <methods>; }
+-keep class io.github.libxposed.helper.ktx.* implements io.github.libxposed.helper.HookBuilder$* { public <methods>; }
+-keep abstract class io.github.libxposed.helper.ktx.LazyBind { abstract <methods>; <init>(); }
+-keep class io.github.libxposed.helper.ktx.Hooker
+-keep class io.github.libxposed.helper.ktx.Matcher
+-keepattributes *
+-repackageclasses "libxposed.helper.kt"

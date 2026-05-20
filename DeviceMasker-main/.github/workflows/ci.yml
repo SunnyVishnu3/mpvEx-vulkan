@@ -1,0 +1,237 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: "17"
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: false
+
+      - name: Ensure Gradle wrapper is executable
+        run: chmod +x ./gradlew
+
+      - name: Spotless check
+        run: ./gradlew spotlessCheck --build-cache --stacktrace
+
+      - name: Detekt
+        run: ./gradlew detekt --build-cache --stacktrace
+
+      - name: Compile debug Kotlin
+        run: ./gradlew :app:compileDebugKotlin :common:compileDebugKotlin :xposed:compileDebugKotlin :verifier:compileDebugKotlin --build-cache --stacktrace
+
+      - name: Lint
+        run: ./gradlew lint --build-cache --stacktrace
+
+      - name: Unit tests
+        run: ./gradlew test --build-cache --stacktrace
+
+      - name: R8 validation build
+        run: ./gradlew :app:assembleCiRelease --build-cache --stacktrace
+
+      - name: Upload lint and test reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: quality-reports-${{ github.run_id }}
+          path: |
+            app/build/reports/**
+            common/build/reports/**
+            xposed/build/reports/**
+            verifier/build/reports/**
+          if-no-files-found: warn
+          retention-days: 7
+
+  assemble-build-artifacts:
+    name: Assemble Build Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - quality
+    permissions:
+      contents: read
+      attestations: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: false
+
+      - name: Ensure Gradle wrapper is executable
+        run: chmod +x ./gradlew
+
+      - name: Check release signing secrets
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KEY_PASS }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASS" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASS" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Decode release keystore
+        if: steps.signing.outputs.available == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KEY_PASS }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+          {
+            echo "KEYSTORE_PATH=$RUNNER_TEMP/release.keystore"
+            echo "KEYSTORE_PASS=$KEYSTORE_PASS"
+            echo "KEY_ALIAS=$KEY_ALIAS"
+            echo "KEY_PASS=$KEY_PASS"
+          } >> "$GITHUB_ENV"
+
+      - name: Assemble debug
+        run: ./gradlew assembleDebug --build-cache --stacktrace
+
+      - name: Assemble signed release
+        if: steps.signing.outputs.available == 'true'
+        run: ./gradlew assembleRelease --build-cache --stacktrace
+
+      - name: Prepare build artifacts
+        env:
+          SIGNED_RELEASE_AVAILABLE: ${{ steps.signing.outputs.available }}
+        run: |
+          VERSION_NAME=$(grep '^VERSION_NAME=' gradle.properties | cut -d= -f2)
+          VERSION_CODE=$(grep '^VERSION_CODE=' gradle.properties | cut -d= -f2)
+          SHORT_SHA="${GITHUB_SHA::7}"
+          mkdir -p dist/debug dist/release dist/source dist/metadata
+          debug_apks=(app/build/outputs/apk/debug/*.apk)
+          if [ "${#debug_apks[@]}" -ne 1 ]; then
+            echo "Expected exactly one debug APK, found ${#debug_apks[@]}"
+            printf '%s\n' "${debug_apks[@]}"
+            exit 1
+          fi
+          cp "${debug_apks[0]}" "dist/debug/DeviceMasker-v${VERSION_NAME}-code${VERSION_CODE}-debug-${SHORT_SHA}.apk"
+
+          release_apks=(app/build/outputs/apk/release/*.apk)
+          if [ "${#release_apks[@]}" -eq 1 ]; then
+            cp "${release_apks[0]}" "dist/release/DeviceMasker-v${VERSION_NAME}-code${VERSION_CODE}-release-signed-${SHORT_SHA}.apk"
+          else
+            echo "Signed release APK not available for this run."
+          fi
+
+          git archive --format=zip \
+            --output "dist/source/DeviceMasker-v${VERSION_NAME}-code${VERSION_CODE}-source-${SHORT_SHA}.zip" \
+            HEAD
+
+          cat > dist/metadata/build-metadata.json <<EOF
+          {
+            "project": "DeviceMasker",
+            "versionName": "${VERSION_NAME}",
+            "versionCode": ${VERSION_CODE},
+            "gitSha": "${GITHUB_SHA}",
+            "shortSha": "${SHORT_SHA}",
+            "branch": "${GITHUB_REF_NAME}",
+            "ref": "${GITHUB_REF}",
+            "workflow": "${GITHUB_WORKFLOW}",
+            "workflowRunId": "${GITHUB_RUN_ID}",
+            "workflowRunNumber": "${GITHUB_RUN_NUMBER}",
+            "signedReleaseAvailable": ${SIGNED_RELEASE_AVAILABLE}
+          }
+          EOF
+
+          ls -la dist
+          ls -la dist/debug
+          ls -la dist/release
+          ls -la dist/source
+          ls -la dist/metadata
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: DeviceMasker-debug-${{ github.run_id }}
+          path: |
+            dist/debug/**
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload signed release APK
+        if: steps.signing.outputs.available == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: DeviceMasker-release-signed-${{ github.run_id }}
+          path: |
+            dist/release/**
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload source archive
+        uses: actions/upload-artifact@v6
+        with:
+          name: DeviceMasker-source-${{ github.run_id }}
+          path: |
+            dist/source/**
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload build metadata
+        uses: actions/upload-artifact@v6
+        with:
+          name: DeviceMasker-build-metadata-${{ github.run_id }}
+          path: |
+            dist/metadata/**
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Attest signed release APK
+        if: steps.signing.outputs.available == 'true' && github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: dist/release/*.apk
+
+      - name: Attest debug APK
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: dist/debug/*.apk

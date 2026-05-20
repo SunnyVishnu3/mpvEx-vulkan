@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+    Base theme for Device Masker.
+    Minimal XML theme as the actual theming is done in Jetpack Compose.
+    This theme is used for the splash screen and Activity window.
+    -->
+    <style name="Theme.DeviceMasker" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Window background for splash/startup -->
+        <item name="android:windowBackground">@android:color/black</item>
+
+        <!-- Status bar and navigation bar colors -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+
+        <!-- Edge-to-edge display (API 27+, gracefully ignored on 26) -->
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="27">shortEdges</item>
+
+        <!-- Light status bar icons for dark background -->
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
+    </style>
+</resources>

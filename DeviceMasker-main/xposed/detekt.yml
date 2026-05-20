@@ -1,0 +1,33 @@
+exceptions:
+  TooGenericExceptionCaught:
+    active: false
+  TooGenericExceptionThrown:
+    active: false
+
+complexity:
+  LongMethod:
+    allowedLines: 140
+  CyclomaticComplexMethod:
+    allowedComplexity: 25
+
+performance:
+  SpreadOperator:
+    active: false
+
+potential-bugs:
+  Deprecation:
+    active: false
+  LateinitUsage:
+    active: false
+  NullCheckOnMutableProperty:
+    active: false
+  NullableToStringCall:
+    active: false
+  PropertyUsedBeforeDeclaration:
+    active: false
+  UnconditionalJumpStatementInLoop:
+    active: false
+
+style:
+  ReturnCount:
+    max: 6

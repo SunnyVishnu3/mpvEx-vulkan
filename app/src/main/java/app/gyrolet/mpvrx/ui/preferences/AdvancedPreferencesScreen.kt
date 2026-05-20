@@ -91,6 +91,7 @@ object AdvancedPreferencesScreen : Screen {
     val scope = rememberCoroutineScope()
     var showImportDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
+    var showYtdlDialog by remember { mutableStateOf(false) }
     var importStats by remember { mutableStateOf<SettingsManager.ImportStats?>(null) }
     var exportStats by remember { mutableStateOf<SettingsManager.ExportStats?>(null) }
     val playbackHistoryClearedMessage = stringResource(R.string.pref_advanced_cleared_playback_history)
@@ -215,6 +216,10 @@ object AdvancedPreferencesScreen : Screen {
       )
     }
 
+    if (showYtdlDialog) {
+      YtdlUpdateDialog(onDismiss = { showYtdlDialog = false })
+    }
+
     Scaffold(
       topBar = {
         TopAppBar(
@@ -245,6 +250,59 @@ object AdvancedPreferencesScreen : Screen {
             .fillMaxSize()
             .padding(padding),
         ) {
+          // YouTube-DL Section
+          item {
+            PreferenceSectionHeader(title = "YouTube-DL (yt-dlp)")
+          }
+
+          item {
+            PreferenceCard {
+              val enableYtdl by preferences.enableYtdl.collectAsState()
+              SwitchPreference(
+                value = enableYtdl,
+                onValueChange = preferences.enableYtdl::set,
+                title = { Text(stringResource(R.string.pref_enable_ytdl_title)) },
+              )
+
+              PreferenceDivider()
+
+              val ytdlFormat by preferences.ytdlFormat.collectAsState()
+              ListPreference(
+                value = ytdlFormat,
+                onValueChange = preferences.ytdlFormat::set,
+                values = listOf(
+                  "bestvideo[height<=?1080]+bestaudio/best",
+                  "bestvideo[height<=?720]+bestaudio/best",
+                  "bestvideo[height<=?480]+bestaudio/best",
+                  "bestvideo[height<=?360]+bestaudio/best",
+                  "bestaudio/best"
+                ),
+                title = { Text(stringResource(R.string.pref_ytdl_format_title)) },
+                summary = {
+                  Text(
+                    ytdlFormat,
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+
+              Preference(
+                title = { Text("Install/Update youtube-dl") },
+                summary = {
+                  Text(
+                    "Download and update the yt-dlp binary for streaming support",
+                    color = MaterialTheme.colorScheme.outline
+                  )
+                },
+                onClick = {
+                  showYtdlDialog = true
+                },
+              )
+            }
+          }
+
           // Backup & Restore Section
           item {
             PreferenceSectionHeader(title = stringResource(R.string.pref_section_backup_restore))
