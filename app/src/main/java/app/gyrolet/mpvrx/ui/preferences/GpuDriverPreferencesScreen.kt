@@ -8,7 +8,7 @@ import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import app.gyrolet.mpvrx.ui.components.AdaptiveSwitch
+import app.gyrolet.mpvrx.ui.player.components.expressive.ExpressiveSwitch as AdaptiveSwitch
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -36,13 +36,17 @@ import app.gyrolet.mpvrx.domain.gpu.GpuDriverManager
 import app.gyrolet.mpvrx.preferences.GpuDriverPreferences
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.presentation.Screen
-import app.gyrolet.mpvrx.presentation.components.LiquidDialog
+import app.gyrolet.mpvrx.ui.theme.LiquidGlassAlertDialog as LiquidDialog
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons as AppIcons
 import app.gyrolet.mpvrx.ui.utils.LocalBackStack
 import app.gyrolet.mpvrx.ui.utils.popSafely
-
+import app.gyrolet.mpvrx.utils.GpuDriverHelper
+import app.gyrolet.mpvrx.utils.GpuDriverLogger
+import app.gyrolet.mpvrx.utils.NativeFreedrenoConfig
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
 
@@ -70,22 +74,26 @@ object GpuDriverPreferencesScreen : Screen {
         val expandedReleases = remember { mutableStateMapOf<String, Boolean>() }
         
         val activeDriverId by preferences.activeDriverId.collectAsState()
-        val hasAcceptedWarning by preferences.hasAcceptedGpuWarning.collectAsState()
-        var showCompatibilityWarning by remember { mutableStateOf(!hasAcceptedWarning && !driverManager.isAdrenoSupported()) }
 
         val isArm64 = remember { Build.SUPPORTED_ABIS.contains("arm64-v8a") }
         val isQualcomm = remember { driverManager.isAdrenoSupported() }
         val isSupported = isArm64 && isQualcomm
         
-        val gpuModel = remember { 
+        // Prefer a Build.SOC_MODEL / Build.BOARD lookup for the display
+        // label too — the native bridge string is the generic
+        // "Qualcomm Adreno GPU Detected" on every Adreno device. Fall back
+        // to the bridge string only if AdrenoLookup doesn't know the SoC.
+        val gpuModel = remember {
             val bridgeInfo = driverManager.getGpuModel()
-            if (bridgeInfo.contains("Architecture Not Supported") || bridgeInfo.contains("Generic GPU")) {
-                "Detected ${Build.HARDWARE} (${Build.MODEL})"
-            } else {
-                bridgeInfo
+            val enriched = app.gyrolet.mpvrx.utils.AdrenoLookup.displayLabel()
+            when {
+                bridgeInfo.contains("Architecture Not Supported") -> bridgeInfo
+                enriched != null -> enriched
+                bridgeInfo.contains("Generic GPU") -> "Detected ${Build.HARDWARE} (${Build.MODEL})"
+                else -> bridgeInfo
             }
         }
-        val adrenoModel = remember { driverManager.parseAdrenoModel(gpuModel) }
+        val adrenoModel = remember { driverManager.getAdrenoModelNumber() }
         val recommendedDriver = remember { driverManager.getRecommendedDriver(adrenoModel) }
 
         LaunchedEffect(Unit) {
@@ -141,37 +149,6 @@ object GpuDriverPreferencesScreen : Screen {
                     .padding(padding)
                     .fillMaxSize()
             ) {
-                if (showCompatibilityWarning) {
-                    LiquidDialog(
-                        onDismissRequest = { /* Must accept or go back */ },
-                        title = {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                                Icon(AppIcons.Default.Aperture, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(28.dp))
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text("Compatibility Warning")
-                            }
-                        },
-                        text = {
-                            Text("Custom GPU drivers are primarily designed for Qualcomm Adreno GPUs. Your device does not appear to have one.\n\nThere is no guarantee these drivers will work, and they could cause crashes or graphical glitches. Proceed with caution.")
-                        },
-                        confirmButton = {
-                            Button(
-                                onClick = {
-                                    preferences.hasAcceptedGpuWarning.set(true)
-                                    showCompatibilityWarning = false
-                                }
-                            ) {
-                                Text("I Understand")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { backstack.popSafely() }) {
-                                Text("Go Back")
-                            }
-                        }
-                    )
-                }
-
                 if (showInfoDialog) {
                     TechnicalInfoDialog(onDismiss = { showInfoDialog = false })
                 }
@@ -187,11 +164,21 @@ object GpuDriverPreferencesScreen : Screen {
                                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Icon(AppIcons.Outlined.Info, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                                         Spacer(modifier = Modifier.width(16.dp))
-                                        Text(
-                                            if (!isArm64) stringResource(R.string.gpu_driver_not_supported)
-                                            else "Custom drivers require a Qualcomm Adreno GPU.",
-                                            color = MaterialTheme.colorScheme.onErrorContainer
-                                        )
+                                        Column {
+                                            Text(
+                                                "GPU is unsupported",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                if (!isArm64) stringResource(R.string.gpu_driver_not_supported)
+                                                else "Custom GPU drivers only work on Qualcomm Adreno hardware (no Mali, PowerVR, etc.). The driver loader is disabled on this device.",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -201,8 +188,42 @@ object GpuDriverPreferencesScreen : Screen {
                             DeviceInfoHub(gpuModel, recommendedDriver)
                         }
 
+                        // Live driver status — green when a custom driver is
+                        // armed, red when the last load failed and we auto-
+                        // reverted to system. Sourced from GpuDriverHelper's
+                        // mutable activeDriverStatus, which is set on every
+                        // code path inside initialize(). Read inside a
+                        // remember(activeDriverId) so the banner refreshes
+                        // when the user changes the active driver pref.
+                        item {
+                            val status = remember(activeDriverId) {
+                                app.gyrolet.mpvrx.utils.GpuDriverHelper.activeDriverStatus
+                            }
+                            when (status) {
+                                app.gyrolet.mpvrx.utils.GpuDriverHelper.DriverStatus.CUSTOM_FAILED ->
+                                    StatusBanner(
+                                        icon = AppIcons.Outlined.Info,
+                                        text = "Custom driver failed to load. Automatically reverted to system driver.",
+                                        container = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f),
+                                        content = MaterialTheme.colorScheme.onErrorContainer,
+                                        accent = MaterialTheme.colorScheme.error,
+                                    )
+                                app.gyrolet.mpvrx.utils.GpuDriverHelper.DriverStatus.CUSTOM_ACTIVE ->
+                                    StatusBanner(
+                                        icon = AppIcons.Default.Check,
+                                        text = "Custom driver active and running",
+                                        container = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                        content = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        accent = MaterialTheme.colorScheme.primary,
+                                        bold = true,
+                                    )
+                                else -> Unit
+                            }
+                        }
+
                         item {
                             val showHud by preferences.showDriverHud.collectAsState()
+                            val verboseLogging by preferences.verboseLogging.collectAsState()
                             PreferenceSectionHeader(title = "General Settings")
                             PreferenceCard {
                                 Row(
@@ -214,6 +235,16 @@ object GpuDriverPreferencesScreen : Screen {
                                         Text(stringResource(R.string.gpu_driver_show_hud_summary), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
                                     }
                                     AdaptiveSwitch(checked = showHud, onCheckedChange = { preferences.showDriverHud.set(it) })
+                                }
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(stringResource(R.string.gpu_driver_verbose_log), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                        Text(stringResource(R.string.gpu_driver_verbose_log_summary), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                                    }
+                                    AdaptiveSwitch(checked = verboseLogging, onCheckedChange = { preferences.verboseLogging.set(it) })
                                 }
                             }
                         }
@@ -228,28 +259,61 @@ object GpuDriverPreferencesScreen : Screen {
                                 isSelected = activeDriverId == driver.id,
                                 onSelect = {
                                     if (activeDriverId != driver.id) {
-                                        preferences.activeDriverId.set(driver.id)
-                                        Toast.makeText(context, R.string.gpu_driver_restart_required, Toast.LENGTH_LONG).show()
+                                        // Live-swap: tear down the old bridge hooks and
+                                        // arm the new driver in-process. Saves the user a
+                                        // force-close + cold-start. Pref is only persisted
+                                        // after the bridge confirms the load. On failure
+                                        // applyDriverChange THROWS — we deliberately let
+                                        // it propagate so the app crashes with the real
+                                        // cause instead of silently falling back to the
+                                        // OEM driver. Boot-time guard recovers on the
+                                        // next launch.
+                                        scope.launch(Dispatchers.IO) {
+                                            GpuDriverHelper.applyDriverChange(context, driver.id)
+                                            withContext(Dispatchers.Main) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Driver '${driver.name}' applied — start a new video to use it",
+                                                    Toast.LENGTH_LONG,
+                                                ).show()
+                                            }
+                                        }
                                     }
                                 },
                                 onDelete = {
                                     scope.launch {
+                                        val wasActive = activeDriverId == driver.id
                                         driverManager.deleteDriver(driver.id)
                                         drivers.clear()
                                         drivers.addAll(driverManager.getInstalledDrivers())
                                         safDrivers.clear()
                                         safDrivers.addAll(driverManager.getSafDrivers())
-                                        if (activeDriverId == driver.id) {
-                                            preferences.activeDriverId.set("system")
+                                        if (wasActive) {
+                                            // Live-swap to system so the bridge isn't
+                                            // pointing at a now-deleted .so.
+                                            withContext(Dispatchers.IO) {
+                                                GpuDriverHelper.applyDriverChange(context, "system")
+                                            }
                                         }
                                     }
                                 }
                             )
                         }
 
-                        if (safDrivers.isNotEmpty()) {
-                            item { PreferenceSectionHeader("Drivers in Storage (gpudriver/)") }
-                            items(safDrivers, key = { it.uri.toString() }) { safDriver ->
+                        // Hide SAF entries that duplicate an already-installed
+                        // driver — showing an "Install" button next to a driver
+                        // you've already installed is just noise. The auto-
+                        // backup zip is still on disk for crash recovery; once
+                        // the user uninstalls, the entry re-appears here so they
+                        // can reinstall without redownloading.
+                        val installedNames = drivers
+                            .filterNot { it.isSystem }
+                            .mapTo(mutableSetOf()) { it.name }
+                        val visibleSafDrivers = safDrivers.filter { it.name !in installedNames }
+
+                        if (isSupported && visibleSafDrivers.isNotEmpty()) {
+                            item { PreferenceSectionHeader(title = "Drivers in Storage (gpudriver/)") }
+                            items(visibleSafDrivers, key = { it.uri.toString() }) { safDriver ->
                                 SafDriverItem(
                                     driver = safDriver,
                                     onInstall = {
@@ -260,17 +324,30 @@ object GpuDriverPreferencesScreen : Screen {
                                                 drivers.addAll(driverManager.getInstalledDrivers())
                                                 safDrivers.clear()
                                                 safDrivers.addAll(driverManager.getSafDrivers())
-                                                preferences.activeDriverId.set(result.getOrNull()?.id ?: "system")
-                                                Toast.makeText(context, "Driver installed and activated", Toast.LENGTH_SHORT).show()
+                                                // Auto-activate the freshly installed driver
+                                                // via the live-swap path so the user doesn't
+                                                // need a restart to try it out. Throws on
+                                                // failure (no silent OEM fallback).
+                                                val newId = result.getOrNull()?.id
+                                                if (newId != null) {
+                                                    withContext(Dispatchers.IO) {
+                                                        GpuDriverHelper.applyDriverChange(context, newId)
+                                                    }
+                                                }
+                                                Toast.makeText(context, R.string.gpu_driver_install_success, Toast.LENGTH_SHORT).show()
                                             } else {
-                                                Toast.makeText(context, "Failed to install driver", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.gpu_driver_install_failed, result.exceptionOrNull()?.message),
+                                                    Toast.LENGTH_LONG,
+                                                ).show()
                                             }
                                         }
-                                    }
+                                    },
                                 )
                             }
                         }
-                        
+
                         item { Spacer(modifier = Modifier.height(80.dp)) }
                     }
 
@@ -279,39 +356,64 @@ object GpuDriverPreferencesScreen : Screen {
                         tonalElevation = 8.dp,
                         color = MaterialTheme.colorScheme.surface
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Button(
-                                onClick = { launcher.launch("application/zip") },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
+                        if (isSupported) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Icon(AppIcons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.gpu_driver_install_from_file), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
-                            Button(
-                                onClick = { 
-                                    showFetchSheet = true
-                                    if (remoteDriverGroups.isEmpty()) {
-                                        scope.launch {
-                                            isFetching = true
-                                            remoteDriverGroups.clear()
-                                            remoteDriverGroups.addAll(driverManager.fetchRemoteDriverGroups())
-                                            isFetching = false
+                                Button(
+                                    onClick = { launcher.launch("application/zip") },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                ) {
+                                    Icon(AppIcons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.gpu_driver_install_from_file), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                                Button(
+                                    onClick = {
+                                        showFetchSheet = true
+                                        if (remoteDriverGroups.isEmpty()) {
+                                            scope.launch {
+                                                isFetching = true
+                                                remoteDriverGroups.clear()
+                                                remoteDriverGroups.addAll(driverManager.fetchRemoteDriverGroups())
+                                                isFetching = false
+                                            }
                                         }
-                                    }
-                                },
-                                modifier = Modifier.weight(1f)
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(AppIcons.Default.Download, contentDescription = null, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.gpu_driver_fetch_drivers), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                        } else {
+                            // Non-Adreno / non-arm64 hardware: replace the
+                            // SAF picker and remote-driver downloader with a
+                            // single warning so the user can't sideload or
+                            // download an incompatible driver and crash the
+                            // app on the next vkCreateInstance.
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(AppIcons.Default.Download, contentDescription = null, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.gpu_driver_fetch_drivers), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Icon(
+                                    AppIcons.Outlined.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    "Custom GPU installation disabled for preventing playback crashes",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
                             }
                         }
                     }
@@ -341,7 +443,7 @@ object GpuDriverPreferencesScreen : Screen {
                                         scope.launch {
                                             isFetching = true
                                             remoteDriverGroups.clear()
-                                            remoteDriverGroups.addAll(driverManager.fetchRemoteDriverGroups())
+                                            remoteDriverGroups.addAll(driverManager.fetchRemoteDriverGroups(forceRefresh = true))
                                             isFetching = false
                                         }
                                     },
@@ -376,7 +478,7 @@ object GpuDriverPreferencesScreen : Screen {
                                             scope.launch {
                                                 isFetching = true
                                                 remoteDriverGroups.clear()
-                                                remoteDriverGroups.addAll(driverManager.fetchRemoteDriverGroups())
+                                                remoteDriverGroups.addAll(driverManager.fetchRemoteDriverGroups(forceRefresh = true))
                                                 isFetching = false
                                             }
                                         }) {
@@ -429,8 +531,6 @@ object GpuDriverPreferencesScreen : Screen {
                                                                         if (result.isSuccess) {
                                                                             drivers.clear()
                                                                             drivers.addAll(driverManager.getInstalledDrivers())
-                                                                            safDrivers.clear()
-                                                                            safDrivers.addAll(driverManager.getSafDrivers())
                                                                             showFetchSheet = false
                                                                             Toast.makeText(context, R.string.gpu_driver_install_success, Toast.LENGTH_SHORT).show()
                                                                         } else {
@@ -528,6 +628,67 @@ object GpuDriverPreferencesScreen : Screen {
     }
 
     @Composable
+    private fun SafDriverItem(
+        driver: GpuDriverManager.SafGpuDriver,
+        onInstall: () -> Unit,
+    ) {
+        Card(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp).fillMaxWidth(),
+            onClick = onInstall,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            ),
+            shape = RoundedCornerShape(20.dp),
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.secondaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        AppIcons.Default.Folder,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+                Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
+                    Text(
+                        driver.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    val subtitle = listOfNotNull(
+                        driver.version.takeIf { it.isNotEmpty() }?.let { "v$it" },
+                        driver.author.takeIf { it.isNotEmpty() }?.let { "by $it" },
+                    ).joinToString(" • ")
+                    if (subtitle.isNotEmpty()) {
+                        Text(
+                            subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Button(
+                    onClick = onInstall,
+                    contentPadding = PaddingValues(horizontal = 12.dp),
+                    modifier = Modifier.height(32.dp),
+                ) {
+                    Text("Install", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
+    }
+
+    @Composable
     private fun DriverItem(
         driver: GpuDriver,
         isSelected: Boolean,
@@ -571,6 +732,27 @@ object GpuDriverPreferencesScreen : Screen {
                     }
                     if (driver.isSystem) {
                         Text(driver.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        // Metadata chips: size + install date + min Vulkan API.
+                        // Each chip is conditional — empty fields don't render
+                        // a placeholder, so older drivers without these values
+                        // just show nothing extra.
+                        val chips = buildList {
+                            if (driver.fileSizeBytes > 0) add(formatFileSize(driver.fileSizeBytes))
+                            if (driver.installDate > 0) add(formatInstallDate(driver.installDate))
+                            if (driver.minApi.isNotEmpty()) add("Vulkan ${driver.minApi}")
+                        }
+                        if (chips.isNotEmpty()) {
+                            Text(
+                                chips.joinToString("  •  "),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (isSelected)
+                                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(top = 2.dp),
+                            )
+                        }
                     }
                 }
                 if (!driver.isSystem) {
@@ -601,55 +783,6 @@ object GpuDriverPreferencesScreen : Screen {
                     }
                 }
             )
-        }
-    }
-
-    @Composable
-    private fun SafDriverItem(
-        driver: GpuDriverManager.SafGpuDriver,
-        onInstall: () -> Unit
-    ) {
-        Card(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp).fillMaxWidth(),
-            onClick = onInstall,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.secondaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(AppIcons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
-                }
-                Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
-                    Text(
-                        driver.name, 
-                        style = MaterialTheme.typography.titleMedium, 
-                        fontWeight = FontWeight.Bold, 
-                        maxLines = 1, 
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        listOfNotNull(
-                            if (driver.version.isNotEmpty()) "v${driver.version}" else null,
-                            if (driver.author.isNotEmpty()) "by ${driver.author}" else null
-                        ).joinToString(" • "),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Button(
-                    onClick = onInstall,
-                    contentPadding = PaddingValues(horizontal = 12.dp),
-                    modifier = Modifier.height(32.dp)
-                ) {
-                    Text("Install", style = MaterialTheme.typography.labelSmall)
-                }
-            }
         }
     }
 
@@ -815,6 +948,8 @@ object GpuDriverPreferencesScreen : Screen {
     private fun TechnicalInfoDialog(onDismiss: () -> Unit) {
         val context = LocalContext.current
         val driverManager = koinInject<GpuDriverManager>()
+        val gpuPrefs = koinInject<GpuDriverPreferences>()
+        val shareScope = rememberCoroutineScope()
         
         val systemInfo = remember {
             buildString {
@@ -875,15 +1010,31 @@ object GpuDriverPreferencesScreen : Screen {
                         Spacer(modifier = Modifier.width(12.dp))
                         Text("Technical Info")
                     }
-                    IconButton(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                            val clip = android.content.ClipData.newPlainText("MpvRx System Info", systemInfo)
-                            clipboard.setPrimaryClip(clip)
-                            Toast.makeText(context, "System info copied to clipboard", Toast.LENGTH_SHORT).show()
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = {
+                                // Heavy: collects state + runs `logcat -d`.
+                                // Off-main thread to keep the dialog snappy.
+                                shareScope.launch {
+                                    val dump = withContext(Dispatchers.IO) {
+                                        GpuDriverLogger.collect(context, driverManager, gpuPrefs)
+                                    }
+                                    GpuDriverLogger.share(context, dump)
+                                }
+                            }
+                        ) {
+                            Icon(AppIcons.Default.Download, contentDescription = "Share diagnostic log", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                         }
-                    ) {
-                        Icon(AppIcons.Default.ContentCopy, contentDescription = "Copy", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        IconButton(
+                            onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                val clip = android.content.ClipData.newPlainText("StreamX System Info", systemInfo)
+                                clipboard.setPrimaryClip(clip)
+                                Toast.makeText(context, "System info copied to clipboard", Toast.LENGTH_SHORT).show()
+                            }
+                        ) {
+                            Icon(AppIcons.Default.ContentCopy, contentDescription = "Copy", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        }
                     }
                 }
             },
@@ -963,5 +1114,58 @@ object GpuDriverPreferencesScreen : Screen {
                 )
             }
         }
+    }
+
+    // Compact status card rendered above the General Settings section. Driven
+    // by GpuDriverHelper.activeDriverStatus — green when a custom driver is
+    // armed, red when the last load failed and we auto-reverted.
+    @Composable
+    private fun StatusBanner(
+        icon: app.gyrolet.mpvrx.ui.icons.AppIcon,
+        text: String,
+        container: Color,
+        content: Color,
+        accent: Color,
+        bold: Boolean = false,
+    ) {
+        Card(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp).fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = container),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+                    color = content,
+                )
+            }
+        }
+    }
+
+    // Renders bytes as "12.3 MB" / "456 KB" / "789 B" — driver sizes are
+    // typically 5–100 MB so MB is the common case. Two-decimal precision
+    // keeps the chip narrow without losing useful detail.
+    private fun formatFileSize(bytes: Long): String {
+        if (bytes < 1024) return "$bytes B"
+        val kb = bytes / 1024.0
+        if (kb < 1024) return "%.1f KB".format(kb)
+        val mb = kb / 1024.0
+        if (mb < 1024) return "%.1f MB".format(mb)
+        return "%.2f GB".format(mb / 1024.0)
+    }
+
+    // Renders an epoch-millis install timestamp as a short locale date.
+    // Uses java.text directly to avoid pulling in a new dep; the formatter is
+    // re-created per call which is fine for a UI list of ~5–20 drivers.
+    private fun formatInstallDate(epochMillis: Long): String {
+        val fmt = java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault())
+        return fmt.format(java.util.Date(epochMillis))
     }
 }
