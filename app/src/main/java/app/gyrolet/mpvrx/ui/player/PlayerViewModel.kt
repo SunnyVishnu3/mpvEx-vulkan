@@ -4422,6 +4422,7 @@ class PlayerViewModel(
         )
       }
       AmbientVisualMode.FRAME_EXTEND -> applyFrameExtendPreset(AmbientShaderPresets.frameExtendFast)
+      AmbientVisualMode.YOUTUBE -> {}
     }
   }
 
@@ -4442,6 +4443,7 @@ class PlayerViewModel(
         )
       }
       AmbientVisualMode.FRAME_EXTEND -> applyFrameExtendPreset(AmbientShaderPresets.frameExtendBalanced)
+      AmbientVisualMode.YOUTUBE -> {}
     }
   }
 
@@ -4462,6 +4464,7 @@ class PlayerViewModel(
         )
       }
       AmbientVisualMode.FRAME_EXTEND -> applyFrameExtendPreset(AmbientShaderPresets.frameExtendHighQuality)
+      AmbientVisualMode.YOUTUBE -> {}
     }
   }
 
@@ -4664,6 +4667,11 @@ class PlayerViewModel(
             detailProtection = _frameExtendDetailProtection.value,
             glowMix = _frameExtendGlowMix.value,
             ditherNoise = ditherNoise,
+          )
+        AmbientVisualMode.YOUTUBE ->
+          AmbientYouTubeShaderSpec(
+            context = context,
+            shared = shared,
           )
       }
 
