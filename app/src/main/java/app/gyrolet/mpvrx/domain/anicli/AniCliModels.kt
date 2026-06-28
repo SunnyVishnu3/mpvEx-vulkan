@@ -45,6 +45,7 @@ data class AniCliEpisode(
     val thumbnail: String? = null,
     val isPreview: Boolean = false,
     val duration: String? = null,
+    val poster: String? = null,
 )
 
 data class AniCliSubtitleTrack(
@@ -79,6 +80,7 @@ data class AniCliUiState(
     val isLoadingEpisodes: Boolean = false,
     val episodes: List<AniCliEpisode> = emptyList(),
     val selectedEpisode: String? = null,
+    val selectedEpisodeNumber: String? = null,
     val isLoadingStreams: Boolean = false,
     val streamLinks: List<AniCliStreamLink> = emptyList(),
     val showStreamSheet: Boolean = false,

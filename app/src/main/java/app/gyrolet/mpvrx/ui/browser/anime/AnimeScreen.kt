@@ -10,11 +10,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons as MIcons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search as MdiSearch
-import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Clear
+import app.gyrolet.mpvrx.ui.icons.Icon
+import app.gyrolet.mpvrx.ui.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -66,11 +63,11 @@ object AnimeScreen : Screen {
                     onValueChange = { searchText = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Search anime...") },
-                    leadingIcon = { Icon(MdiSearch, contentDescription = null) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
                         if (searchText.isNotEmpty()) {
                             IconButton(onClick = { searchText = ""; vm.search("") }) {
-                                Icon(MIcons.filled.Clear, contentDescription = "Clear")
+                                Icon(Icons.Default.Clear, contentDescription = "Clear")
                             }
                         }
                     },
@@ -122,7 +119,7 @@ object AnimeScreen : Screen {
         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(MIcons.filled.Explore, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.SmartDisplay, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(6.dp))
                     Text("Explore", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 }
@@ -196,7 +193,7 @@ object AnimeScreen : Screen {
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { vm.selectAnime(anime); /* deselect by reset */ }) {
-                        Icon(MIcons.Filled.PlayArrow, contentDescription = null)
+                        Icon(Icons.Default.PlayArrow, contentDescription = null)
                     }
                     Column(Modifier.weight(1f)) {
                         Text(anime.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -248,7 +245,7 @@ object AnimeScreen : Screen {
             ),
         ) {
             Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(MIcons.Filled.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("Episode ${episode.number}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
@@ -298,7 +295,7 @@ object AnimeScreen : Screen {
     private fun StreamCard(link: AniCliStreamLink, onClick: () -> Unit) {
         Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
             Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(MIcons.Filled.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(link.title ?: link.quality, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
