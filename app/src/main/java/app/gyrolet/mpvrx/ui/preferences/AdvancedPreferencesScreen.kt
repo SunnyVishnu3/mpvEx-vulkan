@@ -48,6 +48,7 @@ import app.gyrolet.mpvrx.R
 import app.gyrolet.mpvrx.database.MpvRxDatabase
 import app.gyrolet.mpvrx.domain.thumbnail.ThumbnailRepository
 import app.gyrolet.mpvrx.preferences.AdvancedPreferences
+import app.gyrolet.mpvrx.preferences.BrowserPreferences
 import app.gyrolet.mpvrx.preferences.FoldersPreferences
 import app.gyrolet.mpvrx.preferences.SettingsManager
 import app.gyrolet.mpvrx.preferences.SubtitlesPreferences
@@ -86,6 +87,7 @@ object AdvancedPreferencesScreen : Screen {
     val preferences = koinInject<AdvancedPreferences>()
     val settingsManager = koinInject<SettingsManager>()
     val foldersPreferences = koinInject<FoldersPreferences>()
+    val browserPreferences = koinInject<BrowserPreferences>()
     val subtitlesPreferences = koinInject<SubtitlesPreferences>()
     val scope = rememberCoroutineScope()
     var showImportDialog by remember { mutableStateOf(false) }
@@ -340,6 +342,46 @@ object AdvancedPreferencesScreen : Screen {
             }
           }
           
+          // Anime Folder Section
+          item {
+            PreferenceSectionHeader(title = "Anime Downloads")
+          }
+
+          item {
+            PreferenceCard {
+              val animeFolderUri by browserPreferences.animeFolderUri.collectAsState()
+
+              val animeFolderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
+                if (uri == null) return@rememberLauncherForActivityResult
+                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                browserPreferences.animeFolderUri.set(uri.toString())
+              }
+
+              Preference(
+                title = { Text("Anime Folder") },
+                summary = {
+                  Text(
+                    text = if (animeFolderUri.isNotEmpty()) getSimplifiedStoragePath(animeFolderUri) else "Select folder for anime downloads",
+                    color = MaterialTheme.colorScheme.outline,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                  )
+                },
+                icon = { Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                onClick = { animeFolderPicker.launch(null) },
+              )
+
+              if (animeFolderUri.isNotEmpty()) {
+                PreferenceDivider()
+                Preference(
+                  title = { Text("Clear Anime Folder") },
+                  icon = { Icon(Icons.Default.Clear, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                  onClick = { browserPreferences.animeFolderUri.set("") },
+                )
+              }
+            }
+          }
+
           // MPV Configuration Section
           item {
             PreferenceSectionHeader(title = stringResource(R.string.pref_section_mpv_config))
