@@ -419,6 +419,7 @@ object Icons {
     val FileUpload = Shared.FileUpload
     val Flip = Shared.Flip
     val Folder = Shared.Folder
+    val FolderOff = Shared.FolderOff
     val Gesture = Shared.Gesture
     val Headset = Shared.Headset
     val Info = Shared.Info
