@@ -234,6 +234,7 @@ dependencies {
 
   implementation(libs.truetype.parser)
   implementation(libs.fsaf)
+  implementation("com.google.code.gson:gson:2.10.1")
   implementation(libs.mediainfo.lib)
   implementation("com.llamatik:library:1.4.0")
   implementation(libs.androidx.profileinstaller)
