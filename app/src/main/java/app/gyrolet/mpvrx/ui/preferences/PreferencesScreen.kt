@@ -227,7 +227,7 @@ object PreferencesScreen : Screen {
           SettingsDestination(
             title = "Anime Mode",
             summary = "Browse and stream anime from MovieBox",
-            icon = Icons.Filled.Movie,
+            icon = Icons.Filled.PlayArrow,
             screen = AnimePreferencesScreen,
           ),
         ),
