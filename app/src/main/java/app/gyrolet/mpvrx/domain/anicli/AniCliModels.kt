@@ -1,10 +1,22 @@
 package app.gyrolet.mpvrx.domain.anicli
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class AnimeSource(val displayName: String, val supportsMode: Boolean, val isAdult: Boolean = false) {
     MOVIEBOX("MovieBox", false),
 }
 
 val AnimeSource.isStreamingEmbedSource: Boolean get() = false
+
+enum class AnimeTab { LATEST, SEARCH, BOOKMARKS, DOWNLOADS }
+
+enum class AnimeListContext {
+    TRENDING,
+    SEARCH,
+    BOOKMARKS,
+    HISTORY,
+}
 
 data class AniCliAnime(
     val id: String,
@@ -37,6 +49,7 @@ data class AnimeHistoryEntry(
     val watchedAt: Long,
 )
 
+@Serializable
 data class AniCliEpisode(
     val id: String,
     val number: String,
@@ -67,6 +80,57 @@ data class AniCliStreamLink(
     val title: String? = null,
 )
 
+@Serializable
+enum class AnimeDownloadQualityMode {
+    HIGHEST,
+    LOWEST,
+    EXACT,
+}
+
+data class AnimeDownloadRequest(
+    val source: AnimeSource,
+    val animeId: String,
+    val animeName: String,
+    val episodeId: String? = null,
+    val episodeNumber: String,
+    val episodeTitle: String? = null,
+    val subtitleTracks: List<AniCliSubtitleTrack> = emptyList(),
+    val translationType: String,
+    val qualityLabel: String = "Auto",
+    val qualityMode: AnimeDownloadQualityMode = AnimeDownloadQualityMode.HIGHEST,
+    val directUrl: String? = null,
+    val referer: String? = null,
+    val userAgent: String? = null,
+    val requestHeaders: Map<String, String> = emptyMap(),
+)
+
+sealed class DownloadState {
+    data object Idle : DownloadState()
+    data object Preparing : DownloadState()
+    data class InProgress(val progress: Float) : DownloadState()
+    data class Paused(val progress: Float) : DownloadState()
+    data object Completed : DownloadState()
+    data class Failed(val error: String) : DownloadState()
+}
+
+data class AnimeDownloadInfo(
+    val key: String,
+    val animeId: String,
+    val animeName: String,
+    val episodeId: String? = null,
+    val epNo: String,
+    val episodeTitle: String? = null,
+    val quality: String,
+    val state: DownloadState = DownloadState.Idle,
+    val bytesDownloaded: Long = 0L,
+    val totalBytes: Long? = null,
+    val transferRateBytesPerSecond: Long? = null,
+    val fileUri: String? = null,
+    val subtitleFileUri: String? = null,
+    val subtitleLabel: String? = null,
+    val updatedAt: Long = System.currentTimeMillis(),
+)
+
 data class AniCliUiState(
     val searchQuery: String = "",
     val mode: String = "sub",
@@ -77,6 +141,8 @@ data class AniCliUiState(
     val searchHasMore: Boolean = true,
     val hasSearched: Boolean = false,
     val selectedAnime: AniCliAnime? = null,
+    val selectedAnimeIndex: Int? = null,
+    val selectedListContext: AnimeListContext? = null,
     val isLoadingEpisodes: Boolean = false,
     val episodes: List<AniCliEpisode> = emptyList(),
     val selectedEpisode: String? = null,
@@ -90,4 +156,18 @@ data class AniCliUiState(
     val isLoadingTrending: Boolean = false,
     val animeHistory: List<AnimeHistoryEntry> = emptyList(),
     val selectedSource: AnimeSource = AnimeSource.MOVIEBOX,
+    val bookmarkedIds: Set<String> = emptySet(),
+    val isSortAscending: Boolean = true,
+    val animeProviderPage: Int = 1,
+    val animeProviderHasMore: Boolean = true,
+    val selectedTab: AnimeTab = AnimeTab.LATEST,
+    val latestAnime: List<AniCliAnime> = emptyList(),
+    val latestPage: Int = 1,
+    val latestHasMore: Boolean = true,
+    val isLoadingLatest: Boolean = false,
+    val isLoadingMoreLatest: Boolean = false,
+    val animeBookmarks: List<AniCliAnime> = emptyList(),
+    val downloadedAnime: List<AniCliAnime> = emptyList(),
+    val downloadedEpisodes: Map<String, List<String>> = emptyMap(),
+    val isDownloadingAll: Boolean = false,
 )

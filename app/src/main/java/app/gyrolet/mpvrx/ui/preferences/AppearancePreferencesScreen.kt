@@ -564,6 +564,21 @@ object AppearancePreferencesScreen : Screen {
                                     )
                                 },
                             )
+
+                            PreferenceDivider()
+
+                            val showAnimeTab by preferences.showAnimeTab.collectAsState()
+                            SwitchPreference(
+                                value = showAnimeTab,
+                                onValueChange = preferences.showAnimeTab::set,
+                                title = { Text("Anime") },
+                                summary = {
+                                    Text(
+                                        text = "Show Anime tab in the bottom navigation bar",
+                                        color = MaterialTheme.colorScheme.outline,
+                                    )
+                                },
+                            )
                         }
                     }
 
