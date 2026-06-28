@@ -339,6 +339,7 @@ object Icons {
   }
 
   object Filled {
+    val Movie = Shared.Movie
     val AccessTime = Shared.AccessTime
     val AccountBalance = Shared.AccountBalance
     val AccountTree = Shared.AccountTree

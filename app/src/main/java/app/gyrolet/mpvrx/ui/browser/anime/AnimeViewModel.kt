@@ -13,6 +13,7 @@ import app.gyrolet.mpvrx.domain.anicli.AnimeSource
 import app.gyrolet.mpvrx.domain.anicli.provider.BaseAnimeProvider
 import app.gyrolet.mpvrx.domain.anicli.provider.EpisodeStreamsParams
 import app.gyrolet.mpvrx.domain.anicli.provider.SearchParams
+import app.gyrolet.mpvrx.domain.anicli.provider.SearchResult
 import app.gyrolet.mpvrx.domain.anicli.provider.SourceRegistry
 import app.gyrolet.mpvrx.preferences.BrowserPreferences
 import com.google.gson.Gson
