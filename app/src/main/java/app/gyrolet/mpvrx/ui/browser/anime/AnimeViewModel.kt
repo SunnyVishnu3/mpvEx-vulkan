@@ -10,6 +10,7 @@ import app.gyrolet.mpvrx.domain.anicli.AniCliSubtitleTrack
 import app.gyrolet.mpvrx.domain.anicli.AniCliUiState
 import app.gyrolet.mpvrx.domain.anicli.AnimeHistoryEntry
 import app.gyrolet.mpvrx.domain.anicli.AnimeSource
+import app.gyrolet.mpvrx.domain.anicli.provider.AnimeParams
 import app.gyrolet.mpvrx.domain.anicli.provider.BaseAnimeProvider
 import app.gyrolet.mpvrx.domain.anicli.provider.EpisodeStreamsParams
 import app.gyrolet.mpvrx.domain.anicli.provider.SearchParams
@@ -17,7 +18,6 @@ import app.gyrolet.mpvrx.domain.anicli.provider.SearchResult
 import app.gyrolet.mpvrx.domain.anicli.provider.SourceRegistry
 import app.gyrolet.mpvrx.preferences.BrowserPreferences
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,13 +25,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.io.File
 
 class AnimeViewModel(application: Application) : AndroidViewModel(application), KoinComponent {
 
     private val sourceRegistry: SourceRegistry by inject()
     private val browserPreferences: BrowserPreferences by inject()
+    private val okHttpClient: OkHttpClient by inject()
     private val gson = Gson()
 
     private val provider: BaseAnimeProvider = sourceRegistry.get(AnimeSource.MOVIEBOX)
@@ -92,11 +96,16 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
         }
     }
 
-    fun selectAnime(anime: AniCliAnime) {
-        _uiState.update { it.copy(selectedAnime = anime, episodes = emptyList(), isLoadingEpisodes = true, selectedEpisode = null, streamLinks = emptyList()) }
+    fun loadAnimeEpisodes(animeId: String, animeName: String) {
+        _uiState.update {
+            it.copy(
+                selectedAnime = AniCliAnime(id = animeId, name = animeName, subEpisodes = 0, dubEpisodes = 0),
+                episodes = emptyList(), isLoadingEpisodes = true, selectedEpisode = null, streamLinks = emptyList(), showStreamSheet = false,
+            )
+        }
         viewModelScope.launch {
             val detail = runCatching {
-                provider.get(app.gyrolet.mpvrx.domain.anicli.provider.AnimeParams(id = anime.id, query = anime.name))
+                provider.get(AnimeParams(id = animeId, query = animeName))
             }.getOrNull()
             val episodes = detail?.episodesInfo?.map { epInfo ->
                 AniCliEpisode(id = epInfo.id, number = epInfo.episode, title = epInfo.title, poster = epInfo.poster, duration = epInfo.duration)
@@ -104,8 +113,8 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
             _uiState.update { state ->
                 val updatedAnime = state.selectedAnime?.copy(
                     subEpisodes = episodes.size,
-                    description = detail?.let { anime.description ?: "" } ?: anime.description,
-                    type = detail?.type ?: anime.type,
+                    description = detail?.description ?: animeName,
+                    type = detail?.type,
                 )
                 state.copy(selectedAnime = updatedAnime, episodes = episodes, isLoadingEpisodes = false)
             }
@@ -151,16 +160,46 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
         }
     }
 
+    fun downloadStream(link: AniCliStreamLink, animeName: String, episodeNumber: String) {
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            val dir = File(app.cacheDir, "anime/${animeName.replace(" ", "_")}")
+            dir.mkdirs()
+            val ext = link.url.substringAfterLast(".").substringBefore("?").takeIf { it.length in 2..4 } ?: "mp4"
+            val file = File(dir, "Episode_$episodeNumber.$ext")
+
+            _uiState.update { it.copy(infoMessage = "Downloading E$episodeNumber...") }
+
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    val request = Request.Builder().url(link.url)
+                        .header("Referer", link.referer ?: "https://moviebox.ph/")
+                        .header("User-Agent", link.userAgent ?: "Mozilla/5.0")
+                        .build()
+                    okHttpClient.newCall(request).execute().use { response ->
+                        if (!response.isSuccessful) throw Exception("Download failed: ${response.code}")
+                        response.body?.byteStream()?.use { input ->
+                            file.outputStream().use { output -> input.copyTo(output) }
+                        }
+                    }
+                }.onSuccess {
+                    _uiState.update { it.copy(infoMessage = "Downloaded: ${file.absolutePath}") }
+                }.onFailure { e ->
+                    _uiState.update { it.copy(infoMessage = "Download failed: ${e.message}") }
+                }
+            }
+        }
+    }
+
     private fun loadHistory() {
-        val json = browserPreferences.animeEnabledSources.get() // repurpose for history storage
-        // We'll store history in a separate pref key
+        val json = browserPreferences.animeEnabledSources.get()
     }
 
     private fun saveHistory() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val json = gson.toJson(_uiState.value.animeHistory)
-                browserPreferences.animeEnabledSources.set(setOf(json)) // temp storage
+                browserPreferences.animeEnabledSources.set(setOf(json))
             }
         }
     }
