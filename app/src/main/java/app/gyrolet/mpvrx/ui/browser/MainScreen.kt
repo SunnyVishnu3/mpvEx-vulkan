@@ -267,7 +267,7 @@ object MainScreen : Screen {
                     MainTab.RECENTS -> Icon(Icons.Filled.History, contentDescription = "Recents")
                     MainTab.PLAYLISTS -> Icon(Icons.Filled.PlaylistPlay, contentDescription = "Playlists")
                     MainTab.NETWORK -> Icon(Icons.Filled.BringYourOwnIp, contentDescription = "Network")
-                    MainTab.ANIME -> Icon(Icons.Filled.Movie, contentDescription = "Anime")
+                    MainTab.ANIME -> Icon(Icons.Filled.PlayArrow, contentDescription = "Anime")
                   }
                 },
                 label = {

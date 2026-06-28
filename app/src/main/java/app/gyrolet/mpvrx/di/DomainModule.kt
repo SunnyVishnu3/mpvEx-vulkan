@@ -2,6 +2,8 @@ package app.gyrolet.mpvrx.di
 
 import app.gyrolet.mpvrx.domain.anicli.provider.SourceRegistry
 import app.gyrolet.mpvrx.domain.anicli.provider.moviebox.MovieBoxAnimeProvider
+import app.gyrolet.mpvrx.ui.browser.anime.AnimeViewModel
+import org.koin.androidx.viewmodel.dsl.viewModel
 import app.gyrolet.mpvrx.domain.anime4k.Anime4KManager
 import app.gyrolet.mpvrx.domain.hdr.HdrToysManager
 import app.gyrolet.mpvrx.domain.thumbnail.CoilVideoThumbnailDecoder
@@ -98,6 +100,7 @@ val domainModule = module {
     single { HdrToysManager(androidContext()) }
     single { MovieBoxAnimeProvider() }
     single { SourceRegistry(providers = listOf(get<MovieBoxAnimeProvider>())) }
+    viewModel { AnimeViewModel(get()) }
     single { OnlineSubtitleFileStore(androidContext(), get()) }
     single { WyzieSearchRepository(androidContext(), get(), get(), get(), get()) }
     single { MpvRxSubtitleHubRepository(get(), get(), get(), get()) }
