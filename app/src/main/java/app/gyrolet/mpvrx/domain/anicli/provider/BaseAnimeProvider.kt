@@ -75,6 +75,7 @@ data class Anime(
     val episodesInfo: List<AnimeEpisodeInfo>? = null,
     val poster: String? = null,
     val year: String? = null,
+    val description: String? = null,
 )
 
 data class EpisodeStream(
