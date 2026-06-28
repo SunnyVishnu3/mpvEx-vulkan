@@ -40,6 +40,7 @@ class AppearancePreferences(
   val showRecentsTab = preferenceStore.getBoolean("show_recents_tab", true)
   val showPlaylistsTab = preferenceStore.getBoolean("show_playlists_tab", true)
   val showNetworkTab = preferenceStore.getBoolean("show_network_tab", false)
+  val showAnimeTab = preferenceStore.getBoolean("show_anime_tab", true)
 
   val topLeftControls =
     preferenceStore.getString(
