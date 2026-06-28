@@ -73,6 +73,10 @@ class BrowserPreferences(
 
   // Watched threshold preference (percentage 1-100)
   val watchedThreshold = preferenceStore.getInt("watched_threshold", 95)
+
+  // Anime preferences
+  val animeEnabledSources = preferenceStore.getStringSet("anime_enabled_sources", setOf("MOVIEBOX"))
+  val animeFolderUri = preferenceStore.getString("anime_folder_uri", "")
 }
 
 /**
