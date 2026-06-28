@@ -25,10 +25,12 @@ import app.gyrolet.mpvrx.preferences.PlayerPreferences
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.ui.player.NavigationAnimStyle
 import org.koin.compose.koinInject
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -43,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.presentation.Screen
@@ -120,6 +123,7 @@ object MainScreen : Screen {
     val showAnimeTab by appearancePreferences.showAnimeTab.collectAsState()
     val hideNavigationBar = NavigationBarState.shouldHideNavigationBar
     val isPermissionDenied = NavigationBarState.isPermissionDenied
+    val contentContainerColor = if (selectedTab == MainTab.ANIME) Color.Black else MaterialTheme.colorScheme.background
     
     val visibleTabs = remember(
       showHomeTab,
@@ -153,6 +157,7 @@ object MainScreen : Screen {
     // Scaffold with bottom navigation bar
     Scaffold(
       modifier = Modifier.fillMaxSize(),
+      containerColor = contentContainerColor,
       bottomBar = {
         // Animated bottom navigation bar with slide animations
         AnimatedVisibility(
@@ -206,7 +211,11 @@ object MainScreen : Screen {
         }
       }
     ) { paddingValues ->
-      Box(modifier = Modifier.fillMaxSize()) {
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .background(contentContainerColor)
+      ) {
         val fabBottomPadding =  80.dp 
 
         AnimatedContent(

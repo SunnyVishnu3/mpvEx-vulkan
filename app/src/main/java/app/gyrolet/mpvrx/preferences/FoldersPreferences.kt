@@ -18,4 +18,10 @@ class FoldersPreferences(
 
   // Dedicated folder where downloaded movies are stored
   val movieFolder = preferenceStore.getString("movie_folder", "")
+
+  // Dedicated folder where Anime mode saves videos and sidecar subtitles.
+  val animeFolder = preferenceStore.getString("anime_folder", "")
+  val animeDownloads = preferenceStore.getString("anime_downloads", "[]")
+  val bookmarkedAnime = preferenceStore.getStringSet("bookmarked_anime", emptySet())
+  val animeHistory = preferenceStore.getStringSet("anime_history", emptySet())
 }

@@ -1,8 +1,6 @@
 package app.gyrolet.mpvrx.ui.preferences
 
 import app.gyrolet.mpvrx.ui.icons.AppIcon
-import app.gyrolet.mpvrx.preferences.AppearancePreferences
-import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
 
@@ -43,7 +41,6 @@ import app.gyrolet.mpvrx.presentation.Screen
 import app.gyrolet.mpvrx.ui.theme.LocalEmphasizedTypography
 import app.gyrolet.mpvrx.ui.utils.LocalBackStack
 import app.gyrolet.mpvrx.ui.utils.popSafely
-import org.koin.compose.koinInject
 import kotlinx.serialization.Serializable
 
 private data class SettingsDestination(
@@ -151,18 +148,6 @@ object PreferencesScreen : Screen {
             summary = stringResource(R.string.pref_audio_summary),
             icon = Icons.Outlined.Audiotrack,
             screen = AudioPreferencesScreen,
-          ),
-        ),
-      ),
-      SettingsSection(
-        title = "Anime",
-        tint = colorScheme.onSurfaceVariant,
-        items = listOf(
-          SettingsDestination(
-            title = "Anime Mode",
-            summary = "Browse and stream anime from MovieBox",
-            icon = Icons.Filled.PlayArrow,
-            screen = AnimePreferencesScreen,
           ),
         ),
       ),

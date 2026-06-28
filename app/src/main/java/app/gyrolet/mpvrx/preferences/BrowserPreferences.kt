@@ -74,8 +74,37 @@ class BrowserPreferences(
   val watchedThreshold = preferenceStore.getInt("watched_threshold", 95)
 
   // Anime preferences
+  val animeEpisodeViewMode = preferenceStore.getEnum("anime_episode_view_mode", EpisodeViewMode.Grid)
+  val animeTrendingViewMode = preferenceStore.getEnum("anime_trending_view_mode", TrendingViewMode.Grid)
+  val animeSelectedSource = preferenceStore.getEnum("anime_selected_source", app.gyrolet.mpvrx.domain.anicli.AnimeSource.MOVIEBOX)
+  val adultModeEnabled = preferenceStore.getBoolean("adult_mode_enabled", false)
   val animeEnabledSources = preferenceStore.getStringSet("anime_enabled_sources", setOf("MOVIEBOX"))
   val animeFolderUri = preferenceStore.getString("anime_folder_uri", "")
+  val animeBookmarksJson = preferenceStore.getString("anime_bookmarks_json", "[]")
+}
+
+enum class EpisodeViewMode {
+  List,
+  Grid,
+  ;
+
+  val displayName: String
+    get() = when (this) {
+      List -> "List"
+      Grid -> "Grid"
+    }
+}
+
+enum class TrendingViewMode {
+  List,
+  Grid,
+  ;
+
+  val displayName: String
+    get() = when (this) {
+      List -> "List"
+      Grid -> "Grid"
+    }
 }
 
 /**

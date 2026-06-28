@@ -36,6 +36,12 @@ class MovieBoxAnimeProvider : BaseAnimeProvider() {
     override val defaultUserAgent: String = MOVIEBOX_USER_AGENT
     private val client = MovieBoxClient()
 
+    override suspend fun latest(params: SearchParams): SearchResults {
+        val results = client.getHome(page = params.currentPage, tabId = 1).toHomeResults()
+            .distinctBy { it.id }.take(params.pageLimit)
+        return SearchResults(pageInfo = PageInfo(currentPage = params.currentPage, perPage = params.pageLimit), results = results)
+    }
+
     override suspend fun search(params: SearchParams): SearchResults {
         val results = if (params.query.trim().isBlank()) {
             client.getHome(page = params.currentPage).toHomeResults()
@@ -146,19 +152,36 @@ class MovieBoxAnimeProvider : BaseAnimeProvider() {
         }
     }
 
-    private fun JsonObject.toSearchResults(): List<SearchResult> = array("items").mapNotNull { it.asObjectOrNull()?.toSearchResult() }
+    private fun JsonObject.toSearchResults(): List<SearchResult> =
+        array("items", "subjects", "list", "results", "movies")
+            .flatMap { it.asObjectOrNull()?.toSearchResultCandidates().orEmpty() }
+            .ifEmpty { toSearchResultCandidates() }
+            .distinctBy { it.id }
 
     private fun JsonObject.toSearchResult(): SearchResult? {
         val subjectType = int("subjectType") ?: int("type")
-        if (subjectType != SUBJECT_TYPE_MOVIE && subjectType != SUBJECT_TYPE_TV) return null
+        if (subjectType != null && subjectType != SUBJECT_TYPE_MOVIE && subjectType != SUBJECT_TYPE_TV) return null
         val id = string("subjectId") ?: string("id") ?: return null
         val title = string("title") ?: string("name") ?: return null
         val poster = obj("cover")?.string("url") ?: string("poster") ?: string("cover")
         val banner = obj("stills")?.string("url") ?: obj("backdrop")?.string("url") ?: string("banner") ?: poster
         val releaseDate = string("releaseDate") ?: string("released")
-        val isMovie = subjectType == SUBJECT_TYPE_MOVIE
+        val isMovie = subjectType != SUBJECT_TYPE_TV
         val episodeLabels = if (isMovie) listOf(MOVIE_EPISODE_LABEL) else (1..(int("episodeCount") ?: int("maxEp") ?: 0).coerceAtLeast(0)).map { it.toString() }
-        return SearchResult(id = id, title = title, episodes = AnimeEpisodes(sub = episodeLabels, raw = episodeLabels), mediaType = if (isMovie) "Movie" else "TV Show", score = float("rating"), poster = poster, year = releaseDate?.take(4), description = string("description") ?: string("overview"), bannerImage = banner, genres = array("genreList", "genres").mapNotNull { it.asObjectOrNull()?.string("name") ?: it.safeString() })
+        val genreString = string("genre")
+        val parsedGenres = if (!genreString.isNullOrBlank()) {
+            genreString.split(",").map { it.trim() }.filter { it.isNotBlank() }
+        } else {
+            array("genreList", "genres", "genre").mapNotNull { it.asObjectOrNull()?.string("name") ?: it.safeString() }
+        }
+        return SearchResult(id = id, title = title, episodes = AnimeEpisodes(sub = episodeLabels, raw = episodeLabels), mediaType = if (isMovie) "Movie" else "TV Show", score = float("imdbRatingValue") ?: float("rating"), poster = poster, year = releaseDate?.take(4), description = string("description") ?: string("overview"), bannerImage = banner, genres = parsedGenres)
+    }
+
+    private fun JsonObject.toSearchResultCandidates(): List<SearchResult> = buildList {
+        obj("subject")?.toSearchResult()?.let(::add)
+        obj("subjectInfo")?.toSearchResult()?.let(::add)
+        obj("item")?.toSearchResult()?.let(::add)
+        toSearchResult()?.let(::add)
     }
 
     private fun JsonObject.toDubs(fallbackSubjectId: String): List<MovieBoxDub> = array("dubs").mapNotNull { element ->
