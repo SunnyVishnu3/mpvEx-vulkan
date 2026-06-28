@@ -392,6 +392,29 @@ object PermissionUtils {
             // Notify that media library has changed
             MediaLibraryEvents.notifyChanged()
 
+            // Rename matching subtitle files in the same directory
+            val oldBase = oldFile.nameWithoutExtension
+            val newBase = newFile.nameWithoutExtension
+            if (oldBase != newBase) {
+              oldFile.parentFile?.listFiles()?.forEach { sibling ->
+                if (sibling.isFile && sibling.nameWithoutExtension == oldBase && sibling.absolutePath != oldFile.absolutePath) {
+                  val newSibling = File(sibling.parentFile, sibling.name.replace(oldBase, newBase))
+                  if (!newSibling.exists()) {
+                    if (sibling.renameTo(newSibling)) {
+                      try {
+                        android.media.MediaScannerConnection.scanFile(
+                          context,
+                          arrayOf(newSibling.absolutePath),
+                          null,
+                          null,
+                        )
+                      } catch (_: Exception) {}
+                    }
+                  }
+                }
+              }
+            }
+
             Log.d(TAG, "✓ Renamed: ${video.displayName} -> $newDisplayName")
             try {
               android.media.MediaScannerConnection.scanFile(
@@ -450,6 +473,20 @@ object PermissionUtils {
             RecentlyPlayedOps.onVideoRenamed(oldPath, newPath)
             PlaybackStateOps.onVideoRenamed(oldPath, newPath)
             MediaLibraryEvents.notifyChanged()
+
+            // Rename matching subtitle files in the same directory
+            val oldBase = File(oldPath).nameWithoutExtension
+            val newBase = File(newPath).nameWithoutExtension
+            if (oldBase != newBase) {
+              File(oldPath).parentFile?.listFiles()?.forEach { sibling ->
+                if (sibling.isFile && sibling.nameWithoutExtension == oldBase && sibling.absolutePath != oldPath) {
+                  val newSibling = File(sibling.parentFile, sibling.name.replace(oldBase, newBase))
+                  if (!newSibling.exists()) {
+                    sibling.renameTo(newSibling)
+                  }
+                }
+              }
+            }
 
             Log.d(TAG, "✓ Renamed (scoped): ${video.displayName} -> $newDisplayName")
             Result.success(Unit)
