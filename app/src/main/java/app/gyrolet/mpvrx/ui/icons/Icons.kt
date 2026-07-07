@@ -377,6 +377,7 @@ object Icons {
     val KeyboardArrowLeft = Shared.KeyboardArrowLeft
     val KeyboardArrowRight = Shared.KeyboardArrowRight
     val KeyboardArrowUp = Shared.KeyboardArrowUp
+    val Movie = Shared.Movie
     val BringYourOwnIp = Shared.BringYourOwnIp
     val Link = Shared.Link
     val LinkOff = Shared.LinkOff
