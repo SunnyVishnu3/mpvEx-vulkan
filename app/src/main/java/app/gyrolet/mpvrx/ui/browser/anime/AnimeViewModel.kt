@@ -72,6 +72,13 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
         foldersPreferences.animeFolder.changes()
             .stateIn(viewModelScope, SharingStarted.Eagerly, foldersPreferences.animeFolder.get())
 
+    private val _episodeSortAscending = MutableStateFlow(false)
+    val episodeSortAscending: StateFlow<Boolean> = _episodeSortAscending.asStateFlow()
+
+    fun toggleEpisodeSort() {
+        _episodeSortAscending.update { !it }
+    }
+
     private val _bookmarks = MutableStateFlow<List<AniCliAnime>>(emptyList())
     val bookmarks: StateFlow<List<AniCliAnime>> = _bookmarks.asStateFlow()
 
@@ -280,6 +287,25 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
         list: List<AniCliAnime>,
         context: AnimeListContext,
     ) {
+        val current = _uiState.value.selectedAnime
+        if (current?.id == anime.id && _uiState.value.selectedListContext == context) {
+            _uiState.update {
+                it.copy(
+                    selectedAnime = null,
+                    selectedAnimeIndex = null,
+                    selectedListContext = null,
+                    episodes = emptyList(),
+                    selectedEpisode = null,
+                    selectedEpisodeNumber = null,
+                    streamLinks = emptyList(),
+                    showStreamSheet = false,
+                    isLoadingEpisodes = false,
+                    isLoadingStreams = false,
+                    errorMessage = null,
+                )
+            }
+            return
+        }
         val selectedIndex = list.indexOfFirst { it.id == anime.id }.takeIf { it >= 0 }
         episodesRequestId++
         streamsRequestId++

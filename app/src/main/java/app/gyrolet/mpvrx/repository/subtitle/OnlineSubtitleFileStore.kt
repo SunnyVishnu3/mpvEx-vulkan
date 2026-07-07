@@ -34,10 +34,13 @@ class OnlineSubtitleFileStore(
       val selectedEpisodeMessage = selectedEpisode?.let { " for episode $it" }.orEmpty()
       throw IllegalStateException("Downloaded subtitle archive did not contain a supported subtitle file$selectedEpisodeMessage")
     }
-    val payload = extracted?.bytes ?: bytes
+    var payload = extracted?.bytes ?: bytes
     if (SubtitleArchiveExtractor.looksLikeHtml(payload)) {
       throw IllegalStateException("Downloaded file is HTML, not a subtitle")
     }
+
+    // Normalize downloaded subtitle text to NFC to fix rendering issues (e.g., broken Korean Jamo)
+    payload = app.gyrolet.mpvrx.utils.media.SubtitleNormalizer.normalizeToNfcIfNeeded(payload)
 
     val extension =
       extracted?.extension

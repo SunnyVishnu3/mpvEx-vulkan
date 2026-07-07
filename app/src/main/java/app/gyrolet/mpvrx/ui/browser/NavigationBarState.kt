@@ -12,6 +12,8 @@ object NavigationBarState {
   var isInSelectionMode: Boolean by mutableStateOf(false)
     private set
 
+  var isDualPaneFolderSelected: Boolean by mutableStateOf(false)
+
   var shouldHideNavigationBar: Boolean by mutableStateOf(false)
     private set
 

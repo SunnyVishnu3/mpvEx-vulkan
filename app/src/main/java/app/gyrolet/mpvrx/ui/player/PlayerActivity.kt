@@ -3210,8 +3210,13 @@ class PlayerActivity :
   /**
    * Helper extension function to convert Int color to hex string for MPV
    */
-  @OptIn(ExperimentalStdlibApi::class)
-  private fun Int.toColorHexString() = "#" + this.toHexString().uppercase()
+  private fun Int.toColorHexString(): String {
+    val a = (this shr 24 and 0xFF).toString(16).padStart(2, '0')
+    val r = (this shr 16 and 0xFF).toString(16).padStart(2, '0')
+    val g = (this shr 8 and 0xFF).toString(16).padStart(2, '0')
+    val b = (this and 0xFF).toString(16).padStart(2, '0')
+    return "#$a$r$g$b".uppercase()
+  }
 
   private fun canIssueMpvCommands(): Boolean = mpvInitialized && !player.isExiting && !isDestroyed
 
@@ -3329,8 +3334,9 @@ class PlayerActivity :
     return runCatching {
       val state = playbackStateRepository.getVideoDataByTitle(mediaIdentifier)
 
+      applyPlaybackState(state)
+      
       withContext(Dispatchers.Main) {
-        applyPlaybackState(state)
         applyDefaultSettings(state)
       }
 
@@ -3348,7 +3354,7 @@ class PlayerActivity :
    *
    * @param state The saved playback state entity
    */
-  private fun applyPlaybackState(state: PlaybackStateEntity?) {
+  private suspend fun applyPlaybackState(state: PlaybackStateEntity?) {
     if (state == null) return
 
     val subDelay = state.subDelay / DELAY_DIVISOR
@@ -3360,7 +3366,7 @@ class PlayerActivity :
       Log.d(TAG, "Restoring ${externalSubUris.size} external subtitle(s)")
 
       for (subUri in externalSubUris) {
-        viewModel.addSubtitle(Uri.parse(subUri), select = false, silent = true)
+        viewModel.addSubtitleSuspend(Uri.parse(subUri), select = false, silent = true)
       }
     }
 

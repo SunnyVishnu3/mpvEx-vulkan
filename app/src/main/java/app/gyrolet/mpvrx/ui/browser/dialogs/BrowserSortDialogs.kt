@@ -32,6 +32,7 @@ fun FolderSortDialog(
   val showDateChip by browserPreferences.showDateChip.collectAsState()
   val showFolderPath by browserPreferences.showFolderPath.collectAsState()
   val showFolderThumbnails by browserPreferences.showFolderThumbnails.collectAsState()
+  val dualPaneForTablet by browserPreferences.dualPaneForTablet.collectAsState()
   val unlimitedNameLines by appearancePreferences.unlimitedNameLines.collectAsState()
   val centerGridTitles by browserPreferences.centerGridTitles.collectAsState()
   val folderViewMode by browserPreferences.folderViewMode.collectAsState()

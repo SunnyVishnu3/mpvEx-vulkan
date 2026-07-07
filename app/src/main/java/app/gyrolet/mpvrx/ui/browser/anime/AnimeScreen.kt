@@ -146,6 +146,7 @@ object AnimeScreen : Screen {
         val bookmarks by viewModel.bookmarks.collectAsState()
         val animeFolderUri by viewModel.animeFolderUri.collectAsState()
         val episodeViewMode by viewModel.episodeViewMode.collectAsState()
+        val episodeSortAscending by viewModel.episodeSortAscending.collectAsState()
         val trendingViewMode by viewModel.trendingViewMode.collectAsState()
         val keyboard = LocalSoftwareKeyboardController.current
         val listState = rememberLazyListState()
@@ -314,7 +315,7 @@ object AnimeScreen : Screen {
                                         onBookmark = { viewModel.toggleBookmark(anime) },
                                     )
                                     if (uiState.selectedAnime?.id == anime.id && uiState.selectedListContext == AnimeListContext.TRENDING) {
-                                        AnimeDetailPanel(uiState = uiState, bookmarks = bookmarks, episodeViewMode = episodeViewMode, viewModel = viewModel)
+                                        AnimeDetailPanel(uiState = uiState, bookmarks = bookmarks, episodeViewMode = episodeViewMode, episodeSortAscending = episodeSortAscending, viewModel = viewModel)
                                     }
                                 }
                             }
@@ -329,7 +330,7 @@ object AnimeScreen : Screen {
                                         },
                                     )
                                     if (uiState.selectedListContext == AnimeListContext.TRENDING && pair.any { it.id == uiState.selectedAnime?.id }) {
-                                        AnimeDetailPanel(uiState = uiState, bookmarks = bookmarks, episodeViewMode = episodeViewMode, viewModel = viewModel)
+                                        AnimeDetailPanel(uiState = uiState, bookmarks = bookmarks, episodeViewMode = episodeViewMode, episodeSortAscending = episodeSortAscending, viewModel = viewModel)
                                     }
                                 }
                             }
@@ -368,7 +369,7 @@ object AnimeScreen : Screen {
                                             onBookmark = { viewModel.toggleBookmark(anime) },
                                         )
                                         if (uiState.selectedAnime?.id == anime.id && uiState.selectedListContext == AnimeListContext.SEARCH) {
-                                            AnimeDetailPanel(uiState = uiState, bookmarks = bookmarks, episodeViewMode = episodeViewMode, viewModel = viewModel)
+                                            AnimeDetailPanel(uiState = uiState, bookmarks = bookmarks, episodeViewMode = episodeViewMode, episodeSortAscending = episodeSortAscending, viewModel = viewModel)
                                         }
                                     }
                                 }
@@ -396,7 +397,7 @@ object AnimeScreen : Screen {
                                         },
                                     )
                                     if (uiState.selectedListContext == AnimeListContext.BOOKMARKS && pair.any { it.id == uiState.selectedAnime?.id }) {
-                                        AnimeDetailPanel(uiState = uiState, bookmarks = bookmarks, episodeViewMode = episodeViewMode, viewModel = viewModel)
+                                        AnimeDetailPanel(uiState = uiState, bookmarks = bookmarks, episodeViewMode = episodeViewMode, episodeSortAscending = episodeSortAscending, viewModel = viewModel)
                                     }
                                 }
                             }
@@ -438,7 +439,7 @@ object AnimeScreen : Screen {
                                         }
                                     }
                                     if (uiState.selectedAnime != null && uiState.selectedListContext == AnimeListContext.HISTORY) {
-                                        AnimeDetailPanel(uiState = uiState, bookmarks = bookmarks, episodeViewMode = episodeViewMode, viewModel = viewModel)
+                                        AnimeDetailPanel(uiState = uiState, bookmarks = bookmarks, episodeViewMode = episodeViewMode, episodeSortAscending = episodeSortAscending, viewModel = viewModel)
                                     }
                                 }
                             }
@@ -726,6 +727,7 @@ private fun AnimeDetailPanel(
     uiState: AniCliUiState,
     bookmarks: List<AniCliAnime>,
     episodeViewMode: EpisodeViewMode,
+    episodeSortAscending: Boolean,
     viewModel: AnimeViewModel,
 ) {
     val anime = uiState.selectedAnime ?: return
@@ -861,6 +863,7 @@ private fun AnimeDetailPanel(
                 AnimeEpisodeGrid(
                     uiState = uiState,
                     viewMode = episodeViewMode,
+                    sortAscending = episodeSortAscending,
                     viewModel = viewModel,
                 )
             }
@@ -872,6 +875,7 @@ private fun AnimeDetailPanel(
 private fun AnimeEpisodeGrid(
     uiState: AniCliUiState,
     viewMode: EpisodeViewMode,
+    sortAscending: Boolean,
     viewModel: AnimeViewModel,
 ) {
     val anime = uiState.selectedAnime ?: return
@@ -880,6 +884,9 @@ private fun AnimeEpisodeGrid(
         canDownloadSelectedSource = viewModel.canDownloadSelectedSource(),
         hasEpisodes = uiState.episodes.isNotEmpty(),
     )
+    val sortedEpisodes = remember(uiState.episodes, sortAscending) {
+        if (sortAscending) uiState.episodes else uiState.episodes.reversed()
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -908,6 +915,18 @@ private fun AnimeEpisodeGrid(
                 }
             }
             Surface(
+                onClick = viewModel::toggleEpisodeSort,
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            ) {
+                Icon(
+                    if (sortAscending) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    null,
+                    modifier = Modifier.padding(8.dp).size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Surface(
                 onClick = viewModel::toggleEpisodeViewMode,
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -927,7 +946,7 @@ private fun AnimeEpisodeGrid(
         uiState.episodes.isEmpty() -> EmptyCard(Icons.Default.Movie, "No episodes", "MovieBox did not return episodes")
         viewMode == EpisodeViewMode.Grid -> {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                uiState.episodes.chunked(3).forEach { row ->
+                sortedEpisodes.chunked(2).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         row.forEach { episode ->
                             EpisodeChip(
@@ -939,7 +958,7 @@ private fun AnimeEpisodeGrid(
                                 modifier = Modifier.weight(1f),
                             )
                         }
-                        repeat(3 - row.size) {
+                        repeat(2 - row.size) {
                             Spacer(Modifier.weight(1f))
                         }
                     }
@@ -948,7 +967,7 @@ private fun AnimeEpisodeGrid(
         }
         else -> {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                uiState.episodes.forEach { episode ->
+                sortedEpisodes.forEach { episode ->
                     EpisodeChip(
                         episode = episode,
                         isSelected = episode.id == uiState.selectedEpisode,

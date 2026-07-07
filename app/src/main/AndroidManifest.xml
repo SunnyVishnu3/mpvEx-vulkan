@@ -53,6 +53,7 @@
 
         <activity
             android:name=".ui.player.PlayerActivity"
+            android:windowSoftInputMode="adjustResize"
             android:enableOnBackInvokedCallback="false"
             android:autoRemoveFromRecents="true"
             android:noHistory="false"

@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.ui.theme.spacing
+import kotlin.math.roundToInt
 
 @Composable
 fun SliderItem(
@@ -71,7 +72,7 @@ fun SliderItem(
       Slider(
         value = value.toFloat(),
         onValueChange = {
-          val newValue = it.toInt()
+          val newValue = it.roundToInt()
           if (newValue != value) {
             onChange(newValue)
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -223,7 +224,7 @@ fun VerticalSlider(
         .height(50.dp),
     value = value.toFloat(),
     valueRange = min.toFloat()..max.toFloat(),
-    onValueChange = { onValueChange(it.toInt()) },
+    onValueChange = { onValueChange(it.roundToInt()) },
   )
 }
 

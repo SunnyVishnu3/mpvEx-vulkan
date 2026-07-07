@@ -1425,6 +1425,11 @@ class PlayerViewModel(
 
   fun addSubtitle(uri: Uri, select: Boolean = true, silent: Boolean = false) {
     viewModelScope.launch(Dispatchers.IO) {
+      addSubtitleSuspend(uri, select, silent)
+    }
+  }
+
+  suspend fun addSubtitleSuspend(uri: Uri, select: Boolean = true, silent: Boolean = false) {
       subtitleAddMutex.withLock {
         val uriString = uri.toString()
         if (_externalSubtitles.contains(uriString)) {
@@ -1499,7 +1504,6 @@ class PlayerViewModel(
           }
         }
       }
-    }
   }
 
   private var translationJob: Job? = null

@@ -89,6 +89,7 @@ object AppearancePreferencesScreen : Screen {
         var isThemeSectionExpanded by rememberSaveable { mutableStateOf(true) }
         val storedThumbnailMode by browserPreferences.thumbnailMode.collectAsState()
         val thumbnailFramePosition by browserPreferences.thumbnailFramePosition.collectAsState()
+        val dualPaneForTablet by browserPreferences.dualPaneForTablet.collectAsState()
         val thumbnailCacheClearedMessage = stringResource(R.string.pref_thumbnail_cache_cleared)
 
         val thumbnailMode = storedThumbnailMode
@@ -340,6 +341,22 @@ object AppearancePreferencesScreen : Screen {
                                 summary = {
                                     Text(
                                         text = stringResource(R.string.pref_appearance_auto_scroll_summary),
+                                        color = MaterialTheme.colorScheme.outline,
+                                    )
+                                }
+                            )
+
+                            PreferenceDivider()
+
+                            SwitchPreference(
+                                value = dualPaneForTablet,
+                                onValueChange = { browserPreferences.dualPaneForTablet.set(it) },
+                                title = {
+                                    Text(text = "Dual Pane View")
+                                },
+                                summary = {
+                                    Text(
+                                        text = "Enable dual pane layout on tablets in folder view",
                                         color = MaterialTheme.colorScheme.outline,
                                     )
                                 }

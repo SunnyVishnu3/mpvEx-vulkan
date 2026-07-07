@@ -25,6 +25,7 @@ class BrowserPreferences(
   val videoSortOrder = preferenceStore.getEnum("video_sort_order", SortOrder.Ascending)
 
   val folderViewMode = preferenceStore.getEnum("folder_view_mode", FolderViewMode.AlbumView)
+  val dualPaneForTablet = preferenceStore.getBoolean("dual_pane_for_tablet", true)
 
   private val isTablet = context.resources.configuration.smallestScreenWidthDp >= 600
   val maxColumns = if (isTablet) 8 else 4

@@ -21,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import app.gyrolet.mpvrx.ui.theme.spacing
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 @Composable
 fun TintedSliderItem(
@@ -70,7 +71,7 @@ fun TintedSliderItem(
       TintedSlider(
         value = value.toFloat(),
         onValueChange = {
-          val newValue = it.toInt()
+          val newValue = it.roundToInt()
           if (newValue != value) {
             onChange(newValue)
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)

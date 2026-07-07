@@ -4,6 +4,7 @@ import app.gyrolet.mpvrx.ui.icons.AppIcon
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +32,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.navigation3.runtime.NavBackStack
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.key
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,8 +75,61 @@ object PreferencesScreen : Screen {
   override fun Content() {
     val backstack = LocalBackStack.current
     val colorScheme = MaterialTheme.colorScheme
-    val emphasizedTypography = LocalEmphasizedTypography.current
     val sections = settingsSections()
+
+    val configuration = LocalConfiguration.current
+    val isTablet = configuration.smallestScreenWidthDp >= 600
+
+    var selectedScreen by remember { mutableStateOf<Screen>(AppearancePreferencesScreen) }
+
+    if (isTablet) {
+      Row(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(0.4f)) {
+          SettingsPane(
+            sections = sections,
+            selectedScreen = selectedScreen,
+            onScreenSelected = { selectedScreen = it }
+          )
+        }
+        VerticalDivider(
+          modifier = Modifier.fillMaxHeight(),
+          color = colorScheme.outlineVariant.copy(alpha = 0.5f),
+          thickness = 1.dp
+        )
+        Box(modifier = Modifier.weight(0.6f)) {
+          key(selectedScreen) {
+            @Suppress("UNCHECKED_CAST")
+            val detailBackstack = rememberNavBackStack(selectedScreen) as NavBackStack<Screen>
+            CompositionLocalProvider(
+              LocalBackStack provides detailBackstack
+            ) {
+              val activeScreen = detailBackstack.lastOrNull() ?: selectedScreen
+              key(activeScreen) {
+                activeScreen.Content()
+              }
+            }
+          }
+        }
+      }
+    } else {
+      SettingsPane(
+        sections = sections,
+        selectedScreen = null,
+        onScreenSelected = { backstack.add(it) }
+      )
+    }
+  }
+
+  @OptIn(ExperimentalMaterial3Api::class)
+  @Composable
+  private fun SettingsPane(
+    sections: List<SettingsSection>,
+    selectedScreen: Screen?,
+    onScreenSelected: (Screen) -> Unit,
+  ) {
+    val backstack = LocalBackStack.current
+    val colorScheme = MaterialTheme.colorScheme
+    val emphasizedTypography = LocalEmphasizedTypography.current
 
     Scaffold(
       topBar = {
@@ -104,7 +169,8 @@ object PreferencesScreen : Screen {
         items(sections, key = { it.title }) { section ->
           SettingsSectionBlock(
             section = section,
-            onItemClick = { backstack.add(it.screen) },
+            selectedScreen = selectedScreen,
+            onItemClick = { destination -> onScreenSelected(destination.screen) },
           )
         }
       }
@@ -281,6 +347,7 @@ private fun SettingsSearchEntry(
 @Composable
 private fun SettingsSectionBlock(
   section: SettingsSection,
+  selectedScreen: Screen?,
   onItemClick: (SettingsDestination) -> Unit,
 ) {
   val emphasizedTypography = LocalEmphasizedTypography.current
@@ -304,6 +371,7 @@ private fun SettingsSectionBlock(
 
     SettingsDestinationGroup(
       section = section,
+      selectedScreen = selectedScreen,
       onItemClick = onItemClick,
       modifier = Modifier.padding(horizontal = 16.dp),
     )
@@ -313,6 +381,7 @@ private fun SettingsSectionBlock(
 @Composable
 private fun SettingsDestinationGroup(
   section: SettingsSection,
+  selectedScreen: Screen?,
   onItemClick: (SettingsDestination) -> Unit,
   modifier: Modifier = Modifier,
 ) {
@@ -327,6 +396,7 @@ private fun SettingsDestinationGroup(
         SettingsDestinationRow(
           item = item,
           tint = section.tint,
+          isSelected = selectedScreen == item.screen,
           onClick = { onItemClick(item) },
         )
         if (index < section.items.lastIndex) {
@@ -344,11 +414,18 @@ private fun SettingsDestinationGroup(
 private fun SettingsDestinationRow(
   item: SettingsDestination,
   tint: Color,
+  isSelected: Boolean,
   onClick: () -> Unit,
 ) {
+  val rowBgColor = if (isSelected) {
+    MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+  } else {
+    Color.Transparent
+  }
   Row(
     modifier = Modifier
       .fillMaxWidth()
+      .background(rowBgColor)
       .clickable(onClick = onClick)
       .padding(horizontal = 14.dp, vertical = 13.dp),
     verticalAlignment = Alignment.CenterVertically,
