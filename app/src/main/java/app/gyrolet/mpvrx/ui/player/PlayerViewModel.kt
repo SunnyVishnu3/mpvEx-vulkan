@@ -750,8 +750,8 @@ class PlayerViewModel(
         }
         val intervalMs =
           when {
-            paused == false && (seekBarVisibleForPolling || controlsVisibleForPolling) -> 50L
-            paused == false -> 500L   // was 250 ms — halved to reduce idle CPU wake-ups
+            paused == false && (seekBarVisibleForPolling || controlsVisibleForPolling) -> 16L
+            paused == false -> 500L   // halved to reduce idle CPU wake-ups
             else -> 500L
           }
         delay(intervalMs)

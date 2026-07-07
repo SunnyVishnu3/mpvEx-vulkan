@@ -162,18 +162,7 @@ class MPVView(
     }
 
     MPVLib.setOptionString("speed", playerPreferences.defaultSpeed.get().toString())
-    // Avoid forcing CPU-side film-grain synthesis globally; this can spike thermals on mobile SoCs.
-    // Let mpv choose the safest path for the active decoder/backend.
-    MPVLib.setOptionString("vd-lavc-film-grain", "auto")
-
-    // Streaming improvements
-    // Use adaptive HLS bitrate selection to avoid forcing the heaviest stream profile.
-    // This reduces thermal load and helps prevent jitter/rebuffering on long sessions.
-    MPVLib.setOptionString("hls-bitrate", "no")
-    MPVLib.setOptionString("http-allow-redirect", "yes")
-    // Drop only video-output-bound late frames when rendering cannot keep up.
-    // This prevents long-term jitter buildup without aggressively sacrificing smoothness.
-    MPVLib.setOptionString("framedrop", "vo")
+    MPVLib.setOptionString("vd-lavc-film-grain", "cpu")
 
     val preciseSeek = playerPreferences.usePreciseSeeking.get()
     MPVLib.setOptionString("hr-seek", if (preciseSeek) "yes" else "no")
@@ -505,7 +494,7 @@ class MPVView(
       return "no"
     }
 
-    return "mediacodec,mediacodec-copy,no"
+    return "mediacodec,no"
   }
 
   private fun selectRenderBackend(): RenderBackendSelection {
