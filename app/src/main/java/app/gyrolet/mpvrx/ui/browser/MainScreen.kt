@@ -225,7 +225,6 @@ object MainScreen : Screen {
             ),
             targetOffsetY = { fullHeight -> fullHeight }
           ),
-          modifier = Modifier.align(androidx.compose.ui.Alignment.BottomStart)
         ) {
           NavigationBar(
             modifier = Modifier
