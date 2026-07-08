@@ -275,6 +275,32 @@ class MPVView(
     return true
   }
 
+  override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, w: Int, h: Int) {
+    super.surfaceChanged(holder, format, w, h)
+    applyFrameRate()
+  }
+
+  override fun surfaceCreated(holder: android.view.SurfaceHolder) {
+    super.surfaceCreated(holder)
+    applyFrameRate()
+  }
+
+  private fun applyFrameRate() {
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+      val fps = MPVLib.getPropertyDouble("container-fps") ?: 0.0
+      if (fps > 0.0 && holder?.surface?.isValid == true) {
+        try {
+          holder.surface.setFrameRate(
+            fps.toFloat(),
+            android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE
+          )
+        } catch (e: Exception) {
+          Log.e(TAG, "Failed to set frame rate on surface", e)
+        }
+      }
+    }
+  }
+
   private val observedProps =
     mapOf(
       "pause" to MPVLib.MpvFormat.MPV_FORMAT_FLAG,
@@ -283,6 +309,7 @@ class MPVView(
       "video-params/aspect" to MPVLib.MpvFormat.MPV_FORMAT_DOUBLE,
       "video-params/w" to MPVLib.MpvFormat.MPV_FORMAT_INT64,
       "video-params/h" to MPVLib.MpvFormat.MPV_FORMAT_INT64,
+      "container-fps" to MPVLib.MpvFormat.MPV_FORMAT_DOUBLE,
       "eof-reached" to MPVLib.MpvFormat.MPV_FORMAT_FLAG,
       "user-data/mpvrx/show_text" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
       "user-data/mpvrx/toggle_ui" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
