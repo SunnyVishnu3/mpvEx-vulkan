@@ -2,6 +2,7 @@ package app.gyrolet.mpvrx.ui.preferences
 
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
+import app.gyrolet.mpvrx.preferences.preference.collectAsState
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -98,6 +99,23 @@ object SettingsSearchScreen : Screen {
             focusRequester.requestFocus()
         }
 
+        val preferenceStore = org.koin.compose.koinInject<app.gyrolet.mpvrx.preferences.preference.PreferenceStore>()
+        val searchHistoryPref = remember { preferenceStore.getString("settings_search_history", "") }
+        val searchHistoryRaw by searchHistoryPref.collectAsState()
+        val searchHistory = remember(searchHistoryRaw) {
+            if (searchHistoryRaw.isEmpty()) emptyList() else searchHistoryRaw.split("|")
+        }
+
+        fun removeSearchHistory(query: String) {
+            val current = searchHistory.toMutableList()
+            current.remove(query)
+            searchHistoryPref.set(current.joinToString("|"))
+        }
+
+        fun clearSearchHistory() {
+            searchHistoryPref.set("")
+        }
+
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -180,26 +198,108 @@ object SettingsSearchScreen : Screen {
 
                 // Results
                 if (searchQuery.isBlank()) {
-                    // Show hint when no search query
-                    Box(
+
+                    LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(14.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Search,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.52f),
-                            )
-                            Text(
-                                text = stringResource(R.string.settings_search_hint),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                        if (searchHistory.isNotEmpty()) {
+                            item {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Search history",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    IconButton(onClick = { clearSearchHistory() }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Clear history",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                            item {
+                                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                                androidx.compose.foundation.layout.FlowRow(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 24.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    searchHistory.forEach { historyQuery ->
+                                        Surface(
+                                            onClick = { searchQuery = historyQuery },
+                                            shape = androidx.compose.foundation.shape.CircleShape,
+                                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                Text(
+                                                    text = historyQuery,
+                                                    style = MaterialTheme.typography.labelLarge,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 12.dp, top = if (searchHistory.isEmpty()) 0.dp else 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Search suggestions",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        item {
+                            val suggestions = listOf("Theme", "Gestures", "Hardware decoding", "Subtitles", "Folders", "Audio", "Background playback", "Advanced")
+                            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                            androidx.compose.foundation.layout.FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                suggestions.forEach { suggestion ->
+                                    Surface(
+                                        onClick = { searchQuery = suggestion },
+                                        shape = androidx.compose.foundation.shape.CircleShape,
+                                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    ) {
+                                        Text(
+                                            text = suggestion,
+                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 } else if (debouncedSearchQuery.isNotEmpty() && searchResults.isEmpty()) {
@@ -239,6 +339,16 @@ object SettingsSearchScreen : Screen {
                                 preference = preference,
                                 onClick = {
                                     keyboardController?.hide()
+                                    val currentQuery = debouncedSearchQuery.trim()
+                                    if (currentQuery.isNotEmpty()) {
+                                        val currentHistory = searchHistoryPref.get().split("|").filter { it.isNotEmpty() }.toMutableList()
+                                        currentHistory.remove(currentQuery)
+                                        currentHistory.add(0, currentQuery)
+                                        if (currentHistory.size > 10) {
+                                            currentHistory.removeLast()
+                                        }
+                                        searchHistoryPref.set(currentHistory.joinToString("|"))
+                                    }
                                     backstack.add(preference.screen)
                                 }
                             )
