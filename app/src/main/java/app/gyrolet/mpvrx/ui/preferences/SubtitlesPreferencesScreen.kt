@@ -433,7 +433,6 @@ object SubtitlesPreferencesScreen : Screen {
           item {
             PreferenceCard {
               var showClearDialog by remember { mutableStateOf(false) }
-              val scope = androidx.compose.runtime.rememberCoroutineScope()
 
               ListPreference(
                 value = onlineSubtitleSearchMode,

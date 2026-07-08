@@ -54,6 +54,7 @@ import app.gyrolet.mpvrx.database.entities.PlaylistEntity
 import app.gyrolet.mpvrx.database.entities.PlaylistItemEntity
 import app.gyrolet.mpvrx.database.entities.PlaybackStateEntity
 import app.gyrolet.mpvrx.databinding.PlayerLayoutBinding
+import app.gyrolet.mpvrx.domain.anime4k.Anime4KManager
 import app.gyrolet.mpvrx.domain.playbackstate.repository.PlaybackStateRepository
 import app.gyrolet.mpvrx.preferences.AdvancedPreferences
 import app.gyrolet.mpvrx.preferences.AppearancePreferences
@@ -1370,14 +1371,14 @@ class PlayerActivity :
    * CRITICAL: Must copy config and scripts BEFORE initializing MPV, as MPV loads scripts during init.
    */
   private fun setupMPV() {
-    // Prepare only the launch-critical files before initializing MPV.
+    // Prepare config and user MPV assets before initializing MPV.
     runCatching {
       syncBundledAssetsIfNeeded()
       syncFromUserMpvDirectory()
       sanitizeInternalFontsDirectory()
-      Log.d(TAG, "MPV config and scripts prepared successfully")
+      Log.d(TAG, "MPV config and assets prepared successfully")
     }.onFailure { e ->
-      Log.e(TAG, "Error copying MPV config and scripts", e)
+      Log.e(TAG, "Error copying MPV config and assets", e)
     }
 
     // NOW initialize MPV - it will find and load the scripts we just copied
@@ -1413,12 +1414,9 @@ class PlayerActivity :
   }
 
   /**
-   * Syncs launch-critical MPV assets from the user's configured MPV directory to internal storage.
-   * Handles: mpv.conf, input.conf, selected scripts/, script helper folders, and script-opts/.
-   *
-   * Keep this path lean: it runs before MPV initialization and directly affects first-frame time.
-   * Large asset folders such as shaders/ and fonts/ are loaded by the app's dedicated managers
-   * or the subtitle font picker instead of being blanket-copied on every video launch.
+   * Syncs MPV assets from the user's configured MPV directory to internal storage.
+   * Handles: mpv.conf, input.conf, selected scripts/, script helper folders, script-opts/,
+   * shaders/, and fonts/.
    */
   private fun syncFromUserMpvDirectory() {
     val mpvConfStorageUri = advancedPreferences.mpvConfStorageUri.get()
@@ -1437,7 +1435,9 @@ class PlayerActivity :
       syncConfigFiles(tree, rootChildren)
       syncScripts(tree, rootChildren)
       syncScriptOpts(tree, rootChildren)
-      Log.d(TAG, "Launch-critical MPV directory sync completed")
+      syncShaders(tree, rootChildren)
+      syncFonts(tree, rootChildren)
+      Log.d(TAG, "Full MPV directory sync completed")
     } else {
       // Fallback: use preferences-based config (no user directory set)
       Log.d(TAG, "No MPV directory configured, using preferences fallback")
@@ -1464,10 +1464,7 @@ class PlayerActivity :
             writeTextFileIfChanged(File(filesDir, configName), content)
             // Cache in preferences for the config editor
             when (configName) {
-              "mpv.conf" -> {
-                advancedPreferences.mpvConf.set(content)
-                syncReferencedShaders(tree, rootChildren, content)
-              }
+              "mpv.conf" -> advancedPreferences.mpvConf.set(content)
               "input.conf" -> advancedPreferences.inputConf.set(content)
             }
             Log.d(TAG, "Synced config: $configName (${content.length} chars)")
@@ -1482,9 +1479,6 @@ class PlayerActivity :
           File(filesDir, configName).apply {
             if (!exists()) createNewFile()
             if (prefContent.isNotBlank()) writeText(prefContent)
-          }
-          if (configName == "mpv.conf" && prefContent.isNotBlank()) {
-            syncReferencedShaders(tree, rootChildren, prefContent)
           }
           Log.d(TAG, "Config not found in directory, used preferences: $configName")
         }
@@ -1606,110 +1600,60 @@ class PlayerActivity :
     Log.d(TAG, "Script-opts sync: $count file(s)")
   }
 
-  private fun syncReferencedShaders(
+  // ==================== Shaders Sync ====================
+
+  /**
+   * Syncs shader files (.glsl, .hook, .comp) from the user's MPV directory.
+   * Looks in shaders/ subfolder first (case-insensitive), falls back to root.
+   */
+  private fun syncShaders(
     tree: DocumentFile,
     rootChildren: Array<DocumentFile>,
-    mpvConf: String,
   ) {
-    val shaderPaths = referencedShaderPaths(mpvConf)
-    if (shaderPaths.isEmpty()) return
+    val shadersDir = File(filesDir, "shaders")
+    shadersDir.mkdirs()
 
     val shadersSubdir = findSubdirCaseInsensitive(tree, "shaders", rootChildren)
-    val sourceRoot = shadersSubdir ?: tree
-    val destinationRoot = File(filesDir, "shaders").apply { mkdirs() }
-    var copiedCount = 0
-
-    shaderPaths.forEach { relativePath ->
-      val sourceFile =
-        findDocumentByRelativePath(sourceRoot, relativePath)
-          ?: findFileCaseInsensitive(sourceRoot, relativePath.substringAfterLast('/'))
-          ?: return@forEach
-
-      val targetPath = relativePath.split('/').fold(destinationRoot) { parent, segment ->
-        File(parent, segment)
-      }
-      if (copyDocumentToFileIfNeeded(sourceFile, targetPath)) {
-        copiedCount++
-      }
-    }
-
-    Log.d(TAG, "Referenced shader sync: $copiedCount/${shaderPaths.size} file(s)")
-  }
-
-  private fun referencedShaderPaths(mpvConf: String): Set<String> {
+    val sourceDir = shadersSubdir ?: tree
     val shaderExtensions = setOf("glsl", "hook", "comp")
+    val count =
+      syncFlatDocumentDirectory(
+        sourceDir = sourceDir,
+        destinationDir = shadersDir,
+        includeFile = { name -> name.substringAfterLast('.', "").lowercase() in shaderExtensions },
+        protectedNames = Anime4KManager.BUILT_IN_SHADER_FILES,
+        deleteMissing = true,
+      )
 
-    return mpvConf
-      .lineSequence()
-      .map(::stripMpvConfigComment)
-      .map(String::trim)
-      .filter { it.isNotEmpty() && !it.startsWith("[") }
-      .mapNotNull(::shaderOptionValue)
-      .flatMap { value ->
-        value
-          .trim()
-          .trimMatchingQuotes()
-          .splitToSequence(':', ';')
-      }
-      .map { normalizeShaderPath(it) }
-      .filter { path -> path.substringAfterLast('.', "").lowercase() in shaderExtensions }
-      .toSet()
+    Log.d(TAG, "Shaders sync: $count file(s)")
   }
 
-  private fun shaderOptionValue(line: String): String? {
-    val separatorIndex = line.indexOf('=').takeIf { it >= 0 }
-      ?: line.indexOfFirst(Char::isWhitespace).takeIf { it >= 0 }
-      ?: return null
-    val key = line.substring(0, separatorIndex).trim()
-    if (!key.startsWith("glsl-shader", ignoreCase = true)) return null
-    return line.substring(separatorIndex + 1).trim().takeIf { it.isNotBlank() }
-  }
+  // ==================== Fonts Sync ====================
 
-  private fun normalizeShaderPath(rawPath: String): String {
-    val normalized =
-      rawPath
-        .trim()
-        .trimMatchingQuotes()
-        .replace('\\', '/')
-        .removePrefix("~~/")
-        .removePrefix("~/")
-        .removePrefix("./")
-        .trimStart('/')
+  /**
+   * Syncs font files (.ttf, .otf, .ttc, .woff, .woff2) from the user's MPV directory.
+   * Looks in fonts/ subfolder first (case-insensitive), falls back to root.
+   */
+  private fun syncFonts(
+    tree: DocumentFile,
+    rootChildren: Array<DocumentFile>,
+  ) {
+    val internalFontsDir = File(filesDir, "fonts")
+    internalFontsDir.mkdirs()
+    internalFontsDir.listFiles()?.filter { it.isDirectory }?.forEach { it.deleteRecursively() }
 
-    val shadersIndex = normalized.indexOf("shaders/", ignoreCase = true)
-    val relativePath =
-      if (shadersIndex >= 0) {
-        normalized.substring(shadersIndex + "shaders/".length)
-      } else {
-        normalized.substringAfterLast('/')
-      }
+    val fontsSubdir = findSubdirCaseInsensitive(tree, "fonts", rootChildren)
+    val sourceDir = fontsSubdir ?: tree
+    val fontExtensions = setOf("ttf", "otf", "ttc", "woff", "woff2")
+    val count =
+      syncFlatDocumentDirectory(
+        sourceDir = sourceDir,
+        destinationDir = internalFontsDir,
+        includeFile = { name -> name.substringAfterLast('.', "").lowercase() in fontExtensions },
+        deleteMissing = false,
+      )
 
-    return relativePath
-      .split('/')
-      .filter { isSafeDocumentFileName(it) }
-      .joinToString("/")
-  }
-
-  private fun stripMpvConfigComment(line: String): String {
-    var quote: Char? = null
-    line.forEachIndexed { index, char ->
-      when {
-        char == '\'' || char == '"' -> quote = if (quote == char) null else quote ?: char
-        char == '#' && quote == null -> return line.substring(0, index)
-      }
-    }
-    return line
-  }
-
-  private fun String.trimMatchingQuotes(): String {
-    if (length < 2) return this
-    val first = first()
-    val last = last()
-    return if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
-      substring(1, lastIndex)
-    } else {
-      this
-    }
+    Log.d(TAG, "Fonts sync: $count file(s) from MPV directory")
   }
 
   private fun syncBundledAssetsIfNeeded() {
@@ -2059,30 +2003,6 @@ class PlayerActivity :
 
   private fun isSafeDocumentFileName(name: String): Boolean =
     name.isNotBlank() && !name.contains('/') && !name.contains('\\')
-
-  private fun findDocumentByRelativePath(
-    sourceRoot: DocumentFile,
-    relativePath: String,
-  ): DocumentFile? {
-    val segments = relativePath.split('/').filter(String::isNotBlank)
-    if (segments.isEmpty()) return null
-
-    var current = sourceRoot
-    segments.forEachIndexed { index, segment ->
-      if (!isSafeDocumentFileName(segment)) return null
-      val next = listTreeFilesSafely(current).firstOrNull {
-        it.name?.equals(segment, ignoreCase = true) == true
-      } ?: return null
-
-      if (index == segments.lastIndex) {
-        return next.takeIf { it.isFile && it.canRead() }
-      }
-      if (!next.isDirectory) return null
-      current = next
-    }
-
-    return null
-  }
 
   /**
    * Finds a subdirectory by name (case-insensitive) within a DocumentFile.
@@ -2771,6 +2691,23 @@ class PlayerActivity :
         // Safety check: don't access MPV during cleanup
         if (!mpvInitialized || player.isExiting || isFinishing) return
         scheduleVideoParamRefresh(reloadShaders = false)
+      }
+      "container-fps" -> {
+        if (!mpvInitialized || player.isExiting || isFinishing) return
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R && value > 0.0) {
+          try {
+            val surface = player.holder?.surface
+            if (surface != null && surface.isValid) {
+              surface.setFrameRate(
+                value.toFloat(),
+                android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE
+              )
+              android.util.Log.i(TAG, "Set display refresh rate to ${value}Hz")
+            }
+          } catch (e: Exception) {
+            android.util.Log.e(TAG, "Failed to set frame rate", e)
+          }
+        }
       }
     }
   }

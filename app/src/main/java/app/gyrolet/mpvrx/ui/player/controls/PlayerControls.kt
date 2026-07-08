@@ -72,6 +72,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -235,6 +236,20 @@ fun PlayerControls(
   var isSeeking by remember { mutableStateOf(false) }
   val mpvSeeking by MPVLib.propBoolean["seeking"].collectAsState()
   val isPlayerSeeking = isSeeking || (mpvSeeking ?: false)
+  var stableDemuxerCacheTime by remember { mutableFloatStateOf(0f) }
+  val currentDemuxerCacheTime =
+    demuxerCacheTime
+      ?.toFloat()
+      ?.takeIf { it > 0f && !it.isNaN() && !it.isInfinite() && seekbarDuration > 0f }
+      ?.coerceIn(0f, seekbarDuration)
+
+  LaunchedEffect(showBufferedRange, seekbarDuration, currentDemuxerCacheTime, isPlayerSeeking) {
+    when {
+      !showBufferedRange || seekbarDuration <= 0f -> stableDemuxerCacheTime = 0f
+      currentDemuxerCacheTime != null -> stableDemuxerCacheTime = currentDemuxerCacheTime
+      !isPlayerSeeking -> stableDemuxerCacheTime = 0f
+    }
+  }
   var resetControlsTimestamp by remember { mutableStateOf(0L) }
   val seekText = seekState.text
   val currentChapter by MPVLib.propInt["chapter"].collectAsState()
@@ -1350,7 +1365,7 @@ fun PlayerControls(
             seekbarStyle = seekbarStyle,
             loopStart = abLoopA?.toFloat(),
             loopEnd = abLoopB?.toFloat(),
-            bufferDuration = if (showBufferedRange && !isPlayerSeeking) demuxerCacheTime?.toFloat() else null,
+            bufferDuration = stableDemuxerCacheTime.takeIf { showBufferedRange && it > 0f },
             isPortrait = isPortrait,
           )
         }

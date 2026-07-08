@@ -350,8 +350,11 @@ object FolderListScreen : Screen {
       )
     }
 
-    LaunchedEffect(isDualPaneActive, selectedFolderBucketId) {
+    DisposableEffect(isDualPaneActive, selectedFolderBucketId) {
       navBarState.isDualPaneFolderSelected = isDualPaneActive && selectedFolderBucketId != null
+      onDispose {
+        navBarState.isDualPaneFolderSelected = false
+      }
     }
 
     // Lifecycle observer for refresh
@@ -762,6 +765,7 @@ object FolderListScreen : Screen {
               VideoListScreen(
                 bucketId = selectedFolderBucketId!!,
                 folderName = selectedFolderName.orEmpty(),
+                isDualPane = true,
                 onBack = {
                   selectedFolderBucketId = null
                   selectedFolderName = null

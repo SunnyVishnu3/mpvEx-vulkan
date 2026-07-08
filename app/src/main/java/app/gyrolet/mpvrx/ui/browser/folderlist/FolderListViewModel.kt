@@ -350,15 +350,6 @@ class FolderListViewModel(
 
         Log.d(TAG, "Fast scan completed: found ${fastFolders.size} folders")
 
-        // EDGE CASE: Empty result when we had data (permissions revoked?)
-        if (fastFolders.isEmpty() && hasExistingData) {
-             Log.w(TAG, "Scan returned empty when we had data - possible permission issue")
-             // Keep existing data, don't clear
-             _isLoading.value = false
-             _scanStatus.value = null
-             return@launch
-        }
-
         // MERGE STRATEGY:
         var needsEnrichment = false
         

@@ -98,6 +98,19 @@ private data class SkipSegmentOverlay(
   val edgeColor: Color,
 )
 
+private fun bufferedEndPx(
+  bufferPosition: Float?,
+  duration: Float,
+  trackWidth: Float,
+  playedPx: Float,
+): Float {
+  val bufferedUntil = bufferPosition ?: return playedPx
+  if (bufferedUntil <= 0f || duration <= 0f || trackWidth <= 0f || bufferedUntil.isNaN() || bufferedUntil.isInfinite()) {
+    return playedPx
+  }
+  return (bufferedUntil / duration * trackWidth).coerceIn(playedPx, trackWidth)
+}
+
 @Composable
 fun SeekbarWithTimers(
   position: Float,
@@ -351,17 +364,23 @@ private fun SeekbarContent(
                 onUserInteractionChange(true)
               },
               onDragEnd = {
+                val targetPos = latestInteractionPosition.coerceIn(0f, duration)
                 scope.launch {
                   delay(50)
+                  animatedPosition.snapTo(targetPos)
+                  onUserPositionChange(targetPos)
+                  onValueChangeFinished(targetPos)
                   onUserInteractionChange(false)
-                  onValueChangeFinished(latestInteractionPosition.coerceIn(0f, duration))
                 }
               },
               onDragCancel = {
+                val targetPos = latestInteractionPosition.coerceIn(0f, duration)
                 scope.launch {
                   delay(50)
+                  animatedPosition.snapTo(targetPos)
+                  onUserPositionChange(targetPos)
+                  onValueChangeFinished(targetPos)
                   onUserInteractionChange(false)
-                  onValueChangeFinished(latestInteractionPosition.coerceIn(0f, duration))
                 }
               },
             ) { change, _ ->
@@ -399,9 +418,12 @@ private fun SeekbarContent(
               },
               onSeekFinished = {
                 val targetPos = latestInteractionPosition.coerceIn(0f, duration)
-                scope.launch { animatedPosition.snapTo(targetPos) }
-                onUserInteractionChange(false)
-                onValueChangeFinished(targetPos)
+                scope.launch {
+                  animatedPosition.snapTo(targetPos)
+                  onUserPositionChange(targetPos)
+                  onValueChangeFinished(targetPos)
+                  onUserInteractionChange(false)
+                }
               },
               loopStart = loopStart,
               loopEnd = loopEnd,
@@ -440,9 +462,12 @@ private fun SeekbarContent(
               },
               onSeekFinished = {
                 val targetPos = latestInteractionPosition.coerceIn(0f, duration)
-                scope.launch { animatedPosition.snapTo(targetPos) }
-                onUserInteractionChange(false)
-                onValueChangeFinished(targetPos)
+                scope.launch {
+                  animatedPosition.snapTo(targetPos)
+                  onUserPositionChange(targetPos)
+                  onValueChangeFinished(targetPos)
+                  onUserInteractionChange(false)
+                }
               },
               loopStart = loopStart,
               loopEnd = loopEnd,
@@ -855,9 +880,9 @@ private fun SquigglySeekbar(
     }
 
     if (bufferDuration != null && bufferDuration > 0f && duration > 0f) {
-      val bufferPx = totalProgressPx + (bufferDuration / duration).coerceIn(0f, 1f) * totalWidth
+      val bufferPx = bufferedEndPx(bufferDuration, duration, totalWidth, totalProgressPx)
       if (bufferPx > totalProgressPx) {
-        drawPathWithGaps(totalProgressPx, bufferPx.coerceAtMost(totalWidth), primaryColor.copy(alpha = 0.55f))
+        drawPathWithGaps(totalProgressPx, bufferPx, primaryColor.copy(alpha = 0.55f))
       }
     }
 
@@ -993,10 +1018,7 @@ private fun SlimSeekbar(
         if (segCursor < totalWidth) segments.add(segCursor to totalWidth)
 
         val bufferPx =
-            if (bufferDuration != null && bufferDuration > 0f && duration > 0f)
-                (bufferDuration / duration * totalWidth).coerceIn(playedPx, totalWidth)
-            else
-                playedPx
+            bufferedEndPx(bufferDuration, duration, totalWidth, playedPx)
 
         // Draw a rect segment with independent left/right corner radii
         fun seg(startX: Float, endX: Float, color: Color, leftR: Float, rightR: Float) {
@@ -1323,9 +1345,7 @@ fun StandardSeekbar(
 
                 val playedPx = size.width * playedFraction
                 val bufferPx =
-                    if (bufferDuration != null && bufferDuration > 0f && duration > 0f)
-                        (bufferDuration / duration * size.width).coerceIn(playedPx, size.width)
-                    else playedPx
+                    bufferedEndPx(bufferDuration, duration, size.width, playedPx)
                 val trackHeight = size.height
                 
                 // Radius for the outer ends of the seekbar

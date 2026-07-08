@@ -121,6 +121,7 @@ data class VideoListScreen(
   val bucketId: String,
   val folderName: String,
   @kotlinx.serialization.Transient val onBack: (() -> Unit)? = null,
+  val isDualPane: Boolean = false,
 ) : Screen {
   @OptIn(ExperimentalMaterial3ExpressiveApi::class)
   @Composable
@@ -293,8 +294,8 @@ data class VideoListScreen(
           },
           onCancelSelection = { selectionManager.clear() },
           onSortClick = { sortDialogOpen.value = true },
-          onSettingsClick = {
-            backstack.add(app.gyrolet.mpvrx.ui.preferences.PreferencesScreen)
+          onSettingsClick = if (isDualPane) null else {
+            { backstack.add(app.gyrolet.mpvrx.ui.preferences.PreferencesScreen) }
           },
           isSingleSelection = selectionManager.isSingleSelection,
           onInfoClick = {
