@@ -1,5 +1,6 @@
 package app.gyrolet.mpvrx.domain.anicli.provider.moviebox
 
+import android.content.Context
 import app.gyrolet.mpvrx.domain.anicli.AnimeSource
 import app.gyrolet.mpvrx.domain.anicli.isEnglishSubtitle
 import app.gyrolet.mpvrx.domain.anicli.provider.Anime
@@ -20,8 +21,9 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import java.util.UUID
 
-class MovieBoxAnimeProvider : BaseAnimeProvider() {
+class MovieBoxAnimeProvider(context: Context) : BaseAnimeProvider() {
 
     private data class MovieBoxDub(val subjectId: String, val code: String, val name: String, val original: Boolean)
     private data class MovieBoxSeasonAvailability(val season: Int, val maxEpisode: Int, val resolutions: List<MovieBoxResolutionAvailability>)
@@ -31,13 +33,22 @@ class MovieBoxAnimeProvider : BaseAnimeProvider() {
     private data class EpisodeAddress(val isMovie: Boolean, val season: Int, val episode: Int)
 
     override val source: AnimeSource = AnimeSource.MOVIEBOX
-    override val headers: Map<String, String> = mapOf("User-Agent" to MOVIEBOX_USER_AGENT, "Referer" to MOVIEBOX_REFERER)
-    override val defaultReferer: String = MOVIEBOX_REFERER
-    override val defaultUserAgent: String = MOVIEBOX_USER_AGENT
-    private val client = MovieBoxClient()
+    override val headers: Map<String, String> = mapOf(
+        "Accept" to "*/*",
+        "User-Agent" to MOVIEBOX_MEDIA_USER_AGENT,
+        "Origin" to MOVIEBOX_MEDIA_ORIGIN,
+        "Referer" to MOVIEBOX_MEDIA_REFERER,
+    )
+    override val defaultReferer: String = MOVIEBOX_MEDIA_REFERER
+    override val defaultUserAgent: String = MOVIEBOX_MEDIA_USER_AGENT
+    private val identityPreferences = context.getSharedPreferences(MOVIEBOX_IDENTITY_PREFERENCES, Context.MODE_PRIVATE)
+    private val client = MovieBoxClient(
+        deviceId = identityPreferences.stableId(MOVIEBOX_DEVICE_ID) { UUID.randomUUID().toString().replace("-", "") },
+        gaid = identityPreferences.stableId(MOVIEBOX_GAID) { UUID.randomUUID().toString() },
+    )
 
     override suspend fun latest(params: SearchParams): SearchResults {
-        val results = client.getHome(page = params.currentPage, tabId = 1).toHomeResults()
+        val results = client.getHome(page = params.currentPage, tabId = HOME_TAB_ALL).toLatestResults()
             .distinctBy { it.id }.take(params.pageLimit)
         return SearchResults(pageInfo = PageInfo(currentPage = params.currentPage, perPage = params.pageLimit), results = results)
     }
@@ -63,11 +74,22 @@ class MovieBoxAnimeProvider : BaseAnimeProvider() {
         } else {
             seasonInfo?.toSeasonAvailabilities().orEmpty().flatMap { season ->
                 (1..season.maxEpisode.coerceAtLeast(0)).map { episode ->
-                    AnimeEpisodeInfo(id = buildEpisodeId(season.season, episode), episode = "S${season.season}E$episode", title = "S${season.season}E$episode", poster = poster)
+                    AnimeEpisodeInfo(id = buildEpisodeId(season.season, episode), episode = "S${season.season}E$episode", title = "S${season.season}E$episode", poster = poster, season = season.season)
                 }
             }
         }
-        return Anime(id = params.id, title = title, episodes = AnimeEpisodes(sub = episodesInfo.map { it.episode }, raw = episodesInfo.map { it.episode }), type = if (isMovie) "Movie" else "TV Show", episodesInfo = episodesInfo, poster = poster, year = year)
+        return Anime(
+            id = params.id,
+            title = title,
+            episodes = AnimeEpisodes(sub = episodesInfo.map { it.episode }, raw = episodesInfo.map { it.episode }),
+            type = if (isMovie) "Movie" else "TV Show",
+            episodesInfo = episodesInfo,
+            poster = poster,
+            year = year,
+            description = subject.string("description") ?: subject.string("overview") ?: subject.string("introduction"),
+            status = subject.string("status") ?: subject.string("releaseStatus"),
+            country = subject.country(),
+        )
     }
 
     override suspend fun episodeStreams(params: EpisodeStreamsParams): List<Server> {
@@ -108,7 +130,7 @@ class MovieBoxAnimeProvider : BaseAnimeProvider() {
             links = listOf(EpisodeStream(
                 link = resourceLink, title = "$title${if (season > 0 && episode > 0) " - S${season}E$episode" else ""}",
                 quality = "${resolution}p", translationType = dub.code.ifBlank { dub.name },
-                audioLanguage = dub.name, referer = MOVIEBOX_REFERER,
+                audioLanguage = dub.name, referer = MOVIEBOX_MEDIA_REFERER,
                 format = when { resourceLink.contains(".m3u8", ignoreCase = true) -> "hls"; resourceLink.contains(".mp4", ignoreCase = true) -> "mp4"; else -> null },
                 isHls = resourceLink.contains(".m3u8", ignoreCase = true), isMp4 = resourceLink.contains(".mp4", ignoreCase = true),
             )),
@@ -143,30 +165,47 @@ class MovieBoxAnimeProvider : BaseAnimeProvider() {
             Subtitle(url = url, language = label)
         }.distinctBy { it.url }
 
-    private fun JsonObject.toHomeResults(): List<SearchResult> = array("items").mapNotNull { it.asObjectOrNull() }.flatMap { section ->
-        when (section.string("type")) {
-            "BANNER" -> section.array("banners", "banner").mapNotNull { it.asObjectOrNull()?.obj("subject")?.toSearchResult() }
-            "SUBJECTS_MOVIE" -> section.array("subjects").mapNotNull { it.asObjectOrNull()?.toSearchResult() }
-            "CUSTOM" -> section.obj("customData")?.array("items")?.mapNotNull { it.asObjectOrNull()?.obj("subject")?.toSearchResult() }.orEmpty()
-            else -> listOfNotNull(section.obj("subject")?.toSearchResult() ?: section.toSearchResult())
+    private fun JsonObject.toLatestResults(): List<SearchResult> {
+        val sections = array("items").mapNotNull { it.asObjectOrNull() }
+        val latestSections = sections.filter { section ->
+            val label = listOfNotNull(section.string("title"), section.string("name"), section.string("id"), section.string("code"))
+                .joinToString(" ").lowercase()
+            listOf("latest", "new release", "recent", "new movie", "new tv").any(label::contains)
         }
+        return (latestSections.ifEmpty { sections }).flatMap { it.toHomeSectionResults() }
+    }
+
+    private fun JsonObject.toHomeResults(): List<SearchResult> =
+        array("items").mapNotNull { it.asObjectOrNull() }.flatMap { it.toHomeSectionResults() }
+
+    private fun JsonObject.toHomeSectionResults(): List<SearchResult> = when (string("type")) {
+        "BANNER" -> (obj("banner")?.array("banners") ?: array("banners"))
+            .mapNotNull { it.asObjectOrNull()?.obj("subject")?.toSearchResult() }
+        "SUBJECTS_MOVIE" -> array("subjects").mapNotNull { it.asObjectOrNull()?.toSearchResult() }
+        "CUSTOM" -> obj("customData")?.array("items")?.mapNotNull { it.asObjectOrNull()?.obj("subject")?.toSearchResult() }.orEmpty()
+        else -> array("subjects").mapNotNull { it.asObjectOrNull()?.toSearchResult() }
+            .ifEmpty { listOfNotNull(obj("subject")?.toSearchResult() ?: toSearchResult()) }
     }
 
     private fun JsonObject.toSearchResults(): List<SearchResult> =
         array("items", "subjects", "list", "results", "movies")
-            .flatMap { it.asObjectOrNull()?.toSearchResultCandidates().orEmpty() }
+            .flatMap { element ->
+                val item = element.asObjectOrNull() ?: return@flatMap emptyList()
+                item.array("subjects").mapNotNull { it.asObjectOrNull()?.toSearchResult() }
+                    .ifEmpty { item.toSearchResultCandidates() }
+            }
             .ifEmpty { toSearchResultCandidates() }
             .distinctBy { it.id }
 
     private fun JsonObject.toSearchResult(): SearchResult? {
         val subjectType = int("subjectType") ?: int("type")
-        if (subjectType != null && subjectType != SUBJECT_TYPE_MOVIE && subjectType != SUBJECT_TYPE_TV) return null
+        if (subjectType != null && subjectType !in setOf(SUBJECT_TYPE_MOVIE, SUBJECT_TYPE_TV, SUBJECT_TYPE_ANIMATION)) return null
         val id = string("subjectId") ?: string("id") ?: return null
         val title = string("title") ?: string("name") ?: return null
         val poster = obj("cover")?.string("url") ?: string("poster") ?: string("cover")
         val banner = obj("stills")?.string("url") ?: obj("backdrop")?.string("url") ?: string("banner") ?: poster
         val releaseDate = string("releaseDate") ?: string("released")
-        val isMovie = subjectType != SUBJECT_TYPE_TV
+        val isMovie = subjectType != SUBJECT_TYPE_TV && subjectType != SUBJECT_TYPE_ANIMATION
         val episodeLabels = if (isMovie) listOf(MOVIE_EPISODE_LABEL) else (1..(int("episodeCount") ?: int("maxEp") ?: 0).coerceAtLeast(0)).map { it.toString() }
         val genreString = string("genre")
         val parsedGenres = if (!genreString.isNullOrBlank()) {
@@ -174,7 +213,7 @@ class MovieBoxAnimeProvider : BaseAnimeProvider() {
         } else {
             array("genreList", "genres", "genre").mapNotNull { it.asObjectOrNull()?.string("name") ?: it.safeString() }
         }
-        return SearchResult(id = id, title = title, episodes = AnimeEpisodes(sub = episodeLabels, raw = episodeLabels), mediaType = if (isMovie) "Movie" else "TV Show", score = float("imdbRatingValue") ?: float("rating"), poster = poster, year = releaseDate?.take(4), description = string("description") ?: string("overview"), bannerImage = banner, genres = parsedGenres)
+        return SearchResult(id = id, title = title, episodes = AnimeEpisodes(sub = episodeLabels, raw = episodeLabels), mediaType = if (isMovie) "Movie" else "TV Show", score = float("imdbRatingValue") ?: float("rating"), status = string("status") ?: string("releaseStatus"), poster = poster, year = releaseDate?.take(4), description = string("description") ?: string("overview"), bannerImage = banner, genres = parsedGenres, country = country())
     }
 
     private fun JsonObject.toSearchResultCandidates(): List<SearchResult> = buildList {
@@ -223,7 +262,7 @@ class MovieBoxAnimeProvider : BaseAnimeProvider() {
     private fun JsonObject.isMovieSubject(seasonInfo: JsonObject?): Boolean {
         val type = int("subjectType") ?: int("type")
         if (type == SUBJECT_TYPE_MOVIE) return true
-        if (type == SUBJECT_TYPE_TV) return false
+        if (type == SUBJECT_TYPE_TV || type == SUBJECT_TYPE_ANIMATION) return false
         return toMovieResources(string("subjectId").orEmpty()).isNotEmpty() || seasonInfo?.toSeasonAvailabilities().orEmpty().isEmpty()
     }
 
@@ -245,20 +284,30 @@ class MovieBoxAnimeProvider : BaseAnimeProvider() {
     private fun buildEpisodeId(season: Int, episode: Int): String = "moviebox:$season:$episode"
     private fun normalizeDubName(rawName: String, original: Boolean): String = when { original -> "Original"; rawName.isBlank() -> "Dub"; else -> rawName }
 
+    private fun android.content.SharedPreferences.stableId(key: String, create: () -> String): String =
+        getString(key, null)?.takeIf { it.isNotBlank() } ?: create().also { edit().putString(key, it).apply() }
+
     private fun JsonObject.array(vararg names: String): List<JsonElement> = names.firstNotNullOfOrNull { name -> get(name)?.takeIf { !it.isJsonNull && it.isJsonArray }?.asJsonArray?.toList() }.orEmpty()
     private fun JsonObject.obj(name: String): JsonObject? = get(name)?.takeIf { !it.isJsonNull && it.isJsonObject }?.asJsonObject
     private fun JsonObject.string(name: String): String? = get(name)?.safeString()?.takeIf { it.isNotBlank() }
     private fun JsonObject.int(name: String): Int? = runCatching { get(name)?.takeIf { !it.isJsonNull }?.asInt }.getOrNull()
     private fun JsonObject.float(name: String): Float? = runCatching { get(name)?.takeIf { !it.isJsonNull }?.asFloat }.getOrNull()
     private fun JsonObject.bool(name: String): Boolean? = runCatching { get(name)?.takeIf { !it.isJsonNull }?.asBoolean }.getOrNull()
+    private fun JsonObject.country(): String? = string("countryName") ?: string("country")
+        ?: array("countryList", "countries").firstNotNullOfOrNull { it.asObjectOrNull()?.string("name") ?: it.safeString() }
     private fun JsonElement.asObjectOrNull(): JsonObject? = takeIf { !it.isJsonNull && it.isJsonObject }?.asJsonObject
     private fun JsonElement.safeString(): String? = runCatching { takeIf { !it.isJsonNull && it.isJsonPrimitive }?.asString }.getOrNull()
 
     private companion object {
-        const val SUBJECT_TYPE_MOVIE = 1; const val SUBJECT_TYPE_TV = 2
+        const val SUBJECT_TYPE_MOVIE = 1; const val SUBJECT_TYPE_TV = 2; const val SUBJECT_TYPE_ANIMATION = 3
+        const val HOME_TAB_ALL = 0
         const val RESOURCE_PER_PAGE = 20; const val MOVIE_EPISODE_ID = "moviebox:movie"
         const val MOVIE_EPISODE_LABEL = "Movie"
-        const val MOVIEBOX_REFERER = "https://moviebox.ph/"
-        const val MOVIEBOX_USER_AGENT = "com.community.oneroom/50020046 (Linux; U; Android 13; en_US; 23078RKD5C; Build/TQ2A.230405.003; Cronet/135.0.7012.3)"
+        const val MOVIEBOX_MEDIA_REFERER = "https://fmoviesunblocked.net/"
+        const val MOVIEBOX_MEDIA_ORIGIN = "https://h5.aoneroom.com"
+        const val MOVIEBOX_MEDIA_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0"
+        const val MOVIEBOX_IDENTITY_PREFERENCES = "moviebox_identity"
+        const val MOVIEBOX_DEVICE_ID = "device_id"
+        const val MOVIEBOX_GAID = "gaid"
     }
 }

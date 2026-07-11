@@ -15,7 +15,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 
-class MovieBoxClient {
+class MovieBoxClient(deviceId: String, gaid: String) {
 
     private data class CacheEntry<T>(val value: T, val expiresAt: Long)
 
@@ -28,7 +28,6 @@ class MovieBoxClient {
         )
         private val retryStatusCodes = setOf(403, 407, 429, 500, 502, 503, 504)
         private const val userAgent = "com.community.oneroom/50020046 (Linux; U; Android 13; en_US; 23078RKD5C; Build/TQ2A.230405.003; Cronet/135.0.7012.3)"
-        private const val clientInfo = "{\"package_name\":\"com.community.oneroom\",\"version_name\":\"3.0.03.0529.03\",\"version_code\":50020046,\"os\":\"android\",\"os_version\":\"13\",\"install_ch\":\"ps\",\"device_id\":\"1234567890abcdef1234567890abcdef\",\"install_store\":\"ps\",\"gaid\":\"11111111-1111-1111-1111-111111111111\",\"brand\":\"Redmi\",\"model\":\"23078RKD5C\",\"system_language\":\"en\",\"net\":\"NETWORK_WIFI\",\"region\":\"US\",\"timezone\":\"Asia/Kolkata\",\"sp_code\":\"40401\",\"X-Play-Mode\":\"2\"}"
         private const val homeTtlMs = 2 * 60 * 1000L
         private const val searchTtlMs = 60 * 1000L
         private const val subjectTtlMs = 10 * 60 * 1000L
@@ -38,6 +37,14 @@ class MovieBoxClient {
     }
 
     private val gson = Gson()
+    private val clientInfo = gson.toJson(mapOf(
+        "package_name" to "com.community.oneroom", "version_name" to "3.0.03.0529.03",
+        "version_code" to 50020046, "os" to "android", "os_version" to "13",
+        "install_ch" to "ps", "device_id" to deviceId,
+        "install_store" to "ps", "gaid" to gaid, "brand" to "Redmi",
+        "model" to "23078RKD5C", "system_language" to "en", "net" to "NETWORK_WIFI",
+        "region" to "US", "timezone" to "Asia/Kolkata", "sp_code" to "40401", "X-Play-Mode" to "2",
+    ))
     private val okHttpClient = OkHttpClient.Builder().followRedirects(true).followSslRedirects(true).build()
     private val hostMutex = Mutex()
     private var activeHost = hosts.first()

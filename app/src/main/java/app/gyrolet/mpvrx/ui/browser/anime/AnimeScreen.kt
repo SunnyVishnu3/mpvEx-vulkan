@@ -133,8 +133,7 @@ internal fun isInfiniteAnimeGridMode(
     trendingViewMode: TrendingViewMode,
 ): Boolean =
     selectedTabIsTrending &&
-        selectedSource == AnimeSource.MOVIEBOX &&
-        trendingViewMode == TrendingViewMode.Grid
+        selectedSource == AnimeSource.MOVIEBOX
 
 @Serializable
 object AnimeScreen : Screen {
@@ -879,14 +878,19 @@ private fun AnimeEpisodeGrid(
     viewModel: AnimeViewModel,
 ) {
     val anime = uiState.selectedAnime ?: return
+    val seasons = remember(uiState.episodes) {
+        uiState.episodes.mapNotNull { it.season }.distinct().sorted()
+    }
+    val visibleEpisodes = remember(uiState.episodes, uiState.selectedSeason, sortAscending) {
+        uiState.episodes
+            .filter { uiState.selectedSeason == null || it.season == uiState.selectedSeason }
+            .let { if (sortAscending) it else it.reversed() }
+    }
     val showBulkDownload = shouldShowBulkEpisodeDownload(
         hasAnimeFolder = viewModel.hasAnimeFolder(),
         canDownloadSelectedSource = viewModel.canDownloadSelectedSource(),
-        hasEpisodes = uiState.episodes.isNotEmpty(),
+        hasEpisodes = visibleEpisodes.isNotEmpty(),
     )
-    val sortedEpisodes = remember(uiState.episodes, sortAscending) {
-        if (sortAscending) uiState.episodes else uiState.episodes.reversed()
-    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -900,7 +904,7 @@ private fun AnimeEpisodeGrid(
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             if (showBulkDownload) {
                 Surface(
-                    onClick = { viewModel.downloadAllEpisodes(anime) },
+                    onClick = { viewModel.downloadEpisodes(anime, visibleEpisodes) },
                     shape = RoundedCornerShape(999.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
                 ) {
@@ -910,7 +914,11 @@ private fun AnimeEpisodeGrid(
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
                     ) {
                         Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                        Text("Download all", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text(
+                            uiState.selectedSeason?.let { "Download S$it" } ?: "Download all",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
                     }
                 }
             }
@@ -941,12 +949,24 @@ private fun AnimeEpisodeGrid(
         }
     }
 
+    if (seasons.size > 1) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(seasons, key = { it }) { season ->
+                FilterChip(
+                    selected = uiState.selectedSeason == season,
+                    onClick = { viewModel.selectSeason(season) },
+                    label = { Text(if (season == 0) "Specials" else "Season $season") },
+                )
+            }
+        }
+    }
+
     when {
         uiState.isLoadingEpisodes -> LoadingCard("Loading episodes")
         uiState.episodes.isEmpty() -> EmptyCard(Icons.Default.Movie, "No episodes", "MovieBox did not return episodes")
         viewMode == EpisodeViewMode.Grid -> {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                sortedEpisodes.chunked(2).forEach { row ->
+                visibleEpisodes.chunked(2).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         row.forEach { episode ->
                             EpisodeChip(
@@ -967,7 +987,7 @@ private fun AnimeEpisodeGrid(
         }
         else -> {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                sortedEpisodes.forEach { episode ->
+                visibleEpisodes.forEach { episode ->
                     EpisodeChip(
                         episode = episode,
                         isSelected = episode.id == uiState.selectedEpisode,
@@ -1215,7 +1235,7 @@ private fun ExploreAnimeCard(
                     AnimeScoreBadge(score, Modifier.align(Alignment.TopEnd).padding(8.dp))
                 }
             }
-            Column(Modifier.padding(10.dp).height(72.dp)) {
+            Column(Modifier.padding(10.dp).height(110.dp)) {
                 Text(
                     anime.name,
                     style = MaterialTheme.typography.labelLarge,
@@ -1223,6 +1243,15 @@ private fun ExploreAnimeCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+                anime.description?.takeIf { it.isNotBlank() }?.let { description ->
+                    Text(
+                        description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 Spacer(Modifier.weight(1f))
                 Text(
                     animeCardDetails(anime),
@@ -1283,6 +1312,15 @@ private fun AnimeResultCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                anime.description?.takeIf { it.isNotBlank() }?.let { description ->
+                    Text(
+                        description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             Surface(
                 onClick = onBookmark,
@@ -1597,6 +1635,7 @@ private fun GenreChip(genre: String) {
 private fun animeCardDetails(anime: AniCliAnime): String = buildList {
     anime.type?.takeIf { it.isNotBlank() }?.let(::add)
     anime.status?.takeIf { it.isNotBlank() }?.let(::add)
+    anime.country?.takeIf { it.isNotBlank() }?.let(::add)
     if (anime.subEpisodes > 0) add("${anime.subEpisodes} episodes")
 }.joinToString(" - ").ifBlank { "MovieBox" }
 

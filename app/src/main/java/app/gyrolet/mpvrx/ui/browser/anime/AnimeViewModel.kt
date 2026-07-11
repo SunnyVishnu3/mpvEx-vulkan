@@ -40,7 +40,7 @@ import org.koin.core.component.inject
 private const val SEP = "\u001F"
 private const val MAX_HISTORY = 20
 private const val SEARCH_PAGE_SIZE = 20
-private const val EXPLORE_PAGE_SIZE = 24
+private const val EXPLORE_PAGE_SIZE = 20
 
 class AnimeViewModel(application: Application) : AndroidViewModel(application), KoinComponent {
 
@@ -175,7 +175,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
             _uiState.update {
                 it.copy(
                     isLoadingMoreSearch = false,
-                    searchResults = it.searchResults + results,
+                    searchResults = (it.searchResults + results).distinctBy { anime -> anime.id },
                     searchPage = nextPage,
                     searchHasMore = results.size >= SEARCH_PAGE_SIZE,
                 )
@@ -233,7 +233,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                         isLoadingTrending = false,
                         trendingAnime = results,
                         animeProviderPage = 1,
-                        animeProviderHasMore = results.size >= EXPLORE_PAGE_SIZE,
+                        animeProviderHasMore = results.isNotEmpty(),
                     )
                 }
             }.onFailure { error ->
@@ -252,9 +252,10 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
         val state = _uiState.value
         if (state.isLoadingTrending || !state.animeProviderHasMore) return
         val nextPage = state.animeProviderPage + 1
+        val requestId = exploreRequestId
+        _uiState.update { it.copy(isLoadingTrending = true) }
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingTrending = true) }
-            val results = runCatching {
+            runCatching {
                 provider.latest(
                     SearchParams(
                         query = "",
@@ -269,16 +270,23 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                             pageLimit = EXPLORE_PAGE_SIZE,
                         )
                     )?.results.orEmpty()
-            }.getOrDefault(emptyList()).map { it.toAniCliAnime() }
-
-            _uiState.update {
-                it.copy(
-                    isLoadingTrending = false,
-                    trendingAnime = it.trendingAnime + results,
-                    animeProviderPage = nextPage,
-                    animeProviderHasMore = results.size >= EXPLORE_PAGE_SIZE,
-                )
-            }
+            }.map { results -> results.map { it.toAniCliAnime() } }
+                .onSuccess { results ->
+                    if (exploreRequestId != requestId) return@onSuccess
+                    _uiState.update {
+                        val existingIds = it.trendingAnime.mapTo(hashSetOf()) { anime -> anime.id }
+                        val newResults = results.filterNot { anime -> anime.id in existingIds }
+                        it.copy(
+                            isLoadingTrending = false,
+                            trendingAnime = it.trendingAnime + newResults,
+                            animeProviderPage = nextPage,
+                            animeProviderHasMore = results.isNotEmpty() && newResults.isNotEmpty(),
+                        )
+                    }
+                }.onFailure { error ->
+                    if (exploreRequestId != requestId) return@onFailure
+                    _uiState.update { it.copy(isLoadingTrending = false, errorMessage = error.message ?: "Could not load more titles") }
+                }
         }
     }
 
@@ -295,6 +303,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                     selectedAnimeIndex = null,
                     selectedListContext = null,
                     episodes = emptyList(),
+                    selectedSeason = null,
                     selectedEpisode = null,
                     selectedEpisodeNumber = null,
                     streamLinks = emptyList(),
@@ -315,6 +324,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                 selectedAnimeIndex = selectedIndex,
                 selectedListContext = context,
                 episodes = emptyList(),
+                selectedSeason = null,
                 selectedEpisode = null,
                 selectedEpisodeNumber = null,
                 streamLinks = emptyList(),
@@ -355,6 +365,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                             title = epInfo.title,
                             poster = epInfo.poster,
                             duration = epInfo.duration,
+                            season = epInfo.season,
                         )
                     }.orEmpty()
                 _uiState.update { state ->
@@ -363,12 +374,14 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                         subEpisodes = episodes.size.takeIf { it > 0 } ?: anime.subEpisodes,
                         description = detail?.description ?: anime.description,
                         type = detail?.type ?: anime.type,
-                        status = detail?.year ?: anime.status,
+                        status = detail?.status ?: detail?.year ?: anime.status,
+                        country = detail?.country ?: anime.country,
                         thumbnail = anime.thumbnail.ifBlank { detail?.poster.orEmpty() },
                     )
                     state.copy(
                         selectedAnime = updatedAnime,
                         episodes = episodes,
+                        selectedSeason = episodes.mapNotNull { it.season }.minOrNull(),
                         isLoadingEpisodes = false,
                     )
                 }
@@ -426,6 +439,20 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                     )
                 }
             }
+        }
+    }
+
+    fun selectSeason(season: Int) {
+        streamsRequestId++
+        _uiState.update {
+            it.copy(
+                selectedSeason = season,
+                selectedEpisode = null,
+                selectedEpisodeNumber = null,
+                isLoadingStreams = false,
+                streamLinks = emptyList(),
+                showStreamSheet = false,
+            )
         }
     }
 
@@ -561,10 +588,10 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
         }
     }
 
-    fun downloadAllEpisodes(anime: AniCliAnime) {
+    fun downloadEpisodes(anime: AniCliAnime, episodes: List<AniCliEpisode>) {
         if (!ensureAnimeFolderConfigured()) return
-        val episodes = _uiState.value.episodes
         if (episodes.isEmpty()) return
+        var queued = 0
         episodes.forEach { episode ->
             val state = getDownloadState(anime.name, episode.number)
             if (state == DownloadState.Idle || state is DownloadState.Failed) {
@@ -581,9 +608,12 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                         qualityMode = AnimeDownloadQualityMode.HIGHEST,
                     )
                 )
+                queued++
             }
         }
-        _uiState.update { it.copy(infoMessage = "Queued ${episodes.size} episodes") }
+        _uiState.update {
+            it.copy(infoMessage = if (queued > 0) "Queued $queued episodes" else "Selected season is already queued or downloaded")
+        }
     }
 
     fun pauseDownload(animeName: String, epNo: String) {
@@ -737,6 +767,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
         description = description,
         score = score,
         genres = genres,
+        country = country,
         type = mediaType,
         status = status ?: year,
         season = season ?: year,
@@ -782,6 +813,7 @@ private fun AniCliAnime.serializeAnime(): String =
         description.orEmpty(),
         type.orEmpty(),
         status.orEmpty(),
+        country.orEmpty(),
     ).joinToString(SEP)
 
 private fun String.deserializeAnime(): AniCliAnime? {
@@ -797,6 +829,7 @@ private fun String.deserializeAnime(): AniCliAnime? {
         description = parts.getOrNull(6)?.takeIf { it.isNotBlank() },
         type = parts.getOrNull(7)?.takeIf { it.isNotBlank() },
         status = parts.getOrNull(8)?.takeIf { it.isNotBlank() },
+        country = parts.getOrNull(9)?.takeIf { it.isNotBlank() },
     )
 }
 

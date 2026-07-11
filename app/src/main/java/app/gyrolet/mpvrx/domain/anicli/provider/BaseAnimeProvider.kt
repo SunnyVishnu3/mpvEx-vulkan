@@ -52,6 +52,7 @@ data class SearchResult(
     val description: String? = null,
     val bannerImage: String? = null,
     val genres: List<String> = emptyList(),
+    val country: String? = null,
 )
 
 data class SearchResults(
@@ -65,6 +66,7 @@ data class AnimeEpisodeInfo(
     val title: String? = null,
     val poster: String? = null,
     val duration: String? = null,
+    val season: Int? = null,
 )
 
 data class Anime(
@@ -76,6 +78,8 @@ data class Anime(
     val poster: String? = null,
     val year: String? = null,
     val description: String? = null,
+    val status: String? = null,
+    val country: String? = null,
 )
 
 data class EpisodeStream(
