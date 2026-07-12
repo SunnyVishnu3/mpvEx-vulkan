@@ -67,29 +67,30 @@ fun AnimatedPlayPauseIcon(
     modifier = modifier,
     contentAlignment = Alignment.Center,
   ) {
+    val triangle = remember { Path() }
     Canvas(
       modifier =
         Modifier
           .fillMaxSize()
-          .graphicsLayer(
-            alpha = playAlpha.value,
-            scaleX = playScale.value,
-            scaleY = playScale.value,
-            rotationZ = playRotation.value,
-          ),
+          .graphicsLayer {
+            alpha = playAlpha.value
+            scaleX = playScale.value
+            scaleY = playScale.value
+            rotationZ = playRotation.value
+          },
     ) {
-      val triangle = Path().apply {
-        moveTo(size.width * 0.34f, size.height * 0.20f)
-        quadraticTo(size.width * 0.30f, size.height * 0.24f, size.width * 0.30f, size.height * 0.31f)
-        lineTo(size.width * 0.30f, size.height * 0.69f)
-        quadraticTo(size.width * 0.30f, size.height * 0.76f, size.width * 0.34f, size.height * 0.80f)
-        lineTo(size.width * 0.76f, size.height * 0.56f)
-        quadraticTo(size.width * 0.83f, size.height * 0.52f, size.width * 0.83f, size.height * 0.50f)
-        quadraticTo(size.width * 0.83f, size.height * 0.48f, size.width * 0.76f, size.height * 0.44f)
-        close()
-      }
       drawPath(
-        path = triangle,
+        path = triangle.apply {
+          reset()
+          moveTo(size.width * 0.34f, size.height * 0.20f)
+          quadraticTo(size.width * 0.30f, size.height * 0.24f, size.width * 0.30f, size.height * 0.31f)
+          lineTo(size.width * 0.30f, size.height * 0.69f)
+          quadraticTo(size.width * 0.30f, size.height * 0.76f, size.width * 0.34f, size.height * 0.80f)
+          lineTo(size.width * 0.76f, size.height * 0.56f)
+          quadraticTo(size.width * 0.83f, size.height * 0.52f, size.width * 0.83f, size.height * 0.50f)
+          quadraticTo(size.width * 0.83f, size.height * 0.48f, size.width * 0.76f, size.height * 0.44f)
+          close()
+        },
         color = tint,
       )
     }
@@ -98,11 +99,11 @@ fun AnimatedPlayPauseIcon(
       modifier =
         Modifier
           .fillMaxSize()
-          .graphicsLayer(
-            alpha = pauseAlpha.value,
-            scaleX = pauseScale.value,
-            scaleY = pauseScale.value,
-          ),
+          .graphicsLayer {
+            alpha = pauseAlpha.value
+            scaleX = pauseScale.value
+            scaleY = pauseScale.value
+          },
     ) {
       val barWidth = size.width * 0.18f
       val barHeight = size.height * 0.58f

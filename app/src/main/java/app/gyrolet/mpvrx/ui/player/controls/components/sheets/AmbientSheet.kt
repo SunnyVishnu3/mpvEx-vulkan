@@ -590,7 +590,7 @@ private fun RowScope.ExpressivePresetButton(
         enabled = enabled,
         modifier = Modifier
             .weight(1f)
-            .graphicsLayer(scaleX = scale, scaleY = scale),
+            .graphicsLayer { scaleX = scale; scaleY = scale },
         colors = if (selected) ButtonDefaults.filledTonalButtonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -617,7 +617,7 @@ private fun RowScope.AmbientModeButton(
         onClick = onClick,
         modifier = Modifier
             .weight(1f)
-            .graphicsLayer(scaleX = scale, scaleY = scale),
+            .graphicsLayer { scaleX = scale; scaleY = scale },
         colors = if (selected) ButtonDefaults.filledTonalButtonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,

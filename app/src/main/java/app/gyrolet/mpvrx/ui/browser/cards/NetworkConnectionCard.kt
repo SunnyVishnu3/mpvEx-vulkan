@@ -60,7 +60,7 @@ fun NetworkConnectionCard(
   Card(
     modifier = modifier
       .fillMaxWidth()
-      .graphicsLayer(scaleX = scale, scaleY = scale)
+      .graphicsLayer { scaleX = scale; scaleY = scale }
       .pointerInput(Unit) {
         awaitPointerEventScope {
           while (true) {

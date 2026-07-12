@@ -49,7 +49,7 @@ fun ExpressiveCard(
 
   Card(
     modifier = modifier
-      .graphicsLayer(scaleX = scale, scaleY = scale)
+      .graphicsLayer { scaleX = scale; scaleY = scale }
       .pressable(onPress = { isPressed = true }, onRelease = { isPressed = false })
       .clickable(
         interactionSource = remember { MutableInteractionSource() },
@@ -96,7 +96,7 @@ fun ExpressiveOutlinedCard(
 
   OutlinedCard(
     modifier = modifier
-      .graphicsLayer(scaleX = scale, scaleY = scale)
+      .graphicsLayer { scaleX = scale; scaleY = scale }
       .pressable(onPress = { isPressed = true }, onRelease = { isPressed = false })
       .clickable(
         interactionSource = remember { MutableInteractionSource() },
@@ -139,7 +139,7 @@ fun ExpressiveElevatedCard(
 
   ElevatedCard(
     modifier = modifier
-      .graphicsLayer(scaleX = scale, scaleY = scale)
+      .graphicsLayer { scaleX = scale; scaleY = scale }
       .pressable(onPress = { isPressed = true }, onRelease = { isPressed = false })
       .clickable(
         interactionSource = remember { MutableInteractionSource() },
