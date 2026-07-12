@@ -232,7 +232,7 @@ dependencies {
 
   implementation(libs.truetype.parser)
   implementation(libs.fsaf)
-  implementation("com.google.code.gson:gson:2.10.1")
+  implementation("com.google.code.gson:gson:2.14.0")
   implementation(libs.mediainfo.lib)
   implementation(libs.llamatik.library)
   implementation(libs.androidx.profileinstaller)
