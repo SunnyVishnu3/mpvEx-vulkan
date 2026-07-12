@@ -33,6 +33,7 @@ class MovieBoxClient(deviceId: String, gaid: String) {
         private const val subjectTtlMs = 10 * 60 * 1000L
         private const val seasonTtlMs = 10 * 60 * 1000L
         private const val resourceTtlMs = 60 * 1000L
+        private const val playInfoTtlMs = 60 * 1000L
         private const val captionsTtlMs = 60 * 1000L
     }
 
@@ -55,6 +56,7 @@ class MovieBoxClient(deviceId: String, gaid: String) {
     private val subjectCache = ConcurrentHashMap<String, CacheEntry<JsonObject>>()
     private val seasonCache = ConcurrentHashMap<String, CacheEntry<JsonObject>>()
     private val resourceCache = ConcurrentHashMap<String, CacheEntry<JsonObject>>()
+    private val playInfoCache = ConcurrentHashMap<String, CacheEntry<JsonObject>>()
     private val captionsCache = ConcurrentHashMap<String, CacheEntry<JsonObject>>()
 
     suspend fun getHome(page: Int = 1, tabId: Int = 0, version: String = ""): JsonObject {
@@ -90,6 +92,18 @@ class MovieBoxClient(deviceId: String, gaid: String) {
         val cacheKey = "$subjectId|$resourceId"
         return cached(captionsCache, cacheKey, captionsTtlMs) {
             requestJson("GET", "/wefeed-mobile-bff/subject-api/get-ext-captions", linkedMapOf("subjectId" to subjectId, "resourceId" to resourceId), includePlayMode = true)
+        }
+    }
+
+    suspend fun getPlayInfo(subjectId: String, season: Int = 0, episode: Int = 0): JsonObject {
+        val cacheKey = "$subjectId|$season|$episode"
+        return cached(playInfoCache, cacheKey, playInfoTtlMs) {
+            requestJson(
+                "GET",
+                "/wefeed-mobile-bff/subject-api/play-info",
+                linkedMapOf("subjectId" to subjectId, "se" to season, "ep" to episode),
+                includePlayMode = true,
+            )
         }
     }
 

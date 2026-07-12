@@ -123,16 +123,21 @@ class MovieBoxAnimeProvider(context: Context) : BaseAnimeProvider() {
     }
 
     private suspend fun MovieBoxResourceEntry.toServer(dub: MovieBoxDub, title: String, season: Int, episode: Int): Server? {
-        if (resourceLink.isBlank()) return null
+        val playInfo = runCatching { client.getPlayInfo(subjectId, season, episode) }.getOrNull()
+        val source = playInfo?.string("playUrl")
+            ?: playInfo?.obj("playInfo")?.string("url")
+            ?: playInfo?.obj("VideoAddress")?.string("url")
+            ?: resourceLink
+        if (source.isBlank()) return null
         val subtitles = runCatching { loadSubtitles(subjectId, resourceId) }.getOrDefault(emptyList())
         return Server(
             name = "${dub.name} - ${resolution}p",
             links = listOf(EpisodeStream(
-                link = resourceLink, title = "$title${if (season > 0 && episode > 0) " - S${season}E$episode" else ""}",
+                link = source, title = "$title${if (season > 0 && episode > 0) " - S${season}E$episode" else ""}",
                 quality = "${resolution}p", translationType = dub.code.ifBlank { dub.name },
                 audioLanguage = dub.name, referer = MOVIEBOX_MEDIA_REFERER,
-                format = when { resourceLink.contains(".m3u8", ignoreCase = true) -> "hls"; resourceLink.contains(".mp4", ignoreCase = true) -> "mp4"; else -> null },
-                isHls = resourceLink.contains(".m3u8", ignoreCase = true), isMp4 = resourceLink.contains(".mp4", ignoreCase = true),
+                format = when { source.contains(".m3u8", ignoreCase = true) -> "hls"; source.contains(".mp4", ignoreCase = true) -> "mp4"; else -> null },
+                isHls = source.contains(".m3u8", ignoreCase = true), isMp4 = source.contains(".mp4", ignoreCase = true),
             )),
             headers = headers, subtitles = subtitles, audio = listOf(dub.name),
         )
@@ -305,7 +310,7 @@ class MovieBoxAnimeProvider(context: Context) : BaseAnimeProvider() {
         const val MOVIE_EPISODE_LABEL = "Movie"
         const val MOVIEBOX_MEDIA_REFERER = "https://fmoviesunblocked.net/"
         const val MOVIEBOX_MEDIA_ORIGIN = "https://h5.aoneroom.com"
-        const val MOVIEBOX_MEDIA_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0"
+        const val MOVIEBOX_MEDIA_USER_AGENT = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36"
         const val MOVIEBOX_IDENTITY_PREFERENCES = "moviebox_identity"
         const val MOVIEBOX_DEVICE_ID = "device_id"
         const val MOVIEBOX_GAID = "gaid"
