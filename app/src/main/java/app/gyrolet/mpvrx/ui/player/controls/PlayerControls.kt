@@ -404,18 +404,23 @@ fun PlayerControls(
         var portraitButtonsTopPx by remember { mutableStateOf<Int?>(null) }
         var bottomRightControlsTopPx by remember { mutableStateOf<Int?>(null) }
 
+        // Color stops are constant; only `alpha` animates. Remember the Brush so it is not
+        // reallocated on every recomposition of this scope (controls show/hide, playlist, etc.).
+        val scrimBrush = remember {
+          Brush.verticalGradient(
+            Pair(0f, Color.Black),
+            Pair(.4f, Color.Transparent),
+            Pair(.6f, Color.Transparent),
+            Pair(1f, Color.Black),
+          )
+        }
         ConstraintLayout(
           modifier =
             Modifier
               .fillMaxSize()
               .onSizeChanged { controlsLayoutHeightPx = it.height }
               .background(
-                Brush.verticalGradient(
-                  Pair(0f, Color.Black),
-                  Pair(.4f, Color.Transparent),
-                  Pair(.6f, Color.Transparent),
-                  Pair(1f, Color.Black),
-                ),
+                scrimBrush,
                 alpha = transparentOverlay,
               )
               .then(safeAreaInsetModifier)
@@ -1082,11 +1087,13 @@ fun PlayerControls(
 
             else -> {
               val buttonShadow =
-                Brush.radialGradient(
-                  0.0f to Color.Black.copy(alpha = 0.3f),
-                  0.7f to Color.Transparent,
-                  1.0f to Color.Transparent,
-                )
+                remember {
+                  Brush.radialGradient(
+                    0.0f to Color.Black.copy(alpha = 0.3f),
+                    0.7f to Color.Transparent,
+                    1.0f to Color.Transparent,
+                  )
+                }
 
               if (playlistMode && viewModel.hasPlaylistSupport()) {
                 androidx.compose.foundation.layout.Row(

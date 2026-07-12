@@ -732,6 +732,21 @@ private fun SquigglySeekbar(
     }
   }
 
+  // Reused across frames: the wave path is rebuilt every frame (phase animates), but
+  // allocating a fresh Path() 60x/sec thrashes the GC and shows up as micro-jank on
+  // mid-tier GPUs. Reset-and-reuse a single instance instead.
+  val wavePath = remember { Path() }
+
+  // Chapter split fractions depend only on (chapters, duration), not on the animating
+  // position/width — precompute once instead of map/filter/sort-ing 2-3x per frame in draw.
+  val chapterFractions = remember(chapters, duration) {
+    if (duration <= 0f) FloatArray(0)
+    else chapters
+      .map { (it.start / duration).coerceIn(0f, 1f) }
+      .sorted()
+      .toFloatArray()
+  }
+
   Canvas(
     modifier =
       modifier
@@ -766,8 +781,9 @@ private fun SquigglySeekbar(
         sign * heightFraction * lineAmplitude
       }
 
-    // Build wavy path for played portion
-    val path = Path()
+    // Build wavy path for played portion (reuse instance to avoid per-frame allocation)
+    val path = wavePath
+    path.reset()
     val waveStart = -phaseOffset - waveLength / 2f
     val waveEnd = if (transitionEnabled) totalWidth else waveProgressPx
 
@@ -822,15 +838,13 @@ private fun SquigglySeekbar(
         }
         return
       }
-      val gaps =
-        chapters
-          .map { (it.start / duration).coerceIn(0f, 1f) * totalWidth }
-          .filter { it in startX..endX }
-          .sorted()
-          .map { x -> (x - gapHalf).coerceAtLeast(startX) to (x + gapHalf).coerceAtMost(endX) }
-
       var segmentStart = startX
-      for ((gapStart, gapEnd) in gaps) {
+      // Iterate precomputed fractions directly; no per-frame list allocations.
+      for (frac in chapterFractions) {
+        val x = frac * totalWidth
+        if (x < startX || x > endX) continue
+        val gapStart = (x - gapHalf).coerceAtLeast(startX)
+        val gapEnd = (x + gapHalf).coerceAtMost(endX)
         if (gapStart > segmentStart) {
           clipRect(
             left = segmentStart,
@@ -988,6 +1002,9 @@ private fun SlimSeekbar(
     val playedColor   = primaryColor
     val unplayedColor = primaryColor.copy(alpha = 0.3f)
 
+    // Reused across frames/segments to avoid allocating a Path per segment per frame.
+    val segPath = remember { Path() }
+
     Canvas(modifier = modifier.fillMaxWidth().height(48.dp)) {
         val progress      = if (duration > 0f) (position / duration).coerceIn(0f, 1f) else 0f
         val totalWidth    = size.width
@@ -1023,7 +1040,8 @@ private fun SlimSeekbar(
         // Draw a rect segment with independent left/right corner radii
         fun seg(startX: Float, endX: Float, color: Color, leftR: Float, rightR: Float) {
             if (endX - startX < 0.5f) return
-            val path = Path()
+            val path = segPath
+            path.reset()
             path.addRoundRect(
                 androidx.compose.ui.geometry.RoundRect(
                     left   = startX,
@@ -1309,7 +1327,6 @@ fun StandardSeekbar(
     
     val isThick = seekbarStyle == SeekbarStyle.Thick
     val baseTrackHeight = if (isThick) 16.dp else 8.dp
-    val trackHeightDp = baseTrackHeight * heightFraction // Apply animation to track height
     val thumbWidth by animateDpAsState(
         targetValue = when {
             isThick && isThumbInteracting -> 4.dp
@@ -1321,6 +1338,9 @@ fun StandardSeekbar(
     )
     val thumbHeight = if (isThick) 16.dp else 24.dp
     val thumbShape = if (isThick) RoundedCornerShape(thumbWidth / 2) else CircleShape
+
+    // Reused across frames/segments to avoid allocating a Path per segment per frame.
+    val segPath = remember { Path() }
 
     Slider(
         value = position,
@@ -1335,7 +1355,7 @@ fun StandardSeekbar(
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(trackHeightDp),
+                    .height(baseTrackHeight),
             ) {
                 val min = sliderState.valueRange.start
                 val max = sliderState.valueRange.endInclusive
@@ -1346,7 +1366,9 @@ fun StandardSeekbar(
                 val playedPx = size.width * playedFraction
                 val bufferPx =
                     bufferedEndPx(bufferDuration, duration, size.width, playedPx)
-                val trackHeight = size.height
+                // Apply the breathing animation in the draw phase (scale) instead of via
+                // Modifier.height, so the spring no longer triggers measure/place every frame.
+                val trackHeight = size.height * heightFraction
                 
                 // Radius for the outer ends of the seekbar
                 val outerRadius = trackHeight / 2f
@@ -1370,8 +1392,9 @@ fun StandardSeekbar(
                 
                 fun drawSegment(startX: Float, endX: Float, color: Color) {
                     if (endX - startX < 0.5f) return
-                    
-                    val path = Path()
+
+                    val path = segPath
+                    path.reset()
                     val isOuterLeft = startX <= 0.5f
                     val isInnerLeft = kotlin.math.abs(startX - thumbGapEnd) < 0.5f
                     

@@ -2,6 +2,14 @@
 
 These notes are written in plain English and focus on what changed for real use.
 
+## Unreleased
+
+### ⚡ Player Performance (heating, battery & jank)
+- **Seekbar draws with zero per-frame allocations**: The seekbar redraws up to 60×/sec during playback. It was allocating a fresh `Path` for the wavy line and for every chapter/segment on each frame, plus recomputing chapter split positions with `map/filter/sort` 2–3× per frame. These are now reused (`Path.reset()`) and precomputed once per file — removing the steady GC churn that showed up as micro-stutters on mid-range GPUs
+- **Seekbar height animates without re-layout**: The Standard/Thick seekbar's "breathing" height animation was resizing the track via layout every frame. It now scales in the draw phase on a fixed-size canvas, so the animation no longer triggers measure/place passes
+- **Control overlay stops re-allocating brushes**: The full-screen scrim gradient and the play/skip button shadow gradients are now created once instead of on every recomposition of the controls
+- **Leaner auto-skip loop**: The intro/outro auto-skip check runs on every playback tick; it no longer wraps its state updates in `runCatching`, dropping a per-tick object allocation
+
 ## 1.5.0-preview.2 — Preview Release
 
 ### 📦 MpvLib Update

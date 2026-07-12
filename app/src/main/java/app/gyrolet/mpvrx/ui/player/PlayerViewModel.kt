@@ -1892,11 +1892,12 @@ class PlayerViewModel(
       skipSegmentsSnapshot.firstOrNull { segment ->
         positionSeconds in segment.startSeconds..segment.endSeconds && (segment.endSeconds - positionSeconds) >= 1.0
       }
-    runCatching {
-      _currentSkippableSegment.value = activeSegment
-      _showSkipChipAuto.value =
-        activeSegment != null && (positionSeconds - activeSegment.startSeconds) < AUTO_SHOW_SKIP_CHIP_DURATION
-    }
+    // Plain assignments (StateFlow only emits on distinct values); no runCatching here —
+    // this runs on every poll tick (up to 60x/sec) and the Result/lambda allocation was
+    // pure per-frame GC pressure. Neither assignment can throw.
+    _currentSkippableSegment.value = activeSegment
+    _showSkipChipAuto.value =
+      activeSegment != null && (positionSeconds - activeSegment.startSeconds) < AUTO_SHOW_SKIP_CHIP_DURATION
 
     if (paused == true || activeSegment == null) return
     if (skippedSegmentTypes.contains(activeSegment.type)) return
