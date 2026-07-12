@@ -7,17 +7,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.net.Inet4Address
 import java.util.concurrent.ConcurrentHashMap
 
 class MovieBoxClient(deviceId: String, gaid: String) {
 
     private data class CacheEntry<T>(val value: T, val expiresAt: Long)
+    private class RateLimitException(retryAfter: String?) : IOException(
+        "MovieBox rate limit reached${retryAfter?.let { "; retry after $it seconds" }.orEmpty()}"
+    )
 
     private companion object {
         private val hosts = listOf(
@@ -26,7 +31,7 @@ class MovieBoxClient(deviceId: String, gaid: String) {
             "https://api3.aoneroom.com", "https://api6sg.aoneroom.com",
             "https://api.inmoviebox.com",
         )
-        private val retryStatusCodes = setOf(403, 407, 429, 500, 502, 503, 504)
+        private val retryStatusCodes = setOf(403, 407, 500, 502, 503, 504)
         private const val userAgent = "com.community.oneroom/50020046 (Linux; U; Android 13; en_US; 23078RKD5C; Build/TQ2A.230405.003; Cronet/135.0.7012.3)"
         private const val homeTtlMs = 2 * 60 * 1000L
         private const val searchTtlMs = 60 * 1000L
@@ -46,8 +51,13 @@ class MovieBoxClient(deviceId: String, gaid: String) {
         "model" to "23078RKD5C", "system_language" to "en", "net" to "NETWORK_WIFI",
         "region" to "US", "timezone" to "Asia/Kolkata", "sp_code" to "40401", "X-Play-Mode" to "2",
     ))
-    private val okHttpClient = OkHttpClient.Builder().followRedirects(true).followSslRedirects(true).build()
+    private val okHttpClient = OkHttpClient.Builder()
+        .dns { hostname -> Dns.SYSTEM.lookup(hostname).sortedByDescending { it is Inet4Address } }
+        .followRedirects(true)
+        .followSslRedirects(true)
+        .build()
     private val hostMutex = Mutex()
+    private val cacheMutex = Mutex()
     private var activeHost = hosts.first()
     private var runtimeToken: String? = null
 
@@ -128,6 +138,7 @@ class MovieBoxClient(deviceId: String, gaid: String) {
                 okHttpClient.newCall(request).execute().use { response ->
                     MovieBoxSigning.extractBearerToken(response.header("x-user"))?.let { runtimeToken = it }
                     val responseBody = response.body.string()
+                    if (response.code == 429) throw RateLimitException(response.header("Retry-After"))
                     if (response.code in retryStatusCodes) { lastResponseError = "HTTP ${response.code}: ${response.message}"; return@use }
                     if (!response.isSuccessful) throw IOException("MovieBox request failed with ${response.code}: ${response.message} ${responseBody.take(240)}")
                     val root = JsonParser.parseString(responseBody).asJsonObject
@@ -137,6 +148,8 @@ class MovieBoxClient(deviceId: String, gaid: String) {
                     hostMutex.withLock { activeHost = host }
                     return@withContext data
                 }
+            } catch (exception: RateLimitException) {
+                throw exception
             } catch (exception: Exception) { lastException = exception }
         }
         throw lastException ?: IOException(lastResponseError ?: "MovieBox host pool exhausted for $path")
@@ -149,10 +162,11 @@ class MovieBoxClient(deviceId: String, gaid: String) {
     }
 
     private suspend fun <T> cached(map: ConcurrentHashMap<String, CacheEntry<T>>, key: String, ttlMs: Long, block: suspend () -> T): T {
-        val now = System.currentTimeMillis()
-        map[key]?.takeIf { it.expiresAt > now }?.let { return it.value }
-        val value = block()
-        map[key] = CacheEntry(value = value, expiresAt = now + ttlMs)
-        return value
+        map[key]?.takeIf { it.expiresAt > System.currentTimeMillis() }?.let { return it.value }
+        return cacheMutex.withLock {
+            map[key]?.takeIf { it.expiresAt > System.currentTimeMillis() }?.value ?: block().also { value ->
+                map[key] = CacheEntry(value = value, expiresAt = System.currentTimeMillis() + ttlMs)
+            }
+        }
     }
 }
