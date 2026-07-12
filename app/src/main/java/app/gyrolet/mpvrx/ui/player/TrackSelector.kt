@@ -228,6 +228,15 @@ class TrackSelector(
     try {
       val currentSid = getTrackSelectionId("sid")
 
+      // Respect "Off – Never enable subtitles automatically" setting
+      if (!subtitlesPreferences.autoEnableSubtitles.get()) {
+        Log.d(TAG, "Smart Sub: Auto-enable subtitles is off. Skipping auto-selection.")
+        if (currentSid > 0) {
+          setTrackSelectionId("sid", 0)
+        }
+        return
+      }
+
       // Respect manual "Subtitles Off" state
       if (hasState && currentSid == 0) {
         Log.d(TAG, "Smart Sub: User disabled subtitles manually. Respecting choice.")

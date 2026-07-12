@@ -12,6 +12,7 @@ import app.gyrolet.mpvrx.ui.player.Decoder
 import app.gyrolet.mpvrx.ui.player.Panels
 import app.gyrolet.mpvrx.ui.player.Sheets
 import app.gyrolet.mpvrx.ui.player.TrackNode
+import app.gyrolet.mpvrx.ui.player.setTrackSelectionId
 import app.gyrolet.mpvrx.ui.player.controls.components.sheets.AspectRatioSheet
 import app.gyrolet.mpvrx.ui.player.controls.components.sheets.AudioTracksSheet
 import app.gyrolet.mpvrx.ui.player.controls.components.sheets.ChaptersSheet
@@ -139,6 +140,8 @@ fun PlayerSheets(
       val provider by aiPreferences.provider.collectAsState()
       val autoTranslateLanguages by aiPreferences.autoTranslateLanguages.collectAsState()
 
+      val subtitlesOff = subtitles.none { isSubtitleSelected(it.id) }
+
       SubtitlesSheet(
         tracks = subtitles.toImmutableList(),
         onToggleSubtitle = onToggleSubtitle,
@@ -165,6 +168,12 @@ fun PlayerSheets(
         autoTranslateLanguages = autoTranslateLanguages,
         aiEnabled = aiEnabled,
         realtimeSubsEnabled = realtimeSubsEnabled,
+        subtitlesOff = subtitlesOff,
+        onDisableSubtitles = {
+          setTrackSelectionId("sid", null)
+          setTrackSelectionId("secondary-sid", null)
+          subtitlesPreferences.autoEnableSubtitles.set(false)
+        },
       )
     }
 

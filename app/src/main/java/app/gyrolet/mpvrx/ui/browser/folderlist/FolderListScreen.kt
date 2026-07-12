@@ -880,6 +880,7 @@ object FolderListScreen : Screen {
         sortOrder = folderSortOrder,
         onSortTypeChange = { browserPreferences.folderSortType.set(it) },
         onSortOrderChange = { browserPreferences.folderSortOrder.set(it) },
+        isDualPane = isDualPaneActive && selectedFolderBucketId != null,
       )
 
       if (pendingDeleteFolders.isNotEmpty()) {
@@ -1038,6 +1039,11 @@ private fun GridContent(
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val folderGridColumnsPref = if (isLandscape) folderGridColumnsLandscape else folderGridColumnsPortrait
 
+    val isTablet = configuration.smallestScreenWidthDp >= 600
+    val dualPaneForTablet by browserPreferences.dualPaneForTablet.collectAsState()
+    val isDualPaneActive = isTablet && dualPaneForTablet
+    val isDualPane = isDualPaneActive && selectedFolderBucketId != null
+
     val computedColumns = if (manualGridColumnsEnabled) {
       folderGridColumnsPref.coerceAtLeast(1)
     } else {
@@ -1091,6 +1097,7 @@ private fun GridContent(
             } else {
               null
             },
+          isDualPane = isDualPane,
         )
       }
     }

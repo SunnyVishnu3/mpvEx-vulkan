@@ -2905,7 +2905,7 @@ class PlayerActivity :
       }
     }
 
-    if (subtitlesPreferences.autoloadMatchingSubtitles.get()) {
+    if (subtitlesPreferences.autoEnableSubtitles.get() && subtitlesPreferences.autoloadMatchingSubtitles.get()) {
       lifecycleScope.launch {
         // For network files played via proxy (SMB/WebDAV/FTP), use the original network file path
         val networkFilePath = intent.getStringExtra("network_file_path")
@@ -3331,6 +3331,8 @@ class PlayerActivity :
 
     MPVLib.setPropertyDouble("sub-delay", subDelay)
     MPVLib.setPropertyDouble("speed", state.playbackSpeed)
+    // Re-apply audio-pitch-correction after speed change, as mpv resets it to default
+    MPVLib.setPropertyBoolean("audio-pitch-correction", audioPreferences.audioPitchCorrection.get())
     MPVLib.setPropertyDouble("audio-delay", audioDelay)
     MPVLib.setPropertyDouble("sub-speed", state.subSpeed)
 

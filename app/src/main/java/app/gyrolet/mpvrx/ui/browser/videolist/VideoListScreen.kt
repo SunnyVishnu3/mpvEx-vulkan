@@ -435,6 +435,7 @@ data class VideoListScreen(
         sortOrder = videoSortOrder,
         onSortTypeChange = { browserPreferences.videoSortType.set(it) },
         onSortOrderChange = { browserPreferences.videoSortOrder.set(it) },
+        isDualPane = isDualPane,
       )
 
       // Delete Dialog

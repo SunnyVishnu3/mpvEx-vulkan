@@ -68,6 +68,7 @@ fun FolderCard(
   isPinned: Boolean = false,
   onPinClick: (() -> Unit)? = null,
   thumbnail: ImageBitmap? = null,
+  isDualPane: Boolean = false,
 ) {
   val appearancePreferences = koinInject<AppearancePreferences>()
   val browserPreferences = koinInject<BrowserPreferences>()
@@ -87,14 +88,14 @@ fun FolderCard(
   val thumbnailRepository = koinInject<ThumbnailRepository>()
   var folderThumbnail by remember(folder.bucketId) { mutableStateOf<android.graphics.Bitmap?>(null) }
 
-  LaunchedEffect(folder.bucketId, showFolderThumbnails, isGridMode, manualGridColumnsEnabled, folderGridColumnsPortrait, folderGridColumnsLandscape) {
+  LaunchedEffect(folder.bucketId, showFolderThumbnails, isGridMode, manualGridColumnsEnabled, folderGridColumnsPortrait, folderGridColumnsLandscape, isDualPane) {
     if (isGridMode && showFolderThumbnails) {
       withContext(Dispatchers.IO) {
         val videos = app.gyrolet.mpvrx.repository.MediaFileRepository.getVideosInFolder(context, folder.bucketId)
         if (videos.isNotEmpty()) {
           val configuration = context.resources.configuration
           val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-          val screenWidthDp = configuration.screenWidthDp.dp
+          val screenWidthDp = if (isDualPane) configuration.screenWidthDp.dp * 0.4f else configuration.screenWidthDp.dp
           val contentHorizontalPadding = 8.dp
           val itemSpacing = 2.dp
           val usableWidth = screenWidthDp - (contentHorizontalPadding * 2) - itemSpacing
@@ -188,7 +189,7 @@ fun FolderCard(
       if (isGridMode) {
         val configuration = LocalConfiguration.current
         val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-        val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
+        val screenWidthDp = if (isDualPane) LocalConfiguration.current.screenWidthDp.dp * 0.4f else LocalConfiguration.current.screenWidthDp.dp
         val contentHorizontalPadding = 8.dp
         val itemSpacing = 2.dp
         val usableWidth = screenWidthDp - (contentHorizontalPadding * 2) - itemSpacing

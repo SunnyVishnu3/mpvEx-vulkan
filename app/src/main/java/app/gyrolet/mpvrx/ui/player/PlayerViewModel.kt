@@ -2696,12 +2696,18 @@ class PlayerViewModel(
     val primarySid = getTrackSelectionId("sid")
     val secondarySid = getTrackSelectionId("secondary-sid")
 
+    val wasOff = primarySid <= 0 && secondarySid <= 0
+
     when {
       id == primarySid -> setTrackSelectionId("sid", null)
       id == secondarySid -> setTrackSelectionId("secondary-sid", null)
       primarySid <= 0 -> setTrackSelectionId("sid", id)
       secondarySid <= 0 -> setTrackSelectionId("secondary-sid", id)
       else -> setTrackSelectionId("sid", id)
+    }
+
+    if (wasOff && !subtitlesPreferences.autoEnableSubtitles.get()) {
+      subtitlesPreferences.autoEnableSubtitles.set(true)
     }
 
     syncSubtitleLayout()

@@ -35,6 +35,7 @@ data class AniCliAnime(
     val studios: List<String> = emptyList(),
     val tags: List<AnilistTag> = emptyList(),
     val isTagsLoaded: Boolean = false,
+    val country: String? = null,
 )
 
 data class AnilistTag(
@@ -59,6 +60,7 @@ data class AniCliEpisode(
     val isPreview: Boolean = false,
     val duration: String? = null,
     val poster: String? = null,
+    val season: Int? = null,
 )
 
 data class AniCliSubtitleTrack(
@@ -145,6 +147,7 @@ data class AniCliUiState(
     val selectedListContext: AnimeListContext? = null,
     val isLoadingEpisodes: Boolean = false,
     val episodes: List<AniCliEpisode> = emptyList(),
+    val selectedSeason: Int? = null,
     val selectedEpisode: String? = null,
     val selectedEpisodeNumber: String? = null,
     val isLoadingStreams: Boolean = false,
