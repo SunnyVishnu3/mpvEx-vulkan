@@ -166,7 +166,7 @@ fun SubtitlesSheet(
             shape = MaterialTheme.shapes.medium,
           )
           LazyColumn(modifier = Modifier.height(280.dp)) {
-            items(languagesToShow) { lang ->
+            items(languagesToShow, key = { it }) { lang ->
               Text(
                 text = lang,
                 modifier = Modifier
@@ -276,7 +276,7 @@ fun SubtitlesSheet(
       }
 
       LazyColumn {
-        items(items) { item ->
+        items(items, key = { it.hashCode() }) { item ->
           when (item) {
             is SubtitleItem.Track -> {
               val track = item.node

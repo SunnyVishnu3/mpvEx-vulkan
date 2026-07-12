@@ -48,7 +48,7 @@ fun <T> OptionsDialog(
           contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp),
           modifier = Modifier.selectableGroup(),
         ) {
-          items(options) { option ->
+          items(options, key = { it.hashCode() }) { option ->
             Row(
               modifier = Modifier
                 .fillMaxWidth()

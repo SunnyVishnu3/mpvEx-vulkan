@@ -287,7 +287,7 @@ fun MoreSheet(
         LazyRow(
           horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
         ) {
-          items(Anime4KManager.Mode.entries) { mode ->
+          items(Anime4KManager.Mode.entries, key = { it.name }) { mode ->
             FilterChip(
               label = { Text(stringResource(mode.titleRes)) },
               selected = anime4kMode == mode.name,
@@ -331,7 +331,7 @@ fun MoreSheet(
         LazyRow(
           horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
         ) {
-          items(Anime4KManager.UltraMode.entries) { mode ->
+          items(Anime4KManager.UltraMode.entries, key = { it.name }) { mode ->
             FilterChip(
               label = { Text(stringResource(mode.titleRes)) },
               selected = anime4kUltraMode == mode.name,

@@ -211,7 +211,7 @@ object LuaScriptsScreen : Screen {
             }
           }
           else -> {
-            items(catalog.availableScripts) { scriptName ->
+            items(catalog.availableScripts, key = { it.hashCode() }) { scriptName ->
               LuaScriptToggleCard(
                 scriptName = scriptName,
                 selected = selectedScripts.contains(scriptName),

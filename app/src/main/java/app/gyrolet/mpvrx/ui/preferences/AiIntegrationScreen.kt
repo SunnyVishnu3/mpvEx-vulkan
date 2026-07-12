@@ -345,7 +345,7 @@ object AiIntegrationScreen : Screen {
                 else -> LocalModelCatalog.speedFirst(ramMb)
               }
 
-              items(visibleLocalModels) { model ->
+              items(visibleLocalModels, key = { it.hashCode() }) { model ->
                   val isDownloaded = remember(model.id, isDownloading) {
                       aiService.isLocalModelDownloaded(model.id)
                   }

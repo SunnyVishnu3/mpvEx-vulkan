@@ -2698,10 +2698,18 @@ class PlayerActivity :
           try {
             val surface = player.holder?.surface
             if (surface != null && surface.isValid) {
-              surface.setFrameRate(
-                value.toFloat(),
-                android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE
-              )
+              if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                surface.setFrameRate(
+                  value.toFloat(),
+                  android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,
+                  android.view.Surface.CHANGE_FRAME_RATE_ALWAYS
+                )
+              } else {
+                surface.setFrameRate(
+                  value.toFloat(),
+                  android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE
+                )
+              }
               android.util.Log.i(TAG, "Set display refresh rate to ${value}Hz")
             }
           } catch (e: Exception) {

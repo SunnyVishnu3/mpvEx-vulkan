@@ -279,10 +279,18 @@ class MPVView(
       val fps = MPVLib.getPropertyDouble("container-fps") ?: 0.0
       if (fps > 0.0 && holder?.surface?.isValid == true) {
         try {
-          holder.surface.setFrameRate(
-            fps.toFloat(),
-            android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE
-          )
+          if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            holder.surface.setFrameRate(
+              fps.toFloat(),
+              android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,
+              android.view.Surface.CHANGE_FRAME_RATE_ALWAYS
+            )
+          } else {
+            holder.surface.setFrameRate(
+              fps.toFloat(),
+              android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE
+            )
+          }
         } catch (e: Exception) {
           Log.e(TAG, "Failed to set frame rate on surface", e)
         }

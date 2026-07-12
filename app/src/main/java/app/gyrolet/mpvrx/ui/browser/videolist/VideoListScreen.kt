@@ -900,10 +900,9 @@ internal fun VideoListContent(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
               ) {
                 items(
-                  count = videosWithInfo.size,
-                  key = { index -> "${videosWithInfo[index].video.id}_${videosWithInfo[index].video.path}" },
-                ) { index ->
-                  val videoWithInfo = videosWithInfo[index]
+                  items = videosWithInfo,
+                  key = { it.video.id.toString() + "_" + it.video.path }
+                ) { videoWithInfo ->
                   val isRecentlyPlayed = recentlyPlayedFilePath?.let { videoWithInfo.video.path == it } ?: false
 
                   VideoCard(
@@ -960,10 +959,9 @@ internal fun VideoListContent(
                 ),
               ) {
                 items(
-                  count = videosWithInfo.size,
-                  key = { index -> "${videosWithInfo[index].video.id}_${videosWithInfo[index].video.path}" },
-                ) { index ->
-                  val videoWithInfo = videosWithInfo[index]
+                  items = videosWithInfo,
+                  key = { it.video.id.toString() + "_" + it.video.path }
+                ) { videoWithInfo ->
                   val isRecentlyPlayed = recentlyPlayedFilePath?.let { videoWithInfo.video.path == it } ?: false
 
                   VideoCard(
