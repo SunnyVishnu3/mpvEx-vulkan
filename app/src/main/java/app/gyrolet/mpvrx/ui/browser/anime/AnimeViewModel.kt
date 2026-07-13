@@ -51,11 +51,13 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
     private val downloadRepository: AnimeDownloadRepository by inject()
     private val gson = Gson()
 
-    private val provider by lazy { sourceRegistry.get(AnimeSource.MOVIEBOX) }
+    private val provider get() = sourceRegistry.get(_uiState.value.selectedSource)
 
     private val _uiState = MutableStateFlow(
         AniCliUiState(
-            selectedSource = AnimeSource.MOVIEBOX,
+            selectedSource = browserPreferences.animeSelectedSource.get()
+                .takeIf { sourceRegistry.getOrNull(it) != null }
+                ?: AnimeSource.MOVIEBOX,
             mode = "sub",
         )
     )
@@ -105,6 +107,33 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                 searchHasMore = if (query.isBlank()) true else state.searchHasMore,
             )
         }
+    }
+
+    fun setSource(source: AnimeSource) {
+        if (_uiState.value.selectedSource == source || sourceRegistry.getOrNull(source) == null) return
+        exploreRequestId++
+        searchRequestId++
+        episodesRequestId++
+        streamsRequestId++
+        browserPreferences.animeSelectedSource.set(source)
+        _uiState.update {
+            it.copy(
+                selectedSource = source,
+                hasSearched = false,
+                searchResults = emptyList(),
+                searchPage = 1,
+                searchHasMore = true,
+                trendingAnime = emptyList(),
+                selectedAnime = null,
+                selectedAnimeIndex = null,
+                selectedListContext = null,
+                episodes = emptyList(),
+                streamLinks = emptyList(),
+                showStreamSheet = false,
+                errorMessage = null,
+            )
+        }
+        loadExplore()
     }
 
     fun search() {
@@ -264,7 +293,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                 _uiState.update {
                     it.copy(
                         isLoadingTrending = false,
-                        errorMessage = error.message ?: "Could not load MovieBox",
+                        errorMessage = error.message ?: "Could not load source",
                     )
                 }
             }
@@ -583,7 +612,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
         handleDownloadAction(anime.name, episode.number) {
             queueDownload(
                 AnimeDownloadRequest(
-                    source = AnimeSource.MOVIEBOX,
+                    source = _uiState.value.selectedSource,
                     animeId = anime.id,
                     animeName = anime.name,
                     episodeId = episode.id,
@@ -601,7 +630,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
         handleDownloadAction(anime.name, episode.number) {
             queueDownload(
                 AnimeDownloadRequest(
-                    source = AnimeSource.MOVIEBOX,
+                    source = _uiState.value.selectedSource,
                     animeId = anime.id,
                     animeName = anime.name,
                     episodeId = episode.id,
@@ -629,7 +658,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
             if (state == DownloadState.Idle || state is DownloadState.Failed) {
                 queueDownload(
                     AnimeDownloadRequest(
-                        source = AnimeSource.MOVIEBOX,
+                        source = _uiState.value.selectedSource,
                         animeId = anime.id,
                         animeName = anime.name,
                         episodeId = episode.id,

@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class AnimeSource(val displayName: String, val supportsMode: Boolean, val isAdult: Boolean = false) {
     MOVIEBOX("MovieBox", false),
+    ENCDEC("EncDec", false),
 }
 
 val AnimeSource.isStreamingEmbedSource: Boolean get() = false

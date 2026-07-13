@@ -83,6 +83,7 @@ import app.gyrolet.mpvrx.domain.anicli.AnimeListContext
 import app.gyrolet.mpvrx.domain.anicli.AnimeSource
 import app.gyrolet.mpvrx.domain.anicli.DownloadState
 import app.gyrolet.mpvrx.domain.anicli.onlyEnglishSubtitles
+import app.gyrolet.mpvrx.domain.anicli.provider.SourceRegistry
 import app.gyrolet.mpvrx.ui.browser.networkstreaming.proxy.HttpStreamingProxy
 import app.gyrolet.mpvrx.preferences.EpisodeViewMode
 import app.gyrolet.mpvrx.preferences.TrendingViewMode
@@ -120,6 +121,7 @@ private enum class AnimeHomeTab(val label: String, val icon: AppIcon) {
 internal fun animeSearchPlaceholder(selectedSource: AnimeSource): String =
     when (selectedSource) {
         AnimeSource.MOVIEBOX -> "Search movies and TV shows"
+        AnimeSource.ENCDEC -> "Search TMDB movies and TV shows"
     }
 
 internal fun canSubmitAnimeSearch(query: String, isSearching: Boolean): Boolean =
@@ -266,6 +268,7 @@ object AnimeScreen : Screen {
                         selectedSource = uiState.selectedSource,
                         searchQuery = uiState.searchQuery,
                         isSearching = uiState.isSearching,
+                        onSourceChange = viewModel::setSource,
                         onQueryChange = viewModel::setSearchQuery,
                         onSearch = submitSearch,
                         onClear = {
@@ -544,12 +547,17 @@ object AnimeScreen : Screen {
                     onDismiss = viewModel::dismissStreamSheet,
                     onPlay = { link, context ->
                         val headers = playbackHeaders(link)
-                        val playbackUrl = HttpStreamingProxy.instance.register(link.url, headers)
+                        val playbackUrl = if (link.isM3u8) {
+                            link.url
+                        } else {
+                            HttpStreamingProxy.instance.register(link.url, headers)
+                        }
                         viewModel.dismissStreamSheet()
                         MediaUtils.playFile(
                             source = playbackUrl,
                             context = context,
                             title = streamPlaybackTitle(anime, episode, link),
+                            headers = headers.takeIf { link.isM3u8 },
                             subtitleTracks = link.subtitles.map {
                                 PlaybackSubtitleTrack(
                                     url = it.url,
@@ -575,48 +583,60 @@ private fun AnimeSearchRow(
     selectedSource: AnimeSource,
     searchQuery: String,
     isSearching: Boolean,
+    onSourceChange: (AnimeSource) -> Unit,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     onClear: () -> Unit,
 ) {
     val canSearch = canSubmitAnimeSearch(searchQuery, isSearching)
-    OutlinedTextField(
-        value = searchQuery,
-        onValueChange = onQueryChange,
-        modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text(animeSearchPlaceholder(selectedSource)) },
-        singleLine = true,
-        leadingIcon = { Icon(Icons.Default.Search, null, modifier = Modifier.size(20.dp)) },
-        trailingIcon = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (isSearching) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                }
-                if (searchQuery.isNotBlank()) {
-                    Surface(
-                        onClick = onClear,
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    ) {
-                        Icon(
-                            Icons.Default.Close,
-                            null,
-                            modifier = Modifier.padding(7.dp).size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Spacer(Modifier.width(8.dp))
-                }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SourceRegistry.orderedSources(AnimeSource.entries).forEach { source ->
+                FilterChip(
+                    selected = source == selectedSource,
+                    onClick = { onSourceChange(source) },
+                    label = { Text(source.displayName) },
+                )
             }
-        },
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions = KeyboardActions(onSearch = { if (canSearch) onSearch() }),
-        shape = RoundedCornerShape(28.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-    )
+        }
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(animeSearchPlaceholder(selectedSource)) },
+            singleLine = true,
+            leadingIcon = { Icon(Icons.Default.Search, null, modifier = Modifier.size(20.dp)) },
+            trailingIcon = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (isSearching) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    }
+                    if (searchQuery.isNotBlank()) {
+                        Surface(
+                            onClick = onClear,
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                null,
+                                modifier = Modifier.padding(7.dp).size(16.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                    }
+                }
+            },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { if (canSearch) onSearch() }),
+            shape = RoundedCornerShape(28.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            ),
+        )
+    }
 }
 
 @Composable
@@ -1639,7 +1659,7 @@ private fun animeCardDetails(anime: AniCliAnime): String = buildList {
     anime.status?.takeIf { it.isNotBlank() }?.let(::add)
     anime.country?.takeIf { it.isNotBlank() }?.let(::add)
     if (anime.subEpisodes > 0) add("${anime.subEpisodes} episodes")
-}.joinToString(" - ").ifBlank { "MovieBox" }
+}.joinToString(" - ").ifBlank { "Media" }
 
 private fun animeCardAccentColor(score: Float?, fallback: Color): Color =
     if (score != null && score >= 80f) ScoreGold else fallback
