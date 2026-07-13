@@ -2,7 +2,6 @@ package app.gyrolet.mpvrx.domain.anicli.provider.moviebox
 
 import android.content.Context
 import app.gyrolet.mpvrx.domain.anicli.AnimeSource
-import app.gyrolet.mpvrx.domain.anicli.isEnglishSubtitle
 import app.gyrolet.mpvrx.domain.anicli.provider.Anime
 import app.gyrolet.mpvrx.domain.anicli.provider.AnimeEpisodes
 import app.gyrolet.mpvrx.domain.anicli.provider.AnimeEpisodeInfo
@@ -16,6 +15,7 @@ import app.gyrolet.mpvrx.domain.anicli.provider.SearchResult
 import app.gyrolet.mpvrx.domain.anicli.provider.SearchResults
 import app.gyrolet.mpvrx.domain.anicli.provider.Server
 import app.gyrolet.mpvrx.domain.anicli.provider.Subtitle
+import app.gyrolet.mpvrx.preferences.BrowserPreferences
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import kotlinx.coroutines.async
@@ -23,7 +23,10 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import java.util.UUID
 
-class MovieBoxAnimeProvider(context: Context) : BaseAnimeProvider() {
+class MovieBoxAnimeProvider(
+    context: Context,
+    private val browserPreferences: BrowserPreferences,
+) : BaseAnimeProvider() {
 
     private data class MovieBoxDub(val subjectId: String, val code: String, val name: String, val original: Boolean)
     private data class MovieBoxSeasonAvailability(val season: Int, val maxEpisode: Int, val resolutions: List<MovieBoxResolutionAvailability>)
@@ -46,6 +49,7 @@ class MovieBoxAnimeProvider(context: Context) : BaseAnimeProvider() {
         deviceId = identityPreferences.stableId(MOVIEBOX_DEVICE_ID) { UUID.randomUUID().toString().replace("-", "") },
         gaid = identityPreferences.stableId(MOVIEBOX_GAID) { UUID.randomUUID().toString() },
     )
+    private val stremioClient = StremioMovieBoxClient()
 
     override suspend fun latest(params: SearchParams): SearchResults {
         val results = client.getHome(page = params.currentPage, tabId = HOME_TAB_ALL).toLatestResults()
@@ -94,6 +98,22 @@ class MovieBoxAnimeProvider(context: Context) : BaseAnimeProvider() {
 
     override suspend fun episodeStreams(params: EpisodeStreamsParams): List<Server> {
         val address = parseEpisodeAddress(params.episodeId, params.episode)
+        val manifestUrl = browserPreferences.movieBoxStremioManifestUrl.get().trim()
+        if (manifestUrl.isNotEmpty()) {
+            val detail = client.getSubject(params.animeId)
+            val type = if (address.isMovie) "movie" else "series"
+            val stremioStreams = runCatching {
+                stremioClient.getStreams(
+                    manifestUrl = manifestUrl,
+                    title = detail.string("title") ?: detail.string("name") ?: params.query,
+                    year = detail.string("releaseDate")?.take(4),
+                    type = type,
+                    season = address.season,
+                    episode = address.episode,
+                )
+            }.getOrDefault(emptyList())
+            if (stremioStreams.isNotEmpty()) return stremioStreams
+        }
         return if (address.isMovie) getMovieServers(params.animeId, params.query)
         else getEpisodeServers(params.animeId, address.season, address.episode, params.query)
     }
@@ -166,7 +186,6 @@ class MovieBoxAnimeProvider(context: Context) : BaseAnimeProvider() {
             val entry = caption.asObjectOrNull() ?: return@mapNotNull null
             val url = entry.string("url") ?: return@mapNotNull null
             val languageCode = entry.string("lan"); val label = entry.string("lanName") ?: languageCode ?: "Subtitle"
-            if (!isEnglishSubtitle(languageCode = languageCode, label = label)) return@mapNotNull null
             Subtitle(url = url, language = label)
         }.distinctBy { it.url }
 

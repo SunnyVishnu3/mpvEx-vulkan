@@ -82,6 +82,7 @@ class BrowserPreferences(
   val animeEnabledSources = preferenceStore.getStringSet("anime_enabled_sources", setOf("MOVIEBOX"))
   val animeFolderUri = preferenceStore.getString("anime_folder_uri", "")
   val animeBookmarksJson = preferenceStore.getString("anime_bookmarks_json", "[]")
+  val movieBoxStremioManifestUrl = preferenceStore.getString("moviebox_stremio_manifest_url", "")
 }
 
 enum class EpisodeViewMode {

@@ -99,7 +99,7 @@ val domainModule = module {
     }
     single { Anime4KManager(androidContext()) }
     single { HdrToysManager(androidContext()) }
-    single { MovieBoxAnimeProvider(androidContext()) }
+    single { MovieBoxAnimeProvider(androidContext(), get()) }
     single { SourceRegistry(providers = listOf(get<MovieBoxAnimeProvider>())) }
     single { AnimeDownloadRepository(androidContext(), get(), get(), get(), get()) }
     viewModel { AnimeViewModel(get()) }
