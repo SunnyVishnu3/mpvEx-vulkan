@@ -27,6 +27,7 @@ import app.gyrolet.mpvrx.preferences.TrendingViewMode
 import app.gyrolet.mpvrx.repository.AnimeDownloadRepository
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -123,25 +124,32 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
         }
         viewModelScope.launch {
             runCatching {
-                provider.search(
+                val response = provider.search(
                     SearchParams(
                         query = query,
                         currentPage = 1,
                         pageLimit = SEARCH_PAGE_SIZE,
                     )
-                )?.results.orEmpty().map { it.toAniCliAnime() }
-            }.onSuccess { results ->
+                )
+                val results = response?.results.orEmpty().map { it.toAniCliAnime() }
+                Triple(
+                    results,
+                    response?.pageInfo?.hasMore ?: (results.size >= SEARCH_PAGE_SIZE),
+                    response?.pageInfo?.nextPage,
+                )
+            }.onSuccess { (results, hasMore, nextPage) ->
                 if (!isActiveSearch(query, requestId)) return@onSuccess
                 _uiState.update {
                     it.copy(
                         isSearching = false,
                         searchResults = results,
-                        searchPage = 1,
-                        searchHasMore = results.size >= SEARCH_PAGE_SIZE,
+                        searchPage = nextPage?.minus(1)?.coerceAtLeast(1) ?: 1,
+                        searchHasMore = hasMore,
                         errorMessage = null,
                     )
                 }
             }.onFailure { error ->
+                if (error is CancellationException) throw error
                 if (!isActiveSearch(query, requestId)) return@onFailure
                 _uiState.update {
                     it.copy(
@@ -161,23 +169,33 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
         val requestId = ++searchRequestId
         _uiState.update { it.copy(isLoadingMoreSearch = true) }
         viewModelScope.launch {
-            val results = runCatching {
-                provider.search(
+            val page = runCatching {
+                val response = provider.search(
                     SearchParams(
                         query = query,
                         currentPage = nextPage,
                         pageLimit = SEARCH_PAGE_SIZE,
                     )
-                )?.results.orEmpty().map { it.toAniCliAnime() }
-            }.getOrDefault(emptyList())
+                )
+                val results = response?.results.orEmpty().map { it.toAniCliAnime() }
+                Triple(
+                    results,
+                    response?.pageInfo?.hasMore ?: (results.size >= SEARCH_PAGE_SIZE),
+                    response?.pageInfo?.nextPage,
+                )
+            }.getOrElse { error ->
+                if (error is CancellationException) throw error
+                Triple(emptyList<AniCliAnime>(), false, null)
+            }
+            val (results, hasMore, apiNextPage) = page
 
             if (!isActiveSearch(query, requestId)) return@launch
             _uiState.update {
                 it.copy(
                     isLoadingMoreSearch = false,
                     searchResults = (it.searchResults + results).distinctBy { anime -> anime.id },
-                    searchPage = nextPage,
-                    searchHasMore = results.size >= SEARCH_PAGE_SIZE,
+                    searchPage = apiNextPage?.minus(1)?.coerceAtLeast(nextPage) ?: nextPage,
+                    searchHasMore = hasMore,
                 )
             }
         }
@@ -210,33 +228,38 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
         }
         viewModelScope.launch {
             runCatching {
-                provider.latest(
+                val response = provider.latest(
                     SearchParams(
                         query = "",
                         currentPage = 1,
                         pageLimit = EXPLORE_PAGE_SIZE,
                     )
-                )?.results
+                )
                     ?: provider.search(
                         SearchParams(
                             query = "",
                             currentPage = 1,
                             pageLimit = EXPLORE_PAGE_SIZE,
                         )
-                    )?.results.orEmpty()
-            }.map { results ->
-                results.map { it.toAniCliAnime() }
-            }.onSuccess { results ->
+                    )
+                val results = response?.results.orEmpty().map { it.toAniCliAnime() }
+                Triple(
+                    results,
+                    response?.pageInfo?.hasMore ?: results.isNotEmpty(),
+                    response?.pageInfo?.nextPage,
+                )
+            }.onSuccess { (results, hasMore, nextPage) ->
                 if (exploreRequestId != requestId) return@onSuccess
                 _uiState.update {
                     it.copy(
                         isLoadingTrending = false,
                         trendingAnime = results,
-                        animeProviderPage = 1,
-                        animeProviderHasMore = results.isNotEmpty(),
+                        animeProviderPage = nextPage?.minus(1)?.coerceAtLeast(1) ?: 1,
+                        animeProviderHasMore = hasMore,
                     )
                 }
             }.onFailure { error ->
+                if (error is CancellationException) throw error
                 if (exploreRequestId != requestId) return@onFailure
                 _uiState.update {
                     it.copy(
@@ -256,37 +279,43 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
         _uiState.update { it.copy(isLoadingTrending = true) }
         viewModelScope.launch {
             runCatching {
-                provider.latest(
+                val response = provider.latest(
                     SearchParams(
                         query = "",
                         currentPage = nextPage,
                         pageLimit = EXPLORE_PAGE_SIZE,
                     )
-                )?.results
+                )
                     ?: provider.search(
                         SearchParams(
                             query = "",
                             currentPage = nextPage,
                             pageLimit = EXPLORE_PAGE_SIZE,
                         )
-                    )?.results.orEmpty()
-            }.map { results -> results.map { it.toAniCliAnime() } }
-                .onSuccess { results ->
-                    if (exploreRequestId != requestId) return@onSuccess
-                    _uiState.update {
-                        val existingIds = it.trendingAnime.mapTo(hashSetOf()) { anime -> anime.id }
-                        val newResults = results.filterNot { anime -> anime.id in existingIds }
-                        it.copy(
-                            isLoadingTrending = false,
-                            trendingAnime = it.trendingAnime + newResults,
-                            animeProviderPage = nextPage,
-                            animeProviderHasMore = results.isNotEmpty() && newResults.isNotEmpty(),
-                        )
-                    }
-                }.onFailure { error ->
-                    if (exploreRequestId != requestId) return@onFailure
-                    _uiState.update { it.copy(isLoadingTrending = false, errorMessage = error.message ?: "Could not load more titles") }
+                    )
+                val results = response?.results.orEmpty().map { it.toAniCliAnime() }
+                Triple(
+                    results,
+                    response?.pageInfo?.hasMore ?: results.isNotEmpty(),
+                    response?.pageInfo?.nextPage,
+                )
+            }.onSuccess { (results, hasMore, apiNextPage) ->
+                if (exploreRequestId != requestId) return@onSuccess
+                _uiState.update {
+                    val existingIds = it.trendingAnime.mapTo(hashSetOf()) { anime -> anime.id }
+                    val newResults = results.filterNot { anime -> anime.id in existingIds }
+                    it.copy(
+                        isLoadingTrending = false,
+                        trendingAnime = it.trendingAnime + newResults,
+                        animeProviderPage = apiNextPage?.minus(1)?.coerceAtLeast(nextPage) ?: nextPage,
+                        animeProviderHasMore = hasMore,
+                    )
                 }
+            }.onFailure { error ->
+                if (error is CancellationException) throw error
+                if (exploreRequestId != requestId) return@onFailure
+                _uiState.update { it.copy(isLoadingTrending = false, errorMessage = error.message ?: "Could not load more titles") }
+            }
         }
     }
 
@@ -370,6 +399,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                     }.orEmpty()
                 _uiState.update { state ->
                     val updatedAnime = state.selectedAnime?.copy(
+                        id = detail?.id ?: anime.id,
                         name = detail?.title ?: anime.name,
                         subEpisodes = episodes.size.takeIf { it > 0 } ?: anime.subEpisodes,
                         description = detail?.description ?: anime.description,
@@ -386,6 +416,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                     )
                 }
             }.onFailure { error ->
+                if (error is CancellationException) throw error
                 if (!isActiveEpisodeRequest(anime.id, requestId)) return@onFailure
                 _uiState.update {
                     it.copy(
@@ -431,6 +462,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                     )
                 }
             }.onFailure { error ->
+                if (error is CancellationException) throw error
                 if (!isActiveStreamRequest(anime.id, episode.id, requestId)) return@onFailure
                 _uiState.update {
                     it.copy(
@@ -691,7 +723,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application), 
                         AniCliSubtitleTrack(
                             url = subtitle.url,
                             label = subtitle.language ?: "Subtitle",
-                            languageCode = subtitle.language,
+                            languageCode = subtitle.languageCode ?: subtitle.language,
                         )
                     },
                     audioLanguages = stream.audioLanguage?.let(::listOf)

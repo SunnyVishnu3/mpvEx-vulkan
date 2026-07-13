@@ -37,6 +37,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.FileOutputStream
 import java.net.URL
+import java.nio.charset.StandardCharsets
 
 private const val TAG = "AnimeDownloadRepository"
 private const val DEFAULT_REFERER = "https://google.com"
@@ -47,6 +48,13 @@ private const val ANIMEPAHE_USER_AGENT =
 private const val PERSISTED_DOWNLOADS_FALLBACK = "[]"
 private const val DOWNLOAD_PROGRESS_PERSIST_INTERVAL_MS = 1500L
 private const val DOWNLOAD_NOTIFICATION_SYNC_INTERVAL_MS = 750L
+private const val MAX_SAFE_NAME_BYTES = 120
+private val SERIES_SUFFIX = Regex(
+    """\s+(?:S\d+(?:\s*-\s*S\d+)?|Season\s+\d+|S\d+E\d+)\s*$""",
+    RegexOption.IGNORE_CASE,
+)
+private val MOVIEBOX_EPISODE_ID = Regex("""moviebox:(\d+):(\d+)""", RegexOption.IGNORE_CASE)
+private val SEASON_EPISODE_LABEL = Regex("""S(\d+)E(\d+)""", RegexOption.IGNORE_CASE)
 
 class AnimeDownloadRepository(
     private val context: Context,
@@ -59,6 +67,7 @@ class AnimeDownloadRepository(
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val notifier = AnimeDownloadNotifier(context)
     private val stateLock = Any()
+    private val directoryLock = Any()
     private val records = linkedMapOf<String, PersistedAnimeDownload>()
     private val jobs = mutableMapOf<String, Job>()
     private var lastPersistedAtMs = 0L
@@ -504,7 +513,7 @@ class AnimeDownloadRepository(
 
         val animeDir = findOrCreateAnimeDirectory(record)
         val extension = guessExtension(record.directUrl.orEmpty())
-        val fileName = record.fileName ?: buildEpisodeFileName(record, extension)
+        val fileName = buildEpisodeFileName(record, extension)
         val mimeType = record.mimeType ?: guessMimeType(fileName)
         val file = animeDir.findFile(fileName) ?: animeDir.createFile(mimeType, fileName)
             ?: throw IllegalStateException("Cannot create output file")
@@ -1028,29 +1037,59 @@ class AnimeDownloadRepository(
     private fun findOrCreateAnimeDirectory(record: PersistedAnimeDownload): DocumentFile {
         val root = DocumentFile.fromTreeUri(context, Uri.parse(record.animeFolderUri))
             ?: throw IllegalStateException("Invalid anime folder URI")
-        val safeAnimeName = sanitizeFileName(record.animeName)
-        return root.findFile(safeAnimeName) ?: root.createDirectory(safeAnimeName)
-            ?: throw IllegalStateException("Cannot create anime folder")
+        val safeAnimeName = seriesBaseName(record.animeName)
+        return synchronized(directoryLock) {
+            root.listFiles().firstOrNull {
+                it.isDirectory && it.name.equals(safeAnimeName, ignoreCase = true)
+            } ?: root.findFile(safeAnimeName)?.takeIf { it.isDirectory }
+                ?: root.createDirectory(safeAnimeName)
+                ?: throw IllegalStateException("Cannot create anime folder")
+        }
     }
 
     private fun buildEpisodeFileName(record: PersistedAnimeDownload, extension: String): String {
-        val safeName = sanitizeFileName(record.animeName)
-        val episodeMarker = if (record.epNo.equals("movie", ignoreCase = true)) {
-            ""
-        } else {
-            " - Ep${record.epNo.replace("/", "_")}"
-        }
-        val title = record.episodeTitle
-            ?.takeIf { it.isNotBlank() && !it.equals(record.animeName, ignoreCase = true) }
-            ?.let { " - ${sanitizeFileName(it)}" } ?: ""
-        return "$safeName$episodeMarker$title$extension"
+        val safeName = seriesBaseName(record.animeName)
+        if (record.epNo.equals("movie", ignoreCase = true)) return "$safeName$extension"
+        return "$safeName-${episodeFileMarker(record)}$extension"
     }
 
     private fun buildEpisodeSubtitleFileName(videoBaseName: String, extension: String): String =
         "${videoBaseName.ifBlank { "Episode" }}$extension"
 
+    private fun seriesBaseName(value: String): String =
+        sanitizeFileName(value.replace(SERIES_SUFFIX, "").trim().trimEnd(' ', '-', '_', '.'))
+
+    private fun episodeFileMarker(record: PersistedAnimeDownload): String {
+        MOVIEBOX_EPISODE_ID.matchEntire(record.episodeId.orEmpty())?.let { match ->
+            return "S${match.groupValues[1].toInt()}E${match.groupValues[2].toInt()}"
+        }
+        SEASON_EPISODE_LABEL.find(record.epNo)?.let { match ->
+            return "S${match.groupValues[1].toInt()}E${match.groupValues[2].toInt()}"
+        }
+        return "E${sanitizeFileName(record.epNo.replace("/", "_"))}"
+    }
+
     private fun sanitizeFileName(value: String): String =
-        value.replace(Regex("[\\\\/:*?\"<>|]"), "_").take(80)
+        value
+            .replace(Regex("[\\\\/:*?\"<>|\\p{Cc}]"), "_")
+            .trim()
+            .trimEnd('.')
+            .ifBlank { "Untitled" }
+            .let { truncateUtf8(it, MAX_SAFE_NAME_BYTES) }
+
+    private fun truncateUtf8(value: String, maxBytes: Int): String {
+        val result = StringBuilder()
+        val codePoints = value.codePoints().iterator()
+        var bytes = 0
+        while (codePoints.hasNext()) {
+            val text = String(Character.toChars(codePoints.nextInt()))
+            val textBytes = text.toByteArray(StandardCharsets.UTF_8).size
+            if (bytes + textBytes > maxBytes) break
+            result.append(text)
+            bytes += textBytes
+        }
+        return result.toString().ifBlank { "Untitled" }
+    }
 
     private fun guessExtension(url: String): String {
         val path = try {
@@ -1211,7 +1250,7 @@ private fun List<AniCliSubtitleTrack>.toAniCliPreferredSubtitle(): PreferredSubt
 
 private fun List<Subtitle>.toProviderPreferredSubtitle(): PreferredSubtitleLink? =
     mapNotNull { track ->
-        if (!isEnglishSubtitle(languageCode = track.language, label = track.language)) {
+        if (!isEnglishSubtitle(languageCode = track.languageCode, label = track.language)) {
             return@mapNotNull null
         }
         track.url

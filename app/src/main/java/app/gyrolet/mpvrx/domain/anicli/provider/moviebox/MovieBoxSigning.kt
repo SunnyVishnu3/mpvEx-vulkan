@@ -1,4 +1,4 @@
-package app.gyrolet.mpvrx.domain.anicli.provider.moviebox
+﻿package app.gyrolet.mpvrx.domain.anicli.provider.moviebox
 
 import com.google.gson.JsonParser
 import java.net.URI

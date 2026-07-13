@@ -30,6 +30,8 @@ data class PageInfo(
     val total: Int? = null,
     val perPage: Int? = null,
     val currentPage: Int? = null,
+    val hasMore: Boolean? = null,
+    val nextPage: Int? = null,
 )
 
 data class AnimeEpisodes(
@@ -98,6 +100,7 @@ data class EpisodeStream(
 data class Subtitle(
     val url: String,
     val language: String? = null,
+    val languageCode: String? = null,
 )
 
 data class Server(

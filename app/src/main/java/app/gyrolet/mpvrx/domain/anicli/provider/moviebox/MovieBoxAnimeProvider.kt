@@ -1,10 +1,9 @@
 package app.gyrolet.mpvrx.domain.anicli.provider.moviebox
 
-import android.content.Context
 import app.gyrolet.mpvrx.domain.anicli.AnimeSource
 import app.gyrolet.mpvrx.domain.anicli.provider.Anime
-import app.gyrolet.mpvrx.domain.anicli.provider.AnimeEpisodes
 import app.gyrolet.mpvrx.domain.anicli.provider.AnimeEpisodeInfo
+import app.gyrolet.mpvrx.domain.anicli.provider.AnimeEpisodes
 import app.gyrolet.mpvrx.domain.anicli.provider.AnimeParams
 import app.gyrolet.mpvrx.domain.anicli.provider.BaseAnimeProvider
 import app.gyrolet.mpvrx.domain.anicli.provider.EpisodeStream
@@ -15,323 +14,453 @@ import app.gyrolet.mpvrx.domain.anicli.provider.SearchResult
 import app.gyrolet.mpvrx.domain.anicli.provider.SearchResults
 import app.gyrolet.mpvrx.domain.anicli.provider.Server
 import app.gyrolet.mpvrx.domain.anicli.provider.Subtitle
-import app.gyrolet.mpvrx.preferences.BrowserPreferences
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import java.util.UUID
+import java.io.IOException
 
-class MovieBoxAnimeProvider(
-    context: Context,
-    private val browserPreferences: BrowserPreferences,
-) : BaseAnimeProvider() {
+class MovieBoxAnimeProvider : BaseAnimeProvider() {
 
-    private data class MovieBoxDub(val subjectId: String, val code: String, val name: String, val original: Boolean)
-    private data class MovieBoxSeasonAvailability(val season: Int, val maxEpisode: Int, val resolutions: List<MovieBoxResolutionAvailability>)
-    private data class MovieBoxResolutionAvailability(val resolution: Int, val episodeCount: Int)
-    private data class MovieBoxResourceEntry(val subjectId: String, val title: String, val resourceId: String, val resourceLink: String, val resolution: Int, val season: Int, val episode: Int)
-    private data class MovieBoxPager(val page: Int, val hasMore: Boolean, val nextPage: Int)
-    private data class EpisodeAddress(val isMovie: Boolean, val season: Int, val episode: Int)
+    private data class SubjectRef(
+        val subjectId: String,
+        val detailPath: String,
+        val subjectType: Int,
+    )
+
+    private data class Dub(
+        val subjectId: String,
+        val detailPath: String,
+        val code: String,
+        val name: String,
+        val original: Boolean,
+    )
+
+    private data class EpisodeAddress(
+        val isMovie: Boolean,
+        val season: Int,
+        val episode: Int,
+    )
 
     override val source: AnimeSource = AnimeSource.MOVIEBOX
-    override val headers: Map<String, String> = mapOf(
-        "Accept" to "*/*",
-        "User-Agent" to MOVIEBOX_MEDIA_USER_AGENT,
-        "Origin" to MOVIEBOX_MEDIA_ORIGIN,
-        "Referer" to MOVIEBOX_MEDIA_REFERER,
-    )
-    override val defaultReferer: String = MOVIEBOX_MEDIA_REFERER
-    override val defaultUserAgent: String = MOVIEBOX_MEDIA_USER_AGENT
-    private val identityPreferences = context.getSharedPreferences(MOVIEBOX_IDENTITY_PREFERENCES, Context.MODE_PRIVATE)
-    private val client = MovieBoxClient(
-        deviceId = identityPreferences.stableId(MOVIEBOX_DEVICE_ID) { UUID.randomUUID().toString().replace("-", "") },
-        gaid = identityPreferences.stableId(MOVIEBOX_GAID) { UUID.randomUUID().toString() },
-    )
-    private val stremioClient = StremioMovieBoxClient()
+    override val headers: Map<String, String> = mediaHeaders(detailPath = null)
+    override val defaultReferer: String = MOVIEBOX_ORIGIN
+    override val defaultUserAgent: String = MOVIEBOX_USER_AGENT
+
+    private val client = MovieBoxClient()
 
     override suspend fun latest(params: SearchParams): SearchResults {
-        val results = client.getHome(page = params.currentPage, tabId = HOME_TAB_ALL).toLatestResults()
-            .distinctBy { it.id }.take(params.pageLimit)
-        return SearchResults(pageInfo = PageInfo(currentPage = params.currentPage, perPage = params.pageLimit), results = results)
+        val page = params.currentPage.coerceAtLeast(1)
+        val pageLimit = params.pageLimit.coerceAtLeast(1)
+        val data = client.getTrending(page = page - 1, perPage = pageLimit)
+        return data.toSearchResults(
+            itemKeys = arrayOf("subjectList", "items"),
+            requestedPage = page,
+            pageLimit = pageLimit,
+            pageOffset = 1,
+        )
     }
 
     override suspend fun search(params: SearchParams): SearchResults {
-        val results = if (params.query.trim().isBlank()) {
-            client.getHome(page = params.currentPage).toHomeResults()
-        } else {
-            client.search(keyword = params.query.trim(), page = params.currentPage, perPage = params.pageLimit).toSearchResults()
-        }.distinctBy { it.id }.take(params.pageLimit)
-        return SearchResults(pageInfo = PageInfo(currentPage = params.currentPage, perPage = params.pageLimit), results = results)
+        val query = params.query.trim()
+        if (query.isBlank()) return latest(params)
+        val page = params.currentPage.coerceAtLeast(1)
+        val pageLimit = params.pageLimit.coerceAtLeast(1)
+        return client.search(query, page, pageLimit).toSearchResults(
+            itemKeys = arrayOf("items", "subjects", "results"),
+            requestedPage = page,
+            pageLimit = pageLimit,
+        )
     }
 
     override suspend fun get(params: AnimeParams): Anime {
-        val subject = client.getSubject(params.id)
-        val seasonInfo = runCatching { client.getSeasonInfo(params.id) }.getOrNull()
-        val isMovie = subject.isMovieSubject(seasonInfo)
+        val reference = resolveReference(params.id, params.query)
+        val detail = client.getDetail(reference.detailPath)
+        val subject = detail.obj("subject") ?: throw IOException("MovieBox detail response has no subject")
+        val resolvedReference = subject.toSubjectRef() ?: reference
         val title = subject.string("title") ?: subject.string("name") ?: params.query
-        val poster = subject.obj("cover")?.string("url") ?: subject.string("poster") ?: subject.string("cover")
-        val year = subject.string("releaseDate")?.take(4)
-        val episodesInfo = if (isMovie) {
-            listOf(AnimeEpisodeInfo(id = MOVIE_EPISODE_ID, episode = MOVIE_EPISODE_LABEL, title = title, poster = poster))
-        } else {
-            seasonInfo?.toSeasonAvailabilities().orEmpty().flatMap { season ->
-                (1..season.maxEpisode.coerceAtLeast(0)).map { episode ->
-                    AnimeEpisodeInfo(id = buildEpisodeId(season.season, episode), episode = "S${season.season}E$episode", title = "S${season.season}E$episode", poster = poster, season = season.season)
-                }
-            }
-        }
-        return Anime(
-            id = params.id,
-            title = title,
-            episodes = AnimeEpisodes(sub = episodesInfo.map { it.episode }, raw = episodesInfo.map { it.episode }),
-            type = if (isMovie) "Movie" else "TV Show",
-            episodesInfo = episodesInfo,
-            poster = poster,
-            year = year,
-            description = subject.string("description") ?: subject.string("overview") ?: subject.string("introduction"),
-            status = subject.string("status") ?: subject.string("releaseStatus"),
-            country = subject.country(),
-        )
-    }
-
-    override suspend fun episodeStreams(params: EpisodeStreamsParams): List<Server> {
-        val address = parseEpisodeAddress(params.episodeId, params.episode)
-        val manifestUrl = browserPreferences.movieBoxStremioManifestUrl.get().trim()
-        if (manifestUrl.isNotEmpty()) {
-            val detail = client.getSubject(params.animeId)
-            val type = if (address.isMovie) "movie" else "series"
-            val stremioStreams = runCatching {
-                stremioClient.getStreams(
-                    manifestUrl = manifestUrl,
-                    title = detail.string("title") ?: detail.string("name") ?: params.query,
-                    year = detail.string("releaseDate")?.take(4),
-                    type = type,
-                    season = address.season,
-                    episode = address.episode,
+        val poster = subject.obj("cover")?.string("url") ?: subject.string("poster")
+        val isMovie = resolvedReference.subjectType != SUBJECT_TYPE_TV
+        val episodeInfo = if (isMovie) {
+            listOf(
+                AnimeEpisodeInfo(
+                    id = MOVIE_EPISODE_ID,
+                    episode = MOVIE_EPISODE_LABEL,
+                    title = title,
+                    poster = poster,
                 )
-            }.getOrDefault(emptyList())
-            if (stremioStreams.isNotEmpty()) return stremioStreams
-        }
-        return if (address.isMovie) getMovieServers(params.animeId, params.query)
-        else getEpisodeServers(params.animeId, address.season, address.episode, params.query)
-    }
-
-    private suspend fun getMovieServers(subjectId: String, title: String): List<Server> = coroutineScope {
-        val detail = client.getSubject(subjectId)
-        val dubs = detail.toDubs(subjectId)
-        dubs.map { dub -> async {
-            val dubDetail = if (dub.subjectId == subjectId) detail else client.getSubject(dub.subjectId)
-            dubDetail.toMovieResources(dub.subjectId).sortedByDescending { it.resolution }.mapNotNull { it.toServer(dub, title, 0, 0) }
-        } }.awaitAll().flatten().distinctBy { it.links.firstOrNull()?.link ?: it.name }.sortedBy { it.movieBoxSortKey() }
-    }
-
-    private suspend fun getEpisodeServers(subjectId: String, seasonNumber: Int, episodeNumber: Int, title: String): List<Server> = coroutineScope {
-        val detail = client.getSubject(subjectId)
-        val dubs = detail.toDubs(subjectId)
-        dubs.map { dub -> async {
-            val seasonAvailabilities = client.getSeasonInfo(dub.subjectId).toSeasonAvailabilities()
-            val targetSeason = seasonAvailabilities.firstOrNull { it.season == seasonNumber } ?: return@async emptyList()
-            coroutineScope {
-                targetSeason.resolutions.filter { it.episodeCount >= episodeNumber }.sortedByDescending { it.resolution }.map { availability -> async {
-                    val resource = findEpisodeResource(dub.subjectId, availability.resolution, seasonNumber, episodeNumber, seasonAvailabilities) ?: return@async null
-                    resource.toServer(dub, title, seasonNumber, episodeNumber)
-                } }.awaitAll().filterNotNull()
+            )
+        } else {
+            val resource = detail.obj("resource")
+                ?: throw IOException("MovieBox TV detail response has no resource data")
+            val seasonsElement = resource.get("seasons")
+            if (seasonsElement == null || seasonsElement.isJsonNull || !seasonsElement.isJsonArray) {
+                throw IOException("MovieBox TV detail response has no valid seasons array")
             }
-        } }.awaitAll().flatten().distinctBy { it.links.firstOrNull()?.link ?: it.name }.sortedBy { it.movieBoxSortKey() }
-    }
-
-    private suspend fun MovieBoxResourceEntry.toServer(dub: MovieBoxDub, title: String, season: Int, episode: Int): Server? {
-        val playInfo = runCatching { client.getPlayInfo(subjectId, season, episode) }.getOrNull()
-        val source = playInfo?.string("playUrl")
-            ?: playInfo?.obj("playInfo")?.string("url")
-            ?: playInfo?.obj("VideoAddress")?.string("url")
-            ?: resourceLink
-        if (source.isBlank()) return null
-        val subtitles = runCatching { loadSubtitles(subjectId, resourceId) }.getOrDefault(emptyList())
-        return Server(
-            name = "${dub.name} - ${resolution}p",
-            links = listOf(EpisodeStream(
-                link = source, title = "$title${if (season > 0 && episode > 0) " - S${season}E$episode" else ""}",
-                quality = "${resolution}p", translationType = dub.code.ifBlank { dub.name },
-                audioLanguage = dub.name, referer = MOVIEBOX_MEDIA_REFERER,
-                format = when { source.contains(".m3u8", ignoreCase = true) -> "hls"; source.contains(".mp4", ignoreCase = true) -> "mp4"; else -> null },
-                isHls = source.contains(".m3u8", ignoreCase = true), isMp4 = source.contains(".mp4", ignoreCase = true),
-            )),
-            headers = headers, subtitles = subtitles, audio = listOf(dub.name),
+            resource.array("seasons")
+                .mapNotNull { it.asObjectOrNull() }
+                .sortedBy { it.int("se") ?: Int.MAX_VALUE }
+                .flatMap { season ->
+                    val seasonNumber = season.int("se") ?: return@flatMap emptyList()
+                    val episodeCount = season.int("maxEp")?.coerceAtLeast(0) ?: 0
+                    (1..episodeCount).map { episode ->
+                        AnimeEpisodeInfo(
+                            id = buildEpisodeId(seasonNumber, episode),
+                            episode = "S${seasonNumber}E$episode",
+                            title = "S${seasonNumber}E$episode",
+                            poster = poster,
+                            season = seasonNumber,
+                        )
+                    }
+                }
+        }
+        val episodeLabels = episodeInfo.map { it.episode }
+        return Anime(
+            id = resolvedReference.encode(),
+            title = title,
+            episodes = AnimeEpisodes(sub = episodeLabels, raw = episodeLabels),
+            type = if (isMovie) "Movie" else "TV Show",
+            episodesInfo = episodeInfo,
+            poster = poster,
+            year = subject.string("releaseDate")?.take(4),
+            description = subject.string("description") ?: detail.obj("metadata")?.string("description"),
+            status = subject.string("status") ?: subject.string("releaseStatus"),
+            country = subject.string("countryName") ?: subject.string("country"),
         )
     }
 
-    private suspend fun findEpisodeResource(subjectId: String, resolution: Int, seasonNumber: Int, episodeNumber: Int, seasonAvailabilities: List<MovieBoxSeasonAvailability>? = null): MovieBoxResourceEntry? {
-        val resolvedSeasons = seasonAvailabilities ?: client.getSeasonInfo(subjectId).toSeasonAvailabilities()
-        val resolutionSeasons = resolvedSeasons.toSeasonIndexesForResolution(resolution)
-        val targetSeason = resolutionSeasons.firstOrNull { it.season == seasonNumber } ?: return null
-        if (targetSeason.episodes < episodeNumber) return null
-        MovieBoxEpisodePager.buildRequestPlan(resolutionSeasons, seasonNumber, episodeNumber, 1, RESOURCE_PER_PAGE).requests.firstOrNull()?.page?.let { predictedPage ->
-            client.getResourcePage(subjectId, resolution, predictedPage, RESOURCE_PER_PAGE).findEpisodeInResourcePage(subjectId, seasonNumber, episodeNumber)?.let { return it }
-        }
-        var page = 1
-        while (true) {
-            client.getResourcePage(subjectId, resolution, page, RESOURCE_PER_PAGE).findEpisodeInResourcePage(subjectId, seasonNumber, episodeNumber)?.let { return it }
-            val pager = client.getResourcePage(subjectId, resolution, page, RESOURCE_PER_PAGE).toPager()
-            if (!pager.hasMore || pager.nextPage <= page) break
-            page = pager.nextPage
-        }
-        return null
+    override suspend fun episodeStreams(params: EpisodeStreamsParams): List<Server> = coroutineScope {
+        val reference = resolveReference(params.animeId, params.query)
+        val detail = client.getDetail(reference.detailPath)
+        val subject = detail.obj("subject") ?: throw IOException("MovieBox detail response has no subject")
+        val resolvedReference = subject.toSubjectRef() ?: reference
+        val address = parseEpisodeAddress(
+            episodeId = params.episodeId,
+            episodeLabel = params.episode,
+            subjectType = resolvedReference.subjectType,
+        )
+        val season = if (address.isMovie) 0 else address.season
+        val episode = if (address.isMovie) 0 else address.episode
+        val title = subject.string("title") ?: params.query
+
+        val allCaptions = runCatching {
+            client.getDownload(
+                subjectId = resolvedReference.subjectId,
+                detailPath = resolvedReference.detailPath,
+                season = season,
+                episode = episode,
+            ).toCaptions()
+        }.getOrDefault(emptyList())
+
+        val results = subject.toDubs(resolvedReference).map { dub ->
+            async {
+                runCatching {
+                    loadResourceServers(dub, title, address, allCaptions)
+                }.onFailure { if (it is CancellationException) throw it }
+            }
+        }.awaitAll()
+        val servers = results.flatMap { it.getOrDefault(emptyList()) }
+            .distinctBy { server -> server.links.firstOrNull()?.link ?: server.name }
+            .sortedWith(
+                compareBy<Server> { languagePriority(it.audio.firstOrNull()) }
+                    .thenByDescending { it.links.firstOrNull()?.quality?.filter(Char::isDigit)?.toIntOrNull() ?: 0 }
+                    .thenBy { it.audio.firstOrNull().orEmpty().lowercase() }
+            )
+        if (servers.isEmpty()) results.firstNotNullOfOrNull { it.exceptionOrNull() }?.let { throw it }
+        servers
     }
 
-    private suspend fun loadSubtitles(subjectId: String, resourceId: String): List<Subtitle> =
-        client.getCaptions(subjectId, resourceId).array("extCaptions").mapNotNull { caption ->
-            val entry = caption.asObjectOrNull() ?: return@mapNotNull null
-            val url = entry.string("url") ?: return@mapNotNull null
-            val languageCode = entry.string("lan"); val label = entry.string("lanName") ?: languageCode ?: "Subtitle"
-            Subtitle(url = url, language = label)
+    private suspend fun resolveReference(id: String, query: String): SubjectRef {
+        decodeSubjectRef(id)?.let { return it }
+        val subjectId = id.substringBefore('|').trim()
+        if (query.isNotBlank()) {
+            var page = 1
+            while (page <= LEGACY_LOOKUP_MAX_PAGES) {
+                val data = client.search(query.trim(), page = page, perPage = LEGACY_LOOKUP_LIMIT)
+                data.array("items").firstNotNullOfOrNull { item ->
+                    item.asObjectOrNull()?.toSubjectRef()?.takeIf { it.subjectId == subjectId }
+                }
+                ?.let { return it }
+                val pager = data.obj("pager")
+                if (pager?.bool("hasMore") != true) break
+                val nextPage = pager.int("nextPage") ?: (page + 1)
+                if (nextPage <= page) break
+                page = nextPage
+            }
+        }
+        return client.getTrending(page = 0, perPage = LEGACY_LOOKUP_LIMIT)
+            .array("subjectList")
+            .firstNotNullOfOrNull { item ->
+                item.asObjectOrNull()?.toSubjectRef()?.takeIf { it.subjectId == subjectId }
+            }
+            ?: throw IOException("MovieBox could not resolve legacy subject id $subjectId")
+    }
+
+    private fun JsonObject.toSearchResults(
+        itemKeys: Array<String>,
+        requestedPage: Int,
+        pageLimit: Int,
+        pageOffset: Int = 0,
+    ): SearchResults {
+        val results = array(*itemKeys)
+            .mapNotNull { it.asObjectOrNull()?.toSearchResult() }
+            .filter { it.hasPlayableType }
+            .distinctBy { it.result.id }
+            .map { it.result }
+        val pager = obj("pager")
+        return SearchResults(
+            pageInfo = PageInfo(
+                total = pager?.int("totalCount"),
+                perPage = pager?.int("perPage") ?: pageLimit,
+                currentPage = requestedPage,
+                hasMore = pager?.bool("hasMore") ?: (results.size >= pageLimit),
+                nextPage = pager?.int("nextPage")?.plus(pageOffset),
+            ),
+            results = results,
+        )
+    }
+
+    private data class ParsedSearchResult(val result: SearchResult, val hasPlayableType: Boolean)
+
+    private fun JsonObject.toSearchResult(): ParsedSearchResult? {
+        val reference = toSubjectRef() ?: return null
+        val title = string("title") ?: string("name") ?: return null
+        val isMovie = reference.subjectType != SUBJECT_TYPE_TV
+        val displayTitle = if (isMovie) title else title.replace(SEASON_SUFFIX, "").trim()
+        val poster = obj("cover")?.string("url") ?: string("poster")
+        val banner = obj("stills")?.string("url") ?: obj("backdrop")?.string("url") ?: poster
+        val genres = string("genre")
+            ?.split(',')
+            ?.map { it.trim() }
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
+        val episodeLabels = if (isMovie) listOf(MOVIE_EPISODE_LABEL) else emptyList()
+        return ParsedSearchResult(
+            result = SearchResult(
+                id = reference.encode(),
+                title = displayTitle,
+                episodes = AnimeEpisodes(sub = episodeLabels, raw = episodeLabels),
+                mediaType = if (isMovie) "Movie" else "TV Show",
+                score = float("imdbRatingValue") ?: float("rating"),
+                status = string("status") ?: string("releaseStatus"),
+                poster = poster,
+                year = string("releaseDate")?.take(4),
+                description = string("description") ?: string("overview"),
+                bannerImage = banner,
+                genres = genres,
+                country = string("countryName") ?: string("country"),
+            ),
+            hasPlayableType = reference.subjectType in PLAYABLE_SUBJECT_TYPES && bool("hasResource") != false,
+        )
+    }
+
+    private fun JsonObject.toDubs(reference: SubjectRef): List<Dub> {
+        val parsed = array("dubs").mapNotNull { element ->
+            val dub = element.asObjectOrNull() ?: return@mapNotNull null
+            val subjectId = dub.string("subjectId") ?: return@mapNotNull null
+            val detailPath = dub.string("detailPath") ?: return@mapNotNull null
+            val rawName = dub.string("lanName") ?: dub.string("name").orEmpty()
+            val original = dub.bool("original") == true || rawName.startsWith("Original", ignoreCase = true)
+            Dub(
+                subjectId = subjectId,
+                detailPath = detailPath,
+                code = dub.string("lanCode") ?: dub.string("code").orEmpty(),
+                name = displayLanguage(
+                    code = dub.string("lanCode") ?: dub.string("code").orEmpty(),
+                    rawName = rawName,
+                    original = original,
+                ),
+                original = original,
+            )
+        }
+        val current = parsed.firstOrNull { it.subjectId == reference.subjectId } ?: Dub(
+            subjectId = reference.subjectId,
+            detailPath = reference.detailPath,
+            code = "original",
+            name = "Original",
+            original = true,
+        )
+        return (listOf(current) + parsed)
+            .distinctBy { it.subjectId to it.detailPath }
+            .sortedWith(compareBy<Dub> { if (it.original) 0 else 1 }.thenBy { it.name.lowercase() })
+    }
+
+    private suspend fun loadResourceServers(
+        dub: Dub,
+        title: String,
+        address: EpisodeAddress,
+        captions: List<Subtitle>,
+    ): List<Server> {
+        val resources = mutableListOf<JsonObject>()
+        var page = 1
+        while (page <= MAX_RESOURCE_PAGES) {
+            val data = client.getResourcePage(dub.subjectId, page, RESOURCE_PAGE_SIZE)
+            resources += data.array("list").mapNotNull { it.asObjectOrNull() }
+                .filter { resource ->
+                    resource.int("se") == address.season && resource.int("ep") == address.episode
+                }
+            val pager = data.obj("pager")
+            if (pager?.bool("hasMore") != true) break
+            val nextPage = pager.int("nextPage") ?: (page + 1)
+            if (nextPage <= page) break
+            page = nextPage
+        }
+
+        val episodeSuffix = if (address.isMovie) "" else " - S${address.season}E${address.episode}"
+        return resources.mapNotNull { resource ->
+            val url = resource.string("resourceLink") ?: return@mapNotNull null
+            val resolution = resource.int("resolution") ?: return@mapNotNull null
+            val requestHeaders = mapOf(
+                "User-Agent" to MOVIEBOX_USER_AGENT,
+                "Accept" to "*/*",
+            )
+            Server(
+                name = "${dub.name} - ${resolution}p",
+                links = listOf(
+                    EpisodeStream(
+                        link = url,
+                        title = "$title$episodeSuffix",
+                        quality = "${resolution}p",
+                        translationType = dub.code.ifBlank { dub.name },
+                        audioLanguage = dub.name,
+                        referer = "",
+                        format = "mp4",
+                        isHls = false,
+                        isMp4 = true,
+                        requestHeaders = requestHeaders,
+                    )
+                ),
+                headers = requestHeaders,
+                subtitles = captions,
+                audio = listOf(dub.name),
+            )
+        }.distinctBy { it.links.first().link }
+            .sortedByDescending { it.links.first().quality.filter(Char::isDigit).toIntOrNull() ?: 0 }
+    }
+
+    private fun JsonObject.toCaptions(): List<Subtitle> =
+        array("captions").mapNotNull { element ->
+            val caption = element.asObjectOrNull() ?: return@mapNotNull null
+            val url = caption.string("url") ?: return@mapNotNull null
+            val languageCode = caption.string("lan")
+            val label = caption.string("lanName") ?: languageCode ?: "Subtitle"
+            Subtitle(url = url, language = label, languageCode = languageCode)
         }.distinctBy { it.url }
 
-    private fun JsonObject.toLatestResults(): List<SearchResult> {
-        val sections = array("items").mapNotNull { it.asObjectOrNull() }
-        val latestSections = sections.filter { section ->
-            val label = listOfNotNull(section.string("title"), section.string("name"), section.string("id"), section.string("code"))
-                .joinToString(" ").lowercase()
-            listOf("latest", "new release", "recent", "new movie", "new tv").any(label::contains)
+    private fun parseEpisodeAddress(
+        episodeId: String?,
+        episodeLabel: String,
+        subjectType: Int,
+    ): EpisodeAddress {
+        if (subjectType != SUBJECT_TYPE_TV || episodeId == MOVIE_EPISODE_ID ||
+            episodeLabel.equals(MOVIE_EPISODE_LABEL, ignoreCase = true)
+        ) {
+            return EpisodeAddress(isMovie = true, season = 0, episode = 0)
         }
-        return (latestSections.ifEmpty { sections }).flatMap { it.toHomeSectionResults() }
+        val idMatch = EPISODE_ID.matchEntire(episodeId.orEmpty())
+        val labelMatch = EPISODE_LABEL.find(episodeLabel)
+        val season = idMatch?.groupValues?.getOrNull(1)?.toIntOrNull()
+            ?: labelMatch?.groupValues?.getOrNull(1)?.toIntOrNull()
+            ?: 1
+        val episode = idMatch?.groupValues?.getOrNull(2)?.toIntOrNull()
+            ?: labelMatch?.groupValues?.getOrNull(2)?.toIntOrNull()
+            ?: episodeLabel.filter(Char::isDigit).toIntOrNull()
+            ?: 1
+        return EpisodeAddress(isMovie = false, season = season.coerceAtLeast(1), episode = episode.coerceAtLeast(1))
     }
 
-    private fun JsonObject.toHomeResults(): List<SearchResult> =
-        array("items").mapNotNull { it.asObjectOrNull() }.flatMap { it.toHomeSectionResults() }
-
-    private fun JsonObject.toHomeSectionResults(): List<SearchResult> = when (string("type")) {
-        "BANNER" -> (obj("banner")?.array("banners") ?: array("banners"))
-            .mapNotNull { it.asObjectOrNull()?.obj("subject")?.toSearchResult() }
-        "SUBJECTS_MOVIE" -> array("subjects").mapNotNull { it.asObjectOrNull()?.toSearchResult() }
-        "CUSTOM" -> obj("customData")?.array("items")?.mapNotNull { it.asObjectOrNull()?.obj("subject")?.toSearchResult() }.orEmpty()
-        else -> array("subjects").mapNotNull { it.asObjectOrNull()?.toSearchResult() }
-            .ifEmpty { listOfNotNull(obj("subject")?.toSearchResult() ?: toSearchResult()) }
+    private fun JsonObject.toSubjectRef(): SubjectRef? {
+        val subjectId = string("subjectId") ?: string("id") ?: return null
+        val detailPath = string("detailPath") ?: return null
+        val subjectType = int("subjectType") ?: int("type") ?: return null
+        return SubjectRef(subjectId, detailPath, subjectType)
     }
 
-    private fun JsonObject.toSearchResults(): List<SearchResult> =
-        array("items", "subjects", "list", "results", "movies")
-            .flatMap { element ->
-                val item = element.asObjectOrNull() ?: return@flatMap emptyList()
-                item.array("subjects").mapNotNull { it.asObjectOrNull()?.toSearchResult() }
-                    .ifEmpty { item.toSearchResultCandidates() }
-            }
-            .ifEmpty { toSearchResultCandidates() }
-            .distinctBy { it.id }
+    private fun SubjectRef.encode(): String = "$subjectId|$detailPath|$subjectType"
 
-    private fun JsonObject.toSearchResult(): SearchResult? {
-        val subjectType = int("subjectType") ?: int("type")
-        if (subjectType != null && subjectType !in setOf(SUBJECT_TYPE_MOVIE, SUBJECT_TYPE_TV, SUBJECT_TYPE_ANIMATION)) return null
-        val id = string("subjectId") ?: string("id") ?: return null
-        val title = string("title") ?: string("name") ?: return null
-        val poster = obj("cover")?.string("url") ?: string("poster") ?: string("cover")
-        val banner = obj("stills")?.string("url") ?: obj("backdrop")?.string("url") ?: string("banner") ?: poster
-        val releaseDate = string("releaseDate") ?: string("released")
-        val isMovie = subjectType != SUBJECT_TYPE_TV && subjectType != SUBJECT_TYPE_ANIMATION
-        val episodeLabels = if (isMovie) listOf(MOVIE_EPISODE_LABEL) else (1..(int("episodeCount") ?: int("maxEp") ?: 0).coerceAtLeast(0)).map { it.toString() }
-        val genreString = string("genre")
-        val parsedGenres = if (!genreString.isNullOrBlank()) {
-            genreString.split(",").map { it.trim() }.filter { it.isNotBlank() }
-        } else {
-            array("genreList", "genres", "genre").mapNotNull { it.asObjectOrNull()?.string("name") ?: it.safeString() }
-        }
-        return SearchResult(id = id, title = title, episodes = AnimeEpisodes(sub = episodeLabels, raw = episodeLabels), mediaType = if (isMovie) "Movie" else "TV Show", score = float("imdbRatingValue") ?: float("rating"), status = string("status") ?: string("releaseStatus"), poster = poster, year = releaseDate?.take(4), description = string("description") ?: string("overview"), bannerImage = banner, genres = parsedGenres, country = country())
-    }
-
-    private fun JsonObject.toSearchResultCandidates(): List<SearchResult> = buildList {
-        obj("subject")?.toSearchResult()?.let(::add)
-        obj("subjectInfo")?.toSearchResult()?.let(::add)
-        obj("item")?.toSearchResult()?.let(::add)
-        toSearchResult()?.let(::add)
-    }
-
-    private fun JsonObject.toDubs(fallbackSubjectId: String): List<MovieBoxDub> = array("dubs").mapNotNull { element ->
-        val dub = element.asObjectOrNull() ?: return@mapNotNull null
-        val subjectId = dub.string("subjectId") ?: return@mapNotNull null
-        val rawName = dub.string("lanName") ?: dub.string("name") ?: ""
-        val isOriginal = dub.bool("original") == true || rawName.startsWith("Original", ignoreCase = true)
-        MovieBoxDub(subjectId = subjectId, code = dub.string("lanCode") ?: dub.string("code") ?: "", name = normalizeDubName(rawName, isOriginal), original = isOriginal)
-    }.distinctBy { it.subjectId to it.code }.ifEmpty { listOf(MovieBoxDub(subjectId = fallbackSubjectId, code = "original", name = "Original", original = true)) }
-
-    private fun JsonObject.toMovieResources(subjectId: String): List<MovieBoxResourceEntry> = array("resourceDetectors").mapNotNull { it.asObjectOrNull() }.flatMap { detector ->
-        detector.array("resolutionList").mapNotNull { it.asObjectOrNull()?.toResourceEntry(subjectId) }
-    }.distinctBy { it.resolution }
-
-    private fun JsonObject.toSeasonAvailabilities(): List<MovieBoxSeasonAvailability> = array("seasons").mapNotNull { season ->
-        val seasonObject = season.asObjectOrNull() ?: return@mapNotNull null
-        val seasonNumber = seasonObject.int("se") ?: return@mapNotNull null
-        val maxEpisode = seasonObject.int("maxEp") ?: 0
-        MovieBoxSeasonAvailability(season = seasonNumber, maxEpisode = maxEpisode, resolutions = seasonObject.array("resolutions").mapNotNull {
-            val r = it.asObjectOrNull() ?: return@mapNotNull null; MovieBoxResolutionAvailability(resolution = r.int("resolution") ?: return@mapNotNull null, episodeCount = r.int("epNum") ?: maxEpisode)
-        })
-    }.sortedBy { it.season }
-
-    private fun JsonObject.toPager(): MovieBoxPager { val p = obj("pager"); val page = p?.int("page") ?: 1; return MovieBoxPager(page = page, hasMore = p?.bool("hasMore") == true, nextPage = p?.int("nextPage") ?: (page + 1)) }
-
-    private fun JsonObject.findEpisodeInResourcePage(subjectId: String, seasonNumber: Int, episodeNumber: Int): MovieBoxResourceEntry? = array("list").mapNotNull { it.asObjectOrNull()?.toResourceEntry(subjectId) }.firstOrNull { it.season == seasonNumber && it.episode == episodeNumber }
-
-    private fun JsonObject.toResourceEntry(subjectId: String): MovieBoxResourceEntry? {
-        val resourceId = string("resourceId") ?: return null
-        val resourceLink = string("resourceLink") ?: return null
-        return MovieBoxResourceEntry(subjectId = subjectId, title = string("title").orEmpty(), resourceId = resourceId, resourceLink = resourceLink, resolution = int("resolution") ?: 0, season = int("se") ?: 0, episode = int("ep") ?: 0)
-    }
-
-    private fun List<MovieBoxSeasonAvailability>.toSeasonIndexesForResolution(resolution: Int): List<MovieBoxSeasonIndex> = mapNotNull { season ->
-        val episodeCount = season.resolutions.firstOrNull { it.resolution == resolution }?.episodeCount ?: return@mapNotNull null
-        MovieBoxSeasonIndex(season = season.season, episodes = episodeCount.coerceAtMost(season.maxEpisode.takeIf { it > 0 } ?: episodeCount))
-    }
-
-    private fun JsonObject.isMovieSubject(seasonInfo: JsonObject?): Boolean {
-        val type = int("subjectType") ?: int("type")
-        if (type == SUBJECT_TYPE_MOVIE) return true
-        if (type == SUBJECT_TYPE_TV || type == SUBJECT_TYPE_ANIMATION) return false
-        return toMovieResources(string("subjectId").orEmpty()).isNotEmpty() || seasonInfo?.toSeasonAvailabilities().orEmpty().isEmpty()
-    }
-
-    private fun Server.movieBoxSortKey(): String {
-        val resolution = links.firstOrNull()?.quality?.filter(Char::isDigit)?.toIntOrNull() ?: 0
-        val dubName = audio.firstOrNull().orEmpty()
-        val isOriginal = dubName.equals("Original", ignoreCase = true)
-        return "${if (isOriginal) "0" else "1"}|${dubName.trim().lowercase()}|${(9999 - resolution.coerceAtLeast(0)).toString().padStart(4, '0')}"
-    }
-
-    private fun parseEpisodeAddress(episodeId: String?, episodeLabel: String): EpisodeAddress {
-        if (episodeId == MOVIE_EPISODE_ID || episodeLabel.equals(MOVIE_EPISODE_LABEL, ignoreCase = true)) return EpisodeAddress(isMovie = true, season = 0, episode = 0)
-        val idParts = episodeId.orEmpty().split(":")
-        if (idParts.size == 3 && idParts[0] == "moviebox") return EpisodeAddress(isMovie = false, season = idParts[1].toIntOrNull() ?: 1, episode = idParts[2].toIntOrNull() ?: 1)
-        val match = Regex("""S(\d+)E(\d+)""", RegexOption.IGNORE_CASE).find(episodeLabel)
-        return EpisodeAddress(isMovie = false, season = match?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1, episode = match?.groupValues?.getOrNull(2)?.toIntOrNull() ?: episodeLabel.filter(Char::isDigit).toIntOrNull() ?: 1)
+    private fun decodeSubjectRef(value: String): SubjectRef? {
+        val parts = value.split('|', limit = 3)
+        if (parts.size != 3) return null
+        val subjectId = parts[0].takeIf { it.isNotBlank() } ?: return null
+        val detailPath = parts[1].takeIf { it.isNotBlank() } ?: return null
+        val subjectType = parts[2].toIntOrNull() ?: return null
+        return SubjectRef(subjectId, detailPath, subjectType)
     }
 
     private fun buildEpisodeId(season: Int, episode: Int): String = "moviebox:$season:$episode"
-    private fun normalizeDubName(rawName: String, original: Boolean): String = when { original -> "Original"; rawName.isBlank() -> "Dub"; else -> rawName }
 
-    private fun android.content.SharedPreferences.stableId(key: String, create: () -> String): String =
-        getString(key, null)?.takeIf { it.isNotBlank() } ?: create().also { edit().putString(key, it).apply() }
+    private fun languagePriority(language: String?): Int = when (language?.trim()?.lowercase()) {
+        "original" -> 0
+        "english" -> 1
+        "hindi" -> 2
+        else -> 3
+    }
 
-    private fun JsonObject.array(vararg names: String): List<JsonElement> = names.firstNotNullOfOrNull { name -> get(name)?.takeIf { !it.isJsonNull && it.isJsonArray }?.asJsonArray?.toList() }.orEmpty()
-    private fun JsonObject.obj(name: String): JsonObject? = get(name)?.takeIf { !it.isJsonNull && it.isJsonObject }?.asJsonObject
-    private fun JsonObject.string(name: String): String? = get(name)?.safeString()?.takeIf { it.isNotBlank() }
-    private fun JsonObject.int(name: String): Int? = runCatching { get(name)?.takeIf { !it.isJsonNull }?.asInt }.getOrNull()
-    private fun JsonObject.float(name: String): Float? = runCatching { get(name)?.takeIf { !it.isJsonNull }?.asFloat }.getOrNull()
-    private fun JsonObject.bool(name: String): Boolean? = runCatching { get(name)?.takeIf { !it.isJsonNull }?.asBoolean }.getOrNull()
-    private fun JsonObject.country(): String? = string("countryName") ?: string("country")
-        ?: array("countryList", "countries").firstNotNullOfOrNull { it.asObjectOrNull()?.string("name") ?: it.safeString() }
-    private fun JsonElement.asObjectOrNull(): JsonObject? = takeIf { !it.isJsonNull && it.isJsonObject }?.asJsonObject
-    private fun JsonElement.safeString(): String? = runCatching { takeIf { !it.isJsonNull && it.isJsonPrimitive }?.asString }.getOrNull()
+    private fun displayLanguage(code: String, rawName: String, original: Boolean): String {
+        if (original) return "Original"
+        return when (code.trim().lowercase()) {
+            "en", "eng" -> "English"
+            "hi", "hin" -> "Hindi"
+            else -> rawName
+                .replace(LANGUAGE_VARIANT_SUFFIX, "")
+                .trim()
+                .ifBlank { code.trim() }
+                .ifBlank { "Unknown" }
+                .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        }
+    }
+
+    private fun mediaHeaders(detailPath: String?): Map<String, String> = mapOf(
+        "Accept" to "*/*",
+        "User-Agent" to MOVIEBOX_USER_AGENT,
+        "Origin" to MOVIEBOX_ORIGIN,
+        "Referer" to detailPath?.let { "$MOVIEBOX_ORIGIN/movies/$it" }.orEmpty().ifBlank { MOVIEBOX_ORIGIN },
+    )
+
+    private fun JsonObject.array(vararg names: String): List<JsonElement> =
+        names.firstNotNullOfOrNull { name ->
+            get(name)?.takeIf { !it.isJsonNull && it.isJsonArray }?.asJsonArray?.toList()
+        }.orEmpty()
+
+    private fun JsonObject.obj(name: String): JsonObject? =
+        get(name)?.takeIf { !it.isJsonNull && it.isJsonObject }?.asJsonObject
+
+    private fun JsonObject.string(name: String): String? =
+        runCatching { get(name)?.takeIf { !it.isJsonNull && it.isJsonPrimitive }?.asString }
+            .getOrNull()
+            ?.takeIf { it.isNotBlank() }
+
+    private fun JsonObject.int(name: String): Int? =
+        runCatching { get(name)?.takeIf { !it.isJsonNull }?.asInt }.getOrNull()
+
+    private fun JsonObject.float(name: String): Float? =
+        runCatching { get(name)?.takeIf { !it.isJsonNull }?.asFloat }.getOrNull()
+
+    private fun JsonObject.bool(name: String): Boolean? =
+        runCatching { get(name)?.takeIf { !it.isJsonNull }?.asBoolean }.getOrNull()
+
+    private fun JsonElement.asObjectOrNull(): JsonObject? =
+        takeIf { !it.isJsonNull && it.isJsonObject }?.asJsonObject
 
     private companion object {
-        const val SUBJECT_TYPE_MOVIE = 1; const val SUBJECT_TYPE_TV = 2; const val SUBJECT_TYPE_ANIMATION = 3
-        const val HOME_TAB_ALL = 0
-        const val RESOURCE_PER_PAGE = 20; const val MOVIE_EPISODE_ID = "moviebox:movie"
+        const val SUBJECT_TYPE_MOVIE = 1
+        const val SUBJECT_TYPE_TV = 2
+        const val SUBJECT_TYPE_ANIME = 7
+        const val MOVIE_EPISODE_ID = "moviebox:movie"
         const val MOVIE_EPISODE_LABEL = "Movie"
-        const val MOVIEBOX_MEDIA_REFERER = "https://fmoviesunblocked.net/"
-        const val MOVIEBOX_MEDIA_ORIGIN = "https://h5.aoneroom.com"
-        const val MOVIEBOX_MEDIA_USER_AGENT = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36"
-        const val MOVIEBOX_IDENTITY_PREFERENCES = "moviebox_identity"
-        const val MOVIEBOX_DEVICE_ID = "device_id"
-        const val MOVIEBOX_GAID = "gaid"
+        const val MOVIEBOX_ORIGIN = "https://h5.aoneroom.com"
+        const val MOVIEBOX_USER_AGENT =
+            "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
+        const val LEGACY_LOOKUP_LIMIT = 24
+        const val LEGACY_LOOKUP_MAX_PAGES = 5
+        const val RESOURCE_PAGE_SIZE = 20
+        const val MAX_RESOURCE_PAGES = 20
+        val PLAYABLE_SUBJECT_TYPES = setOf(SUBJECT_TYPE_MOVIE, SUBJECT_TYPE_TV, SUBJECT_TYPE_ANIME)
+        val SEASON_SUFFIX = Regex("""\s+S\d+(?:\s*-\s*S\d+)?\s*$""", RegexOption.IGNORE_CASE)
+        val EPISODE_ID = Regex("""moviebox:(\d+):(\d+)""", RegexOption.IGNORE_CASE)
+        val EPISODE_LABEL = Regex("""S(\d+)E(\d+)""", RegexOption.IGNORE_CASE)
+        val LANGUAGE_VARIANT_SUFFIX = Regex("""\s+(?:dub|sub)\s*$""", RegexOption.IGNORE_CASE)
     }
 }
