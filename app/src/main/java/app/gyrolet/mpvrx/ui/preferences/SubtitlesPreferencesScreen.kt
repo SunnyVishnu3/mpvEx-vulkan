@@ -631,7 +631,7 @@ object SubtitlesPreferencesScreen : Screen {
                                 modifier = Modifier.padding(vertical = 8.dp)
                               )
                             }
-                            items(freeItems.size) { index ->
+                            items(count = freeItems.size, key = { index -> freeItems[index].key }) { index ->
                               val item = freeItems[index]
                               val checked = !wyzieSources.contains("all") && wyzieSources.contains(item.key)
                               Row(
@@ -690,7 +690,7 @@ object SubtitlesPreferencesScreen : Screen {
                                 modifier = Modifier.padding(vertical = 8.dp)
                               )
                             }
-                            items(paidItems.size) { index ->
+                            items(count = paidItems.size, key = { index -> paidItems[index].key }) { index ->
                               val item = paidItems[index]
                               val checked = !wyzieSources.contains("all") && wyzieSources.contains(item.key)
                               val isAvailable = item.available
