@@ -20,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +65,7 @@ import kotlinx.serialization.Serializable
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SliderPreference
+import me.zhanghai.compose.preference.TextFieldPreference
 import app.gyrolet.mpvrx.ui.preferences.components.SwitchPreference
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
@@ -577,6 +579,43 @@ object AppearancePreferencesScreen : Screen {
                                         text = "Show Anime tab in the bottom navigation bar",
                                         color = MaterialTheme.colorScheme.outline,
                                     )
+                                },
+                            )
+                        }
+                    }
+
+                    item {
+                        PreferenceSectionHeader(title = "MovieBox streaming")
+                    }
+
+                    item {
+                        PreferenceCard {
+                            val manifestUrl by browserPreferences.movieBoxStremioManifestUrl.collectAsState()
+                            TextFieldPreference(
+                                value = manifestUrl,
+                                onValueChange = browserPreferences.movieBoxStremioManifestUrl::set,
+                                textToValue = { it.trim() },
+                                title = { Text("Stremio manifest URL") },
+                                summary = {
+                                    Text(
+                                        text = manifestUrl.ifBlank {
+                                            "Optional. Add your hosted MovieBox manifest.json URL; direct MovieBox remains the fallback."
+                                        },
+                                        color = MaterialTheme.colorScheme.outline,
+                                        maxLines = 2,
+                                    )
+                                },
+                                textField = { value, onValueChange, _ ->
+                                    Column {
+                                        Text("MovieBox Stremio manifest")
+                                        TextField(
+                                            value = value,
+                                            onValueChange = onValueChange,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            placeholder = { Text("https://your-service.onrender.com/manifest.json") },
+                                            singleLine = true,
+                                        )
+                                    }
                                 },
                             )
                         }
