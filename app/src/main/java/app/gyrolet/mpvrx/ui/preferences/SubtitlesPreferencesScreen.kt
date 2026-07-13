@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.R
+import app.gyrolet.mpvrx.preferences.SubtitleRenderMode
 import app.gyrolet.mpvrx.preferences.SubtitlesPreferences
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.presentation.Screen
@@ -249,6 +250,28 @@ object SubtitlesPreferencesScreen : Screen {
                     )
                   }
                 },
+              )
+              
+              PreferenceDivider()
+              
+              val renderMode by preferences.subtitleRenderMode.collectAsState()
+              ListPreference(
+                value = renderMode,
+                onValueChange = { preferences.subtitleRenderMode.set(it) },
+                title = { Text("Subtitle Rendering Engine") },
+                summary = {
+                  Text(
+                    when (renderMode) {
+                      SubtitleRenderMode.GPU -> "GPU (libass) - Supports complex typesetting, positioning, and karaoke. Some styling overrides may be ignored."
+                      SubtitleRenderMode.NATIVE -> "Native UI (Compose) - Supports custom text styling (fonts, colors, shadows) consistently, but flattens complex typesetting."
+                    },
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+                entries = listOf(
+                    SubtitleRenderMode.GPU to "GPU (libass)",
+                    SubtitleRenderMode.NATIVE to "Native UI (Compose)"
+                ),
               )
               
               PreferenceDivider()
