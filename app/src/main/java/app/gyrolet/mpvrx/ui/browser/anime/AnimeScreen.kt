@@ -628,7 +628,7 @@ private fun AnimeSectionTabs(
     onSelect: (AnimeHomeTab) -> Unit,
 ) {
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(AnimeHomeTab.entries) { tab ->
+        items(AnimeHomeTab.entries, key = { it.name }) { tab ->
             val count = when (tab) {
                 AnimeHomeTab.HISTORY -> historyCount
                 AnimeHomeTab.BOOKMARKS -> bookmarksCount

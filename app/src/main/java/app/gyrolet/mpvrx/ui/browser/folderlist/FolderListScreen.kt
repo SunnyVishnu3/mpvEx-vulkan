@@ -1145,7 +1145,7 @@ private fun ListContent(
         bottom = navigationBarHeight
       ),
     ) {
-      items(folders) { folder ->
+      items(folders, key = { it.bucketId }) { folder ->
         val isRecentlyPlayed = recentlyPlayedFilePath?.let { filePath ->
           val file = File(filePath)
           file.parent == folder.path

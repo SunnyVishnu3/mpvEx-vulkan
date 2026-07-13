@@ -311,7 +311,7 @@ fun OnlineSubtitleSearchSheet(
       }
 
       LazyColumn {
-        items(items) { item ->
+        items(items, key = { it.hashCode() }) { item ->
           when (item) {
             is OnlineSubtitleItem.OnlineTrack -> {
               OnlineSubtitleRow(
