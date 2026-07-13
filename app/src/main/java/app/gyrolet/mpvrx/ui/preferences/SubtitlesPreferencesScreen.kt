@@ -259,6 +259,15 @@ object SubtitlesPreferencesScreen : Screen {
                 value = renderMode,
                 onValueChange = { preferences.subtitleRenderMode.set(it) },
                 title = { Text("Subtitle Rendering Engine") },
+                values = listOf(SubtitleRenderMode.GPU, SubtitleRenderMode.NATIVE),
+                valueToText = {
+                  AnnotatedString(
+                    when (it) {
+                      SubtitleRenderMode.GPU -> "GPU (libass)"
+                      SubtitleRenderMode.NATIVE -> "Native UI (Compose)"
+                    }
+                  )
+                },
                 summary = {
                   Text(
                     when (renderMode) {
@@ -268,10 +277,6 @@ object SubtitlesPreferencesScreen : Screen {
                     color = MaterialTheme.colorScheme.outline,
                   )
                 },
-                entries = listOf(
-                    SubtitleRenderMode.GPU to "GPU (libass)",
-                    SubtitleRenderMode.NATIVE to "Native UI (Compose)"
-                ),
               )
               
               PreferenceDivider()
