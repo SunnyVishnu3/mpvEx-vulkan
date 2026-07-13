@@ -2,7 +2,6 @@ package app.gyrolet.mpvrx.domain.anicli.provider.moviebox
 
 import android.content.Context
 import app.gyrolet.mpvrx.domain.anicli.AnimeSource
-import app.gyrolet.mpvrx.domain.anicli.isEnglishSubtitle
 import app.gyrolet.mpvrx.domain.anicli.provider.Anime
 import app.gyrolet.mpvrx.domain.anicli.provider.AnimeEpisodes
 import app.gyrolet.mpvrx.domain.anicli.provider.AnimeEpisodeInfo
@@ -187,7 +186,6 @@ class MovieBoxAnimeProvider(
             val entry = caption.asObjectOrNull() ?: return@mapNotNull null
             val url = entry.string("url") ?: return@mapNotNull null
             val languageCode = entry.string("lan"); val label = entry.string("lanName") ?: languageCode ?: "Subtitle"
-            if (!isEnglishSubtitle(languageCode = languageCode, label = label)) return@mapNotNull null
             Subtitle(url = url, language = label)
         }.distinctBy { it.url }
 

@@ -2,6 +2,7 @@ package app.gyrolet.mpvrx.domain.anicli.provider.moviebox
 
 import app.gyrolet.mpvrx.domain.anicli.provider.EpisodeStream
 import app.gyrolet.mpvrx.domain.anicli.provider.Server
+import app.gyrolet.mpvrx.domain.anicli.provider.Subtitle
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -47,6 +48,18 @@ internal class StremioMovieBoxClient {
                 .orEmpty()
             val quality = QUALITY_REGEX.find(description)?.groupValues?.getOrNull(1)?.let { "${it}p" } ?: "Auto"
             val audio = AUDIO_REGEX.find(description)?.groupValues?.getOrNull(1)?.trim()?.takeIf { it.isNotBlank() }
+            val hintSubtitles = stream.obj("behaviorHints")?.array("subtitles").orEmpty()
+            val subtitles = (stream.array("subtitles") + hintSubtitles)
+                .mapNotNull { subtitleElement ->
+                    val subtitle = subtitleElement.asObjectOrNull() ?: return@mapNotNull null
+                    val subtitleUrl = subtitle.string("url") ?: return@mapNotNull null
+                    Subtitle(
+                        url = subtitleUrl,
+                        language = subtitle.string("lang") ?: subtitle.string("language")
+                            ?: subtitle.string("name") ?: subtitle.string("id") ?: "Subtitle",
+                    )
+                }
+                .distinctBy { it.url }
             Server(
                 name = description.lineSequence().firstOrNull()?.takeIf { it.isNotBlank() } ?: name,
                 links = listOf(
@@ -68,6 +81,7 @@ internal class StremioMovieBoxClient {
                     )
                 ),
                 headers = requestHeaders,
+                subtitles = subtitles,
                 audio = listOfNotNull(audio),
             )
         }.distinctBy { it.links.first().link }
