@@ -386,6 +386,11 @@ fun PlayerControls(
       )
     }
 
+    NativeSubtitleOverlay(
+      viewModel = viewModel,
+      modifier = safeAreaInsetModifier.then(navigationBarBottomInsetModifier)
+    )
+
     CompositionLocalProvider(
       LocalRippleConfiguration provides playerRippleConfiguration,
       LocalPlayerButtonsClickEvent provides { resetControlsTimestamp = System.currentTimeMillis() },
