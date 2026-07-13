@@ -117,7 +117,7 @@ fun SubtitleSettingsTypographyCard(
       val isItalic by MPVLib.propBoolean["sub-italic"].collectAsState()
       val mpvJustify by MPVLib.propString["sub-justify"].collectAsState()
       val justify by remember {
-        derivedStateOf { SubtitleJustification.entries.first { it.value == mpvJustify } }
+        derivedStateOf { SubtitleJustification.entries.firstOrNull { it.value == mpvJustify } ?: SubtitleJustification.Auto }
       }
       val font by MPVLib.propString["sub-font"].collectAsState()
       val fontSize by MPVLib.propInt["sub-font-size"].collectAsState()

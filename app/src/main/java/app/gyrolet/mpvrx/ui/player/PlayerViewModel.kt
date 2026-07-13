@@ -27,6 +27,7 @@ import app.gyrolet.mpvrx.preferences.AudioPreferences
 import app.gyrolet.mpvrx.preferences.GesturePreferences
 import app.gyrolet.mpvrx.preferences.IntroSegmentProvider
 import app.gyrolet.mpvrx.preferences.PlayerPreferences
+import app.gyrolet.mpvrx.preferences.SubtitleRenderMode
 import app.gyrolet.mpvrx.preferences.SubtitlesPreferences
 import app.gyrolet.mpvrx.repository.IntroDbLookupOutcome
 import app.gyrolet.mpvrx.repository.IntroDbLookupRequest
@@ -423,6 +424,23 @@ class PlayerViewModel(
   private val _preciseDuration = MutableStateFlow(0f)
   val preciseDuration = _preciseDuration.asStateFlow()
 
+  // ── Native subtitle overlay ──────────────────────────────────────────────────
+  // User's chosen render mode (GPU libass vs. native Compose text), reactive to the setting.
+  val subtitleRenderMode: StateFlow<SubtitleRenderMode> =
+    subtitlesPreferences.subtitleRenderMode.changes()
+      .stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        subtitlesPreferences.subtitleRenderMode.get(),
+      )
+
+  // Current subtitle line streamed from mpv's `sub-text` property (tag-stripped for ASS/SSA).
+  // Only consumed by the Compose overlay while NATIVE mode is active.
+  val nativeSubtitleText: StateFlow<String> =
+    MPVLib.propString["sub-text"]
+      .map { it.orEmpty() }
+      .stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
   // These MPV-backed state flows must be initialized before any init block collects them.
   val subtitleTracks: StateFlow<List<TrackNode>> =
     MPVLib.propNode["track-list"]
@@ -805,6 +823,21 @@ class PlayerViewModel(
             // --------------------------------------------------------
         }
       }
+    }
+
+    // Native subtitle overlay: when NATIVE mode is active, hide mpv's GPU-rendered subtitles
+    // (sub-visibility=no) while keeping the track decoding so `sub-text` keeps streaming the
+    // current line to the Compose overlay. Combined with the duration flow so visibility is
+    // re-asserted on every newly loaded file (a file load resets sub-visibility to default).
+    viewModelScope.launch(playbackStateDispatcher) {
+      combine(subtitleRenderMode, MPVLib.propInt["duration"]) { mode, _ -> mode }
+        .collect { mode ->
+          if (!_isMpvCoreReady.value) return@collect
+          MPVLib.setPropertyString(
+            "sub-visibility",
+            if (mode == SubtitleRenderMode.NATIVE) "no" else "yes",
+          )
+        }
     }
 
     viewModelScope.launch(playbackStateDispatcher) {

@@ -40,6 +40,9 @@ class SubtitlesPreferences(
   val scaleByWindow = preferenceStore.getBoolean("sub_scale_by_window", true)
   val blendSubtitlesWithVideo = preferenceStore.getBoolean("sub_blend_with_video", false)
 
+  /** GPU (libass) vs. native Compose text overlay. See [SubtitleRenderMode]. */
+  val subtitleRenderMode = preferenceStore.getEnum("sub_render_mode", SubtitleRenderMode.GPU)
+
   val defaultSubDelay = preferenceStore.getInt("sub_default_delay")
   val defaultSubSpeed = preferenceStore.getFloat("sub_default_speed", 1f)
 
