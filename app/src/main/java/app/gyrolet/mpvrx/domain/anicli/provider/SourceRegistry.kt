@@ -22,7 +22,7 @@ class SourceRegistry(
             ?: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
 
     companion object {
-        private val SOURCE_DISPLAY_ORDER = listOf(AnimeSource.MOVIEBOX)
+        private val SOURCE_DISPLAY_ORDER = listOf(AnimeSource.MOVIEBOX, AnimeSource.ENCDEC)
 
         fun orderedSources(sources: Iterable<AnimeSource>): List<AnimeSource> {
             val orderIndex = SOURCE_DISPLAY_ORDER.withIndex().associate { it.value to it.index }
