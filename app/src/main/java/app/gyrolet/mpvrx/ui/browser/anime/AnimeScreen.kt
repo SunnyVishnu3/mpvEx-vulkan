@@ -83,6 +83,7 @@ import app.gyrolet.mpvrx.domain.anicli.AnimeListContext
 import app.gyrolet.mpvrx.domain.anicli.AnimeSource
 import app.gyrolet.mpvrx.domain.anicli.DownloadState
 import app.gyrolet.mpvrx.domain.anicli.onlyEnglishSubtitles
+import app.gyrolet.mpvrx.ui.browser.networkstreaming.proxy.HttpStreamingProxy
 import app.gyrolet.mpvrx.preferences.EpisodeViewMode
 import app.gyrolet.mpvrx.preferences.TrendingViewMode
 import app.gyrolet.mpvrx.presentation.Screen
@@ -542,12 +543,13 @@ object AnimeScreen : Screen {
                     getDownloadState = { viewModel.getDownloadState(anime.name, episode.number) },
                     onDismiss = viewModel::dismissStreamSheet,
                     onPlay = { link, context ->
+                        val headers = playbackHeaders(link)
+                        val playbackUrl = HttpStreamingProxy.instance.register(link.url, headers)
                         viewModel.dismissStreamSheet()
                         MediaUtils.playFile(
-                            source = link.url,
+                            source = playbackUrl,
                             context = context,
                             title = streamPlaybackTitle(anime, episode, link),
-                            headers = playbackHeaders(link),
                             subtitleTracks = link.subtitles.map {
                                 PlaybackSubtitleTrack(
                                     url = it.url,
