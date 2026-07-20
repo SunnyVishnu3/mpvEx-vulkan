@@ -16,6 +16,7 @@ import app.gyrolet.mpvrx.preferences.SubtitlesPreferences
 import app.gyrolet.mpvrx.preferences.YtdlPreferences
 import app.gyrolet.mpvrx.domain.anime4k.Anime4KManager
 import app.gyrolet.mpvrx.ui.player.anime4k.applyAnime4KShaderChain
+import app.gyrolet.mpvrx.ui.player.anime4k.applyAnime4KUltraShader
 import app.gyrolet.mpvrx.ui.player.anime4k.applyAnime4KStabilityOptions
 import app.gyrolet.mpvrx.ui.player.anime4k.clearAnime4KShaders
 import app.gyrolet.mpvrx.ui.player.anime4k.selectRuntimeStableAnime4K
@@ -482,6 +483,29 @@ class MPVView(
       val isGpuNext = activeVo == "gpu-next"
       val useVulkan = activeGpuApi == "vulkan"
 
+      // ── Anime4K Ultra ────────────────────────────────────────────────────
+      val enableUltra = decoderPreferences.enableAnime4KUltra.get()
+      val ultraModeStr = decoderPreferences.anime4kUltraMode.get()
+      if (enableUltra && ultraModeStr != "OFF") {
+        val ultraMode = try {
+          Anime4KManager.UltraMode.valueOf(ultraModeStr)
+        } catch (e: IllegalArgumentException) {
+          Anime4KManager.UltraMode.OFF
+        }
+
+        if (ultraMode == Anime4KManager.UltraMode.OFF) {
+          clearAnime4KShaders()
+          return
+        }
+
+        if (applyAnime4KUltraShader(anime4kManager, ultraMode)) {
+          applyAnime4KStabilityOptions(useVulkan = useVulkan)
+        } else {
+          Log.w(TAG, "Anime4K Ultra shader failed to apply for mode=$ultraMode")
+        }
+        return
+      }
+
       // ── Standard Anime4K (requires master switch) ─────────────────────────
       val enabled = decoderPreferences.enableAnime4K.get()
       if (!enabled) {
@@ -559,12 +583,15 @@ class MPVView(
   }
 
   private fun selectRenderBackend(): RenderBackendSelection {
+    val anime4kUltraEnabled = decoderPreferences.enableAnime4KUltra.get() && 
+        (decoderPreferences.anime4kUltraMode.get() != "OFF")
     val anime4kEnabled = decoderPreferences.enableAnime4K.get() && 
         (decoderPreferences.anime4kMode.get() != "OFF")
+    val anime4kAny = anime4kUltraEnabled || anime4kEnabled
     val gpuNextEnabled = decoderPreferences.gpuNext.get()
     val vulkanEnabled = shouldUseVulkan()
 
-    if (anime4kEnabled && gpuNextEnabled && !vulkanEnabled) {
+    if (anime4kAny && gpuNextEnabled && !vulkanEnabled) {
       return RenderBackendSelection(
         vo = "gpu",
         gpuApi = "opengl",

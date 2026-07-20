@@ -49,6 +49,7 @@ import androidx.compose.ui.window.DialogProperties
 import app.gyrolet.mpvrx.R
 import app.gyrolet.mpvrx.domain.anime4k.Anime4KManager
 import app.gyrolet.mpvrx.preferences.AdvancedPreferences
+import app.gyrolet.mpvrx.preferences.DecoderPreferences
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.presentation.components.PlayerSheet
 import app.gyrolet.mpvrx.ui.player.anime4k.Anime4KUiState
@@ -68,13 +69,18 @@ fun MoreSheet(
   onEnterLuaScriptsPanel: () -> Unit,
   anime4KUiState: Anime4KUiState,
   onAnime4KModeSelected: (Anime4KManager.Mode) -> Unit,
+  onAnime4KUltraModeSelected: (Anime4KManager.UltraMode) -> Unit,
   modifier: Modifier = Modifier,
 ) {
+  val decoderPreferences = koinInject<DecoderPreferences>()
   val advancedPreferences = koinInject<AdvancedPreferences>()
   val statisticsPage by advancedPreferences.enabledStatisticsPage.collectAsState()
   val enableLuaScripts by advancedPreferences.enableLuaScripts.collectAsState()
   val selectedLuaScripts by advancedPreferences.selectedLuaScripts.collectAsState()
   val mpvConfStorageLocation by advancedPreferences.mpvConfStorageUri.collectAsState()
+  
+  val enableAnime4KUltra by decoderPreferences.enableAnime4KUltra.collectAsState()
+  val anime4kUltraMode by decoderPreferences.anime4kUltraMode.collectAsState()
   
   PlayerSheet(
     onDismissRequest,
@@ -267,6 +273,30 @@ fun MoreSheet(
         }
       }
 
+      // Anime4K Ultra
+      if (enableAnime4KUltra) {
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.smaller))
+
+        Text(
+            text = stringResource(R.string.pref_anime4k_ultra_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        LazyRow(
+          horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.smaller),
+        ) {
+          items(Anime4KManager.UltraMode.entries, key = { it.name }) { mode ->
+            FilterChip(
+              label = { Text(stringResource(mode.titleRes)) },
+              selected = anime4kUltraMode == mode.name,
+              enabled = !anime4KUiState.isHighResolution || mode == Anime4KManager.UltraMode.OFF,
+              leadingIcon = null,
+              onClick = { onAnime4KUltraModeSelected(mode) }
+            )
+          }
+        }
+      }
 
     }
   }

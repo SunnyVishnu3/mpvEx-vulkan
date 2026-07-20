@@ -4283,6 +4283,9 @@ class PlayerViewModel(
 
   fun selectAnime4KMode(mode: Anime4KManager.Mode) {
     decoderPreferences.anime4kMode.set(mode.name)
+    if (mode != Anime4KManager.Mode.OFF) {
+      decoderPreferences.anime4kUltraMode.set("OFF")
+    }
     viewModelScope.launch(Dispatchers.Default) {
       runCatching {
         val shouldRefreshShaderStack = if (mode == Anime4KManager.Mode.OFF) {
@@ -4339,6 +4342,33 @@ class PlayerViewModel(
     }
     if (!hdrToysManager.apply(profile)) {
       playerUpdate.value = PlayerUpdates.ShowText("HDR Toys shaders unavailable")
+    }
+  }
+
+  fun selectAnime4KUltraMode(mode: Anime4KManager.UltraMode) {
+    decoderPreferences.anime4kUltraMode.set(mode.name)
+    decoderPreferences.enableAnime4KUltra.set(mode != Anime4KManager.UltraMode.OFF)
+    if (mode != Anime4KManager.UltraMode.OFF) {
+      decoderPreferences.anime4kMode.set("OFF")
+    }
+
+    viewModelScope.launch(Dispatchers.Default) {
+      runCatching {
+        if (mode == Anime4KManager.UltraMode.OFF) {
+          clearAnime4KShaders()
+          restartHdrScreenOutputAndAmbientIfActive()
+          return@launch
+        }
+
+        if (app.gyrolet.mpvrx.ui.player.anime4k.applyAnime4KUltraShader(anime4kManager, mode)) {
+          app.gyrolet.mpvrx.ui.player.anime4k.applyAnime4KStabilityOptions(useVulkan = MPVLib.getPropertyString("gpu-api") == "vulkan")
+          restartHdrScreenOutputAndAmbientIfActive()
+        } else {
+          Log.w(TAG, "Failed to apply Anime4K Ultra mode=$mode at runtime")
+        }
+      }.onFailure { error ->
+        Log.e(TAG, "Failed to apply Anime4K Ultra mode ${mode.name}", error)
+      }
     }
   }
 

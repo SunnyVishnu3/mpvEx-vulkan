@@ -270,6 +270,7 @@ fun PlayerSheets(
         onEnterLuaScriptsPanel = { onOpenPanel(Panels.LuaScripts) },
         anime4KUiState = anime4KUiState,
         onAnime4KModeSelected = viewModel::selectAnime4KMode,
+        onAnime4KUltraModeSelected = viewModel::selectAnime4KUltraMode,
       )
     }
 

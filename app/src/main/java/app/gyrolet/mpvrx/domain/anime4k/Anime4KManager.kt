@@ -50,6 +50,18 @@ class Anime4KManager(private val context: Context) {
     ARTCNN(app.gyrolet.mpvrx.R.string.anime4k_mode_artcnn)
   }
 
+  // Anime4K Ultra modes
+  enum class UltraMode(val titleRes: Int, val shaderFile: String) {
+    OFF(app.gyrolet.mpvrx.R.string.anime4k_mode_off, ""),
+    STANDARD(app.gyrolet.mpvrx.R.string.anime4k_ultra_standard, "Anime4K-Ultra.glsl"),
+    DBH(app.gyrolet.mpvrx.R.string.anime4k_ultra_dbh, "Anime4K-Ultra_DbH.glsl"),
+    DBH_SHARP(app.gyrolet.mpvrx.R.string.anime4k_ultra_dbh_sharp, "Anime4K-Ultra_DbH_Sharp.glsl"),
+    DBL(app.gyrolet.mpvrx.R.string.anime4k_ultra_dbl, "Anime4K-Ultra_DbL.glsl"),
+    DBM(app.gyrolet.mpvrx.R.string.anime4k_ultra_dbm, "Anime4K-Ultra_DbM.glsl"),
+    SH(app.gyrolet.mpvrx.R.string.anime4k_ultra_sh, "Anime4K-Ultra_Sh.glsl"),
+    SSH(app.gyrolet.mpvrx.R.string.anime4k_ultra_ssh, "Anime4K-Ultra_SSh.glsl")
+  }
+
   private var shaderDir: File? = null
   private var isInitialized = false
   @Volatile
@@ -472,6 +484,19 @@ class Anime4KManager(private val context: Context) {
     }
 
     return shaders
+  }
+
+  fun getUltraShaderPaths(mode: UltraMode): List<String> {
+    if (mode == UltraMode.OFF || mode.shaderFile.isEmpty()) {
+      return emptyList()
+    }
+
+    val file = getShaderFile(mode.shaderFile)
+    if (!file.exists()) {
+      return emptyList()
+    }
+
+    return listOf(file.absolutePath)
   }
 
   private fun getShaderFile(fileName: String): File {
