@@ -155,7 +155,6 @@ enum class Sheets {
   LyricsProvider,
   Scopes,
   PostProcessingConfig,
-  MemcConfig,
   BookmarkEditor,
   AudiobookRewind,
   AudiobookSleepTimer,

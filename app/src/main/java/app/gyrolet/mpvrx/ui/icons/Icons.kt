@@ -746,5 +746,101 @@ private val PostProcessingVector: ImageVector by lazy(LazyThreadSafetyMode.NONE)
  * 24x24 Material-style hand-crafted vector.
  */
 private val MemcVector: ImageVector by lazy(LazyThreadSafetyMode.NONE) {
-    ImageVector.Builder(
-        name = 
+  ImageVector.Builder(
+    name = "Memc",
+    defaultWidth = 24.dp,
+    defaultHeight = 24.dp,
+    viewportWidth = 24f,
+    viewportHeight = 24f,
+  ).apply {
+    // Left film frame — outer filled rect
+    path(
+      fill = SolidColor(Color.Black),
+      fillAlpha = 1f,
+      stroke = null,
+      strokeAlpha = 1f,
+      strokeLineWidth = 1f,
+      pathFillType = PathFillType.NonZero,
+    ) {
+      moveTo(2f, 5f)
+      lineTo(2f, 19f)
+      lineTo(10f, 19f)
+      lineTo(10f, 5f)
+      close()
+    }
+    // Left film frame — inner cutout
+    path(
+      fill = SolidColor(Color.White),
+      fillAlpha = 1f,
+      stroke = null,
+      strokeAlpha = 1f,
+      strokeLineWidth = 1f,
+      pathFillType = PathFillType.NonZero,
+    ) {
+      moveTo(3.5f, 7f)
+      lineTo(3.5f, 17f)
+      lineTo(8.5f, 17f)
+      lineTo(8.5f, 7f)
+      close()
+    }
+    // Right film frame — outer filled rect
+    path(
+      fill = SolidColor(Color.Black),
+      fillAlpha = 1f,
+      stroke = null,
+      strokeAlpha = 1f,
+      strokeLineWidth = 1f,
+      pathFillType = PathFillType.NonZero,
+    ) {
+      moveTo(14f, 5f)
+      lineTo(14f, 19f)
+      lineTo(22f, 19f)
+      lineTo(22f, 5f)
+      close()
+    }
+    // Right film frame — inner cutout
+    path(
+      fill = SolidColor(Color.White),
+      fillAlpha = 1f,
+      stroke = null,
+      strokeAlpha = 1f,
+      strokeLineWidth = 1f,
+      pathFillType = PathFillType.NonZero,
+    ) {
+      moveTo(15.5f, 7f)
+      lineTo(15.5f, 17f)
+      lineTo(20.5f, 17f)
+      lineTo(20.5f, 7f)
+      close()
+    }
+    // Motion arrow — horizontal bar
+    path(
+      fill = SolidColor(Color.Black),
+      fillAlpha = 1f,
+      stroke = null,
+      strokeAlpha = 1f,
+      strokeLineWidth = 1f,
+      pathFillType = PathFillType.NonZero,
+    ) {
+      moveTo(10f, 11.25f)
+      lineTo(14f, 11.25f)
+      lineTo(14f, 12.75f)
+      lineTo(10f, 12.75f)
+      close()
+    }
+    // Motion arrow — right-pointing arrowhead
+    path(
+      fill = SolidColor(Color.Black),
+      fillAlpha = 1f,
+      stroke = null,
+      strokeAlpha = 1f,
+      strokeLineWidth = 1f,
+      pathFillType = PathFillType.NonZero,
+    ) {
+      moveTo(13f, 9.5f)
+      lineTo(16f, 12f)
+      lineTo(13f, 14.5f)
+      close()
+    }
+  }.build()
+}
