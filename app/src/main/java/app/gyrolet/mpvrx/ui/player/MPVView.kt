@@ -427,10 +427,7 @@ class MPVView(
   private fun applyFrameRate() {
     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
       val fps = PlaybackSession.getPropertyDouble("container-fps") ?: 0.0
-      // Only high frame rates map onto phone panels without a display mode switch. Requesting
-      // film rates (24/25/30) here forces a mode switch during open — a visible black flash and
-      // extra latency before the first frame. mpv's frame pacing covers those rates instead.
-      if (fps >= SURFACE_FRAME_RATE_MIN_FPS && holder?.surface?.isValid == true) {
+      if (fps > 0.0 && holder?.surface?.isValid == true) {
         try {
           holder.surface.setFrameRate(
             fps.toFloat(),
@@ -767,14 +764,5 @@ class MPVView(
           "gpu-next and Vulkan disabled: use gpu/opengl"
         },
     )
-  }
-
-  companion object {
-    /**
-     * Minimum content frame rate that is requested on the rendering surface. Lower rates would
-     * force a display mode switch on phones during open (black flash + latency), so they are left
-     * at the system refresh rate and paced by mpv instead.
-     */
-    const val SURFACE_FRAME_RATE_MIN_FPS = 50.0
   }
 }

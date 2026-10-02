@@ -250,7 +250,7 @@ private fun MiniPlayerContent(
       }
       context.startActivity(intent)
       if (context is Activity && android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-        val enterAnimation = if (animateArtwork) 0 else R.anim.player_open_fade
+        val enterAnimation = if (animateArtwork) 0 else R.anim.slide_in_up
         @Suppress("DEPRECATION")
         context.overridePendingTransition(enterAnimation, 0)
       }

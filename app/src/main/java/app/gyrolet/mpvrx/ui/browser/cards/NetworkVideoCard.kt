@@ -108,21 +108,7 @@ fun NetworkVideoCard(
         null
       }
     }
-  // Seeded during composition so returning to a card does not flash the placeholder first.
-  var thumbnail by remember(thumbnailKey) {
-    mutableStateOf<Bitmap?>(
-      if (displayThumb) {
-        thumbnailRepository.peekNetworkThumbnail(
-          path = file.path,
-          widthPx = thumbSizePx,
-          heightPx = thumbSizePx,
-          connection = connection,
-        )
-      } else {
-        null
-      },
-    )
-  }
+  var thumbnail by remember(thumbnailKey) { mutableStateOf<Bitmap?>(null) }
 
   // Subscribe to ready-keys so folder-level prefetch also updates this card
   LaunchedEffect(thumbnailKey) {

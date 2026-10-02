@@ -17,7 +17,6 @@ import android.provider.MediaStore
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
-import app.gyrolet.mpvrx.R
 import app.gyrolet.mpvrx.domain.media.model.Video
 import app.gyrolet.mpvrx.domain.torrent.isTorrentSource
 import app.gyrolet.mpvrx.ui.browser.NavigationBarState
@@ -66,27 +65,6 @@ data class PlaybackSubtitleTrack(
  * bypassing MediaUtils.
  */
 object MediaUtils {
-  /**
-   * Player launch with an explicit fast fade-in and no exit animation, so opening a video
-   * never falls back to a system slide. Falls back to a plain launch if the animation bundle
-   * cannot be applied (e.g. a non-Activity context without FLAG_ACTIVITY_NEW_TASK).
-   */
-  private fun startPlayerActivity(
-    context: Context,
-    intent: Intent,
-  ) {
-    val bundle =
-      runCatching {
-        androidx.core.app.ActivityOptionsCompat.makeCustomAnimation(context, R.anim.player_open_fade, 0).toBundle()
-      }.getOrNull()
-    if (bundle == null) {
-      context.startActivity(intent)
-      return
-    }
-    runCatching { context.startActivity(intent, bundle) }
-      .onFailure { context.startActivity(intent) }
-  }
-
   fun shouldPlayInMiniPlayerOnly(isAudio: Boolean): Boolean {
     if (!isAudio) return false
     if (userScriptRuntimeNeedsReload()) return false
@@ -111,7 +89,7 @@ object MediaUtils {
     val selectedIndex = startIndex.coerceIn(queueItems.indices)
     if (userScriptRuntimeNeedsReload()) {
       val token = PreparedPlaybackLaunchStore.stage(queueItems, selectedIndex, isExplicitQueue = true)
-      startPlayerActivity(context, Intent(context, PlayerActivity::class.java)
+      context.startActivity(Intent(context, PlayerActivity::class.java)
         .setAction(Intent.ACTION_VIEW)
         .setData(Uri.parse(queueItems[selectedIndex].originalUri))
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -204,7 +182,7 @@ object MediaUtils {
         putExtra(PlayerActivity.EXTRA_VIDEO_HEIGHT, selected.height)
       }
     PlaybackPerformanceTrace.mark("OPEN_REQUEST", "source=$launchSource queue=${videos.size}")
-    startPlayerActivity(context, intent)
+    context.startActivity(intent)
   }
 
   /**
@@ -390,7 +368,7 @@ object MediaUtils {
       "OPEN_REQUEST",
       "source=${launchSource ?: (if (videoSource != null) "library" else "direct")} kind=${if (videoSource != null) "video" else (playbackUri.scheme ?: "path")}",
     )
-    startPlayerActivity(context, intent)
+    context.startActivity(intent)
   }
 
   private fun playbackIdentity(video: Video): String =

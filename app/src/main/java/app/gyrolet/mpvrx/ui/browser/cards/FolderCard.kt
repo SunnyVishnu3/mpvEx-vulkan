@@ -112,11 +112,7 @@ fun FolderCard(
   val context = androidx.compose.ui.platform.LocalContext.current
   val thumbnailRepository = koinInject<ThumbnailRepository>()
   var thumbnailSize by remember { mutableStateOf(IntSize.Zero) }
-  // Seeded from the last frame shown for this folder: fetching again on every return showed the
-  // placeholder for a frame even though the thumbnail was already decoded.
-  var folderThumbnail by remember(folder.bucketId) {
-    mutableStateOf<android.graphics.Bitmap?>(thumbnailRepository.peekFolderThumbnail(folder.bucketId))
-  }
+  var folderThumbnail by remember(folder.bucketId) { mutableStateOf<android.graphics.Bitmap?>(null) }
 
   LaunchedEffect(
     folder.bucketId,

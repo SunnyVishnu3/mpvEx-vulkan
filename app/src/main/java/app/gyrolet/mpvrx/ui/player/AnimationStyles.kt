@@ -62,7 +62,6 @@ enum class VideoOpenAnimation(
   val displayName: String,
 ) {
   Default("Default"),
-  FastFade("Fast Fade"),
   FadeDark("Fade from Black"),
   ZoomBurst("Zoom Burst"),
   SlideUp("Slide Up"),
@@ -341,14 +340,9 @@ fun buildControlsExitV(
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
- * Draws a full-screen coating that stays in place while media is loading, then plays the selected
+ * Draws a full-screen overlay that stays in place while media is loading, then plays the selected
  * [VideoOpenAnimation] once the video is ready. No-op when [style] is
  * [VideoOpenAnimation.Default] or [VideoOpenAnimation.None].
- *
- * The coating is owned by [VideoOpenAnimationState.loadToken]: every new load bumps the token,
- * which re-shows the coating until that load reports ready. [VideoOpenAnimation.FastFade] is the
- * fastest recipe — solid black, zero hold, ~160ms linear fade, no scale or slide — so the first
- * frame is revealed with no added delay.
  */
 @Composable
 fun VideoOpenAnimationOverlay(
@@ -358,15 +352,8 @@ fun VideoOpenAnimationOverlay(
 ) {
   if (style == VideoOpenAnimation.Default || style == VideoOpenAnimation.None) return
 
-  val fadeMs = (160 * speedMultiplier).toInt().coerceAtLeast(80)
-  // Fast Fade clears its coating the moment the video is ready; other styles keep a short beat so
-  // their motion reads as an intentional transition instead of a flash.
-  val holdMs =
-    if (style == VideoOpenAnimation.FastFade) {
-      0
-    } else {
-      (60 * speedMultiplier).toInt().coerceAtLeast(30)
-    }
+  val durationMs = (400 * speedMultiplier).toInt().coerceAtLeast(100)
+  val holdMs = (120 * speedMultiplier).toInt().coerceAtLeast(50)
 
   key(animationState.loadToken) {
     var overlayVisible by remember { mutableStateOf(true) }
@@ -377,17 +364,19 @@ fun VideoOpenAnimationOverlay(
         return@LaunchedEffect
       }
 
-      if (holdMs > 0) delay(holdMs.toLong())
+      delay(holdMs.toLong())
       overlayVisible = false
     }
 
     when (style) {
-      VideoOpenAnimation.FastFade,
       VideoOpenAnimation.FadeDark -> {
         AnimatedVisibility(
           visible = overlayVisible,
           enter = EnterTransition.None,
-          exit = fadeOut(tween(durationMillis = fadeMs, easing = LinearOutSlowInEasing)),
+          exit =
+            fadeOut(
+              spring(dampingRatio = AppMotion.Effect.Alpha.dampingRatio, stiffness = AppMotion.Effect.Alpha.stiffness),
+            ),
         ) {
           Box(
             Modifier

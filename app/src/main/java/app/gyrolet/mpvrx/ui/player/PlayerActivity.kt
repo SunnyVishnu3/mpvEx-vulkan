@@ -640,17 +640,11 @@ class PlayerActivity :
     applyInitialVideoOrientation(intent)
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
-    // Fast open for every entry point: short fade only (no slide translation). The black
-    // windowBackground underneath is the instant coating, so the first frame is revealed
-    // without a slide delay. A shared-element artwork transition owns the animation instead.
-    val animatePlayerArtwork = PlayerArtworkTransitions.motion?.destination == PlayerArtworkDestination.FULL
-    if (!animatePlayerArtwork) {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-        overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, R.anim.player_open_fade, 0)
-      } else {
-        @Suppress("DEPRECATION")
-        overridePendingTransition(R.anim.player_open_fade, 0)
-      }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&
+      intent.action == MediaPlaybackService.ACTION_OPEN_PLAYER
+    ) {
+      val animateArtwork = PlayerArtworkTransitions.motion?.destination == PlayerArtworkDestination.FULL
+      overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, if (animateArtwork) 0 else R.anim.slide_in_up, 0)
     }
     if (intent.action == MediaPlaybackService.ACTION_OPEN_PLAYER && player.userScriptsNeedReload()) {
       currentPlaybackIntentForScriptReload()?.let { playbackIntent ->
@@ -1879,7 +1873,7 @@ class PlayerActivity :
     super.finish()
 
     if (isMiniPlayerEnabled()) {
-      val exitAnimation = if (animateArtwork) 0 else R.anim.player_close_fade
+      val exitAnimation = if (animateArtwork) 0 else R.anim.slide_out_down
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
         overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, 0, exitAnimation)
       } else {
@@ -4261,9 +4255,7 @@ class PlayerActivity :
       }
       "container-fps" -> {
         if (!mpvInitialized || player.isExiting || isFinishing) return
-        // Same gate as MPVView.applyFrameRate: film rates stay at the system refresh rate so no
-        // display mode switch (black flash + latency) happens while the video is opening.
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R && value >= MPVView.SURFACE_FRAME_RATE_MIN_FPS) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R && value > 0.0) {
           try {
             val surface = player.holder?.surface
             if (surface != null && surface.isValid) {

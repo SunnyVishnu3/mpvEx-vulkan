@@ -188,15 +188,6 @@ fun M3UVideoCard(
       }
 
     LaunchedEffect(thumbnailKey) {
-      // Paint an already-decoded frame straight away rather than starting from the placeholder.
-      val seeded =
-        when {
-          networkReference != null -> null
-          isNetwork ->
-            thumbnailRepository.peekNetworkThumbnail(url, thumbWidthPx, thumbHeightPx, connection = null)
-          else -> thumbnailRepository.peekThumbnailFromMemory(actualVideo, thumbWidthPx, thumbHeightPx)
-        }
-      if (seeded != null) thumbnail = seeded
       thumbnailRepository.thumbnailReadyKeys.filter { it == thumbnailKey }.collect {
         thumbnail =
           if (networkReference != null) {
