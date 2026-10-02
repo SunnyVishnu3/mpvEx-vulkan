@@ -275,6 +275,7 @@ object Icons {
     val ZoomIn by lazy(LazyThreadSafetyMode.NONE) { AppIcon(MaterialSymbols.RoundedFilled.Zoom_in) }
     val ZoomOutMap by lazy(LazyThreadSafetyMode.NONE) { AppIcon(MaterialSymbols.RoundedFilled.Zoom_out_map) }
     val PostProcessing by lazy(LazyThreadSafetyMode.NONE) { AppIcon(PostProcessingVector) }
+    val Memc by lazy(LazyThreadSafetyMode.NONE) { AppIcon(MemcVector) }
   }
 
   object RoundedFilled {
@@ -500,6 +501,7 @@ object Icons {
     val ZoomIn get() = Shared.ZoomIn
     val ZoomOutMap get() = Shared.ZoomOutMap
     val PostProcessing get() = Shared.PostProcessing
+    val Memc get() = Shared.Memc
   }
 
   object Alternatives {
@@ -738,3 +740,11 @@ private val PostProcessingVector: ImageVector by lazy(LazyThreadSafetyMode.NONE)
     }
   }.build()
 }
+
+/**
+ * MEMC icon — two film frames with a right-pointing motion arrow between them.
+ * 24x24 Material-style hand-crafted vector.
+ */
+private val MemcVector: ImageVector by lazy(LazyThreadSafetyMode.NONE) {
+    ImageVector.Builder(
+        name = 

@@ -2213,6 +2213,28 @@ val isBrightnessSliderShown = MutableStateFlow(false)
   private var batteryReceiver: BroadcastReceiver? = null
   private var androidSystemInfoBridgeJob: Job? = null
 
+  // ==================== MEMC (Smoovie) ======================================
+  private val _isMEMCEnabled = MutableStateFlow(playerPreferences.isMEMCEnabled.get())
+  val isMEMCEnabled: StateFlow<Boolean> = _isMEMCEnabled.asStateFlow()
+
+  fun toggleMEMC() {
+    val next = !_isMEMCEnabled.value
+    _isMEMCEnabled.value = next
+    playerPreferences.isMEMCEnabled.set(next)
+    if (next) {
+      runCatching {
+        PlaybackSession.command("vf", "add", "@smoovie:smoovie")
+        PlaybackSession.command("af", "add", "@smoovie_af:smoovie")
+      }
+    } else {
+      runCatching {
+        PlaybackSession.command("vf", "remove", "@smoovie")
+        PlaybackSession.command("af", "remove", "@smoovie_af")
+      }
+    }
+    playerUpdate.value = PlayerUpdates.ShowText(if (next) "MEMC On" else "MEMC Off")
+  }
+
   // ==================== Post-Processing ===================================
   private val _isPostProcessingEnabled = MutableStateFlow(playerPreferences.isPostProcessingEnabled.get())
   val isPostProcessingEnabled: StateFlow<Boolean> = _isPostProcessingEnabled.asStateFlow()

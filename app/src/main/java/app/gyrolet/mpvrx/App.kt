@@ -138,6 +138,12 @@ class App :
       .apply()
     CrashReportStore.install(this)
 
+    runCatching {
+      System.loadLibrary("smoovie_native")
+    }.onFailure {
+      Log.i(TAG, "MEMC native engine (smoovie_native) not loaded: ${it.message}")
+    }
+
     configureDebugStrictMode()
 
     // Initialize Koin

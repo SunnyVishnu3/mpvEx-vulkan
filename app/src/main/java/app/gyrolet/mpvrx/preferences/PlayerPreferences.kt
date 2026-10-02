@@ -170,6 +170,7 @@ class PlayerPreferences(
 
   // Post-Processing
   val isPostProcessingEnabled = preferenceStore.getBoolean("pp_enabled", false)
+  val isMEMCEnabled = preferenceStore.getBoolean("memc_enabled", false)
   val postProcessingPreset = preferenceStore.getEnum("pp_preset", PostProcessingPreset.None)
   // NaturalColors
   val ppNaturalLuma = preferenceStore.getFloat("pp_natural_luma", 1.2f)

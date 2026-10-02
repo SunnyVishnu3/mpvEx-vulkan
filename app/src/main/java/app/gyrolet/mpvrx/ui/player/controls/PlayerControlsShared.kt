@@ -1262,6 +1262,51 @@ fun RenderPlayerButton(
       }
     }
 
+    PlayerButton.MEMC -> {
+      val isMEMCEnabled by viewModel.isMEMCEnabled.collectAsState()
+      Surface(
+        shape = CircleShape,
+        color =
+          if (hideBackground) {
+            Color.Transparent
+          } else {
+            MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
+          },
+        contentColor =
+          if (isMEMCEnabled) {
+            MaterialTheme.colorScheme.primary
+          } else if (hideBackground) {
+            controlColor
+          } else {
+            MaterialTheme.colorScheme.onSurface
+          },
+        modifier =
+          Modifier.combinedClickable(
+            onClick = {
+              clickEvent()
+              viewModel.toggleMEMC()
+            },
+          ),
+      ) {
+        Box(contentAlignment = Alignment.Center) {
+          AppSymbolIcon(
+            imageVector = Icons.RoundedFilled.Memc,
+            contentDescription =
+              androidx.compose.ui.res.stringResource(R.string.btn_label_memc),
+            tint =
+              if (isMEMCEnabled) {
+                MaterialTheme.colorScheme.primary
+              } else if (hideBackground) {
+                controlColor
+              } else {
+                MaterialTheme.colorScheme.onSurface
+              },
+            modifier = Modifier.size(24.dp),
+          )
+        }
+      }
+    }
+
     PlayerButton.TIME_NETWORK -> {
       val clockFormat by playerPreferences.clockFormat.collectAsState()
       val stat by rememberTimeAndNetworkStat(clockFormat)

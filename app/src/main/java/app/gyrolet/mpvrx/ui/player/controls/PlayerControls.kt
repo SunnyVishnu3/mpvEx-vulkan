@@ -332,6 +332,7 @@ fun PlayerControls(
   val isHdrOutputEnabled by viewModel.isHdrScreenOutputEnabled.collectAsState()
   val isAmbientEnabled by viewModel.isAmbientEnabled.collectAsState()
   val isPostProcessingEnabled by viewModel.isPostProcessingEnabled.collectAsState()
+  val isMEMCEnabled by viewModel.isMEMCEnabled.collectAsState()
   val backgroundPlaybackEnabled by PlaybackSession.videoBackgroundPlaybackEnabled.collectAsState(
     initial = PlaybackSession.isVideoBackgroundPlaybackEnabled(),
   )
@@ -2117,6 +2118,7 @@ val activePlayerDrawerButtons =
         isHdrOutputEnabled,
         isAmbientEnabled,
         isPostProcessingEnabled,
+        isMEMCEnabled,
         backgroundPlaybackEnabled,
         statisticsPage,
         mediaScopesState.overlayVisible,
@@ -2132,6 +2134,7 @@ val activePlayerDrawerButtons =
           if (isHdrOutputEnabled) add(PlayerButton.HDR_MODE)
           if (isAmbientEnabled) add(PlayerButton.AMBIENT_MODE)
           if (isPostProcessingEnabled) add(PlayerButton.POST_PROCESSING)
+          if (isMEMCEnabled) add(PlayerButton.MEMC)
           if (backgroundPlaybackEnabled) add(PlayerButton.BACKGROUND_PLAYBACK)
           if (statisticsPage == 6) add(PlayerButton.TIME_NETWORK)
           if (mediaScopesState.overlayVisible) add(PlayerButton.SCOPES)

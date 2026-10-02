@@ -2498,6 +2498,7 @@
 
   <!-- Post-Processing Effects -->
   <string name="btn_label_post_processing">Post-Processing</string>
+  <string name="btn_label_memc">MEMC Interpolation</string>
   <string name="ui_post_processing">Post-Processing Effects</string>
   <string name="pp_preset_none">None</string>
   <string name="pp_preset_natural">Natural</string>
