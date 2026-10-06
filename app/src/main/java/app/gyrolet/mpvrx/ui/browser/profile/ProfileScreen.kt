@@ -182,7 +182,6 @@ object ProfileScreen : Screen {
     val advancedPreferences = koinInject<AdvancedPreferences>()
     val browserPreferences = koinInject<BrowserPreferences>()
     val enableRecentlyPlayed by advancedPreferences.enableRecentlyPlayed.collectAsState()
-    val showNetworkTab by appearancePreferences.showNetworkTab.collectAsState()
     val profileName by appearancePreferences.profileName.collectAsState()
     val profileImagePath by appearancePreferences.profileImagePath.collectAsState()
     val showRecentThumbnails by browserPreferences.recentView.showThumbnails.collectAsState()
@@ -337,8 +336,8 @@ object ProfileScreen : Screen {
         LazyColumn(
           state = listState,
           modifier = Modifier.fillMaxSize(),
-          contentPadding = PaddingValues(bottom = navigationBarHeight + 16.dp),
-          verticalArrangement = Arrangement.spacedBy(10.dp),
+          contentPadding = PaddingValues(top = 4.dp, bottom = navigationBarHeight + 24.dp),
+          verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
           item(key = "profile_overview") {
             ProfileOverviewCard(
@@ -346,7 +345,7 @@ object ProfileScreen : Screen {
               recentCount = recentItems.size,
               playlistCount = playlists.size,
               snapshotCount = snapshots.size,
-              showNetwork = !showNetworkTab,
+              showNetwork = true,
               collapseProgress = heroCollapseProgress,
               onEditProfile = {
                 haptics.tick()
@@ -897,7 +896,7 @@ private fun SectionHeader(
   val configuration = LocalConfiguration.current
   val isTablet = configuration.smallestScreenWidthDp >= 600
   Row(
-    modifier = Modifier.fillMaxWidth().padding(start = if (isTablet) 24.dp else 16.dp, end = if (isTablet) 16.dp else 8.dp, top = 12.dp, bottom = 4.dp),
+    modifier = Modifier.fillMaxWidth().padding(start = if (isTablet) 24.dp else 16.dp, end = if (isTablet) 16.dp else 8.dp, top = 20.dp, bottom = 6.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween,
   ) {

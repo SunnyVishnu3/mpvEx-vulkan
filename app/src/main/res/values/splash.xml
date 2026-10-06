@@ -10,7 +10,7 @@
         setter for it — so the Compose splash draws the live colour instead. See SplashContent.
     -->
     <style name="Theme.mpvrx.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="postSplashScreenTheme">@style/Theme.mpvrx</item>
         <item name="android:statusBarColor">@android:color/transparent</item>

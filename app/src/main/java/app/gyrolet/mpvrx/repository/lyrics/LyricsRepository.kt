@@ -142,12 +142,12 @@ class LyricsRepository(
   private val registry = LyricsProviderRegistry(lrcLibApiService)
 
   /**
-   * The provider the user asked for on this session's tracks, or null for the
-   * automatic race. Memory rather than a stored preference: what serves one
-   * album well is not a decision that should outlive the listening.
+   * The online provider to try first for this listening session. LRCLIB is the
+   * fresh-session default; null explicitly selects the automatic provider race.
+   * The choice remains session-scoped rather than becoming a persisted setting.
    */
   @Volatile
-  var preferredProvider: LyricsProvider? = null
+  var preferredProvider: LyricsProvider? = LyricsProvider.LRCLIB
     private set
 
   private data class CacheKey(
