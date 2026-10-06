@@ -9,6 +9,7 @@
 
 package app.gyrolet.mpvrx.preferences
 
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
@@ -140,6 +141,12 @@ class AppearancePreferences(
     preferenceStore.getBoolean("clip_button_migration_complete", false)
 
   init {
+    // Haze Glass relies on Android 12+ rendering primitives. A restored/legacy preference must
+    // never re-enable the expensive glass path on Android 11 or below.
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && liquidGlassEnabled.get()) {
+      liquidGlassEnabled.set(false)
+    }
+
     if (selectedCustomThemeName.get().isBlank()) {
       CustomThemeDefinition.parse(customTheme.get())?.let { legacyTheme ->
         selectedCustomThemeName.set(legacyTheme.name)

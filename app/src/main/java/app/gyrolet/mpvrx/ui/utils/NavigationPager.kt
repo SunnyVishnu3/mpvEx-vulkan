@@ -5,8 +5,6 @@
 package app.gyrolet.mpvrx.ui.utils
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +25,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
@@ -34,6 +33,8 @@ import app.gyrolet.mpvrx.preferences.GesturePreferences
 import app.gyrolet.mpvrx.preferences.PlayerPreferences
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.ui.player.NavigationAnimStyle
+import app.gyrolet.mpvrx.ui.theme.AppMotion
+import kotlin.math.abs
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -50,7 +51,10 @@ internal fun NavigationBackHandler(enabled: Boolean = true, onBack: () -> Unit) 
   BackHandler(enabled = enabled && LocalNavigationPageActive.current, onBack = onBack)
 }
 
-/** Native, finger-following page scrolling; screen-transition effects never change swipe physics. */
+/**
+ * Native finger-following page scrolling. Visual treatment is applied in a graphics layer so
+ * swipes do not trigger relayout/recomposition of expensive media-library screens.
+ */
 @Composable
 internal fun NavigationPager(
   state: PagerState,
@@ -62,7 +66,10 @@ internal fun NavigationPager(
   content: @Composable PagerScope.(Int) -> Unit,
 ) {
   val gesturePreferences = koinInject<GesturePreferences>()
+  val playerPreferences = koinInject<PlayerPreferences>()
   val nestedTabSwipesEnabled by gesturePreferences.nestedTabSwipesEnabled.collectAsState()
+  val style by playerPreferences.appNavStyle.collectAsState()
+  val reduceMotion = AppMotion.shouldReduceMotion()
   val isNestedPager = LocalNavigationPagerPresent.current
   val ownsHorizontalSwipes = userScrollEnabled && (!isNestedPager || (allowNestedSwipes && nestedTabSwipesEnabled))
   val nestedScrollConnection = if (ownsHorizontalSwipes) {
@@ -71,6 +78,7 @@ internal fun NavigationPager(
     // Disabling drag alone does not disable a pager's nested-scroll/fling consumption.
     PassThroughPageScrollConnection
   }
+
   CompositionLocalProvider(LocalNavigationPagerPresent provides true) {
     HorizontalPager(
       state = state,
@@ -83,7 +91,14 @@ internal fun NavigationPager(
       key = key,
       // Keep HorizontalPager's velocity-aware fling and settling defaults in both directions.
     ) { page ->
-      BrowserTabPage(state, page) { content(page) }
+      BrowserTabPage(
+        pagerState = state,
+        page = page,
+        style = style,
+        reduceMotion = reduceMotion,
+      ) {
+        content(page)
+      }
     }
   }
 }
@@ -94,8 +109,10 @@ internal fun rememberTabNavigation(state: PagerState): (Int) -> Unit {
   val preferences = koinInject<PlayerPreferences>()
   val style by preferences.appNavStyle.collectAsState()
   val speed by preferences.animationSpeed.collectAsState()
+  val reduceMotion = AppMotion.shouldReduceMotion()
   val scope = rememberCoroutineScope()
   var job by remember(state) { mutableStateOf<Job?>(null) }
+
   return { page ->
     if (page in 0 until state.pageCount) {
       val isAlreadySettled = state.currentPage == page &&
@@ -103,10 +120,13 @@ internal fun rememberTabNavigation(state: PagerState): (Int) -> Unit {
       job?.cancel()
       if (!isAlreadySettled) {
         job = scope.launch {
-          if (style == NavigationAnimStyle.None) {
+          if (style == NavigationAnimStyle.None || reduceMotion) {
             state.scrollToPage(page)
           } else {
-            state.animateScrollToPage(page, animationSpec = tween(navigationDurationMillis(speed), easing = FastOutSlowInEasing))
+            state.animateScrollToPage(
+              page = page,
+              animationSpec = navigationTabAnimationSpec(style, speed),
+            )
           }
         }
       }
@@ -118,18 +138,62 @@ internal fun rememberTabNavigation(state: PagerState): (Int) -> Unit {
 private fun BrowserTabPage(
   pagerState: PagerState,
   page: Int,
+  style: NavigationAnimStyle,
+  reduceMotion: Boolean,
   content: @Composable () -> Unit,
 ) {
   val parentActive = LocalNavigationPageActive.current
   val isActive by remember(pagerState, page, parentActive) {
     derivedStateOf { parentActive && pagerState.settledPage == page }
   }
+
+  // State is read from the layer block so a drag invalidates only the render layer, not the
+  // media-library composition. All effects are alpha/scale transforms and remain GPU-friendly.
+  val motionModifier =
+    if (reduceMotion || style == NavigationAnimStyle.None) {
+      Modifier
+    } else {
+      Modifier.graphicsLayer {
+        val signedOffset =
+          ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
+            .coerceIn(-1f, 1f)
+        val distance = abs(signedOffset)
+
+        when (style) {
+          NavigationAnimStyle.None -> Unit
+          NavigationAnimStyle.Minimal -> {
+            alpha = 1f - (0.10f * distance)
+          }
+          NavigationAnimStyle.FlipFade -> {
+            alpha = 1f - (0.28f * distance)
+            val scale = 1f - (0.012f * distance)
+            scaleX = scale
+            scaleY = scale
+          }
+          NavigationAnimStyle.Depth -> {
+            alpha = 1f - (0.18f * distance)
+            val scale = 1f - (0.035f * distance)
+            scaleX = scale
+            scaleY = scale
+            translationY = size.height * 0.012f * distance
+          }
+          NavigationAnimStyle.Default -> {
+            alpha = 1f - (0.06f * distance)
+            val scale = 1f - (0.010f * distance)
+            scaleX = scale
+            scaleY = scale
+          }
+        }
+      }
+    }
+
   // Keep data collection and resume observers on the real screen lifecycle. A synthetic
   // CREATED -> RESUMED transition here used to restart them at the end of every swipe.
   CompositionLocalProvider(LocalNavigationPageActive provides isActive) {
     Box(
       Modifier
         .fillMaxSize()
+        .then(motionModifier)
         .focusProperties { canFocus = isActive }
         .semantics { if (!isActive) hideFromAccessibility() },
     ) {

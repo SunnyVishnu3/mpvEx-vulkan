@@ -198,7 +198,7 @@ fun LyricsView(
     Column(
       modifier = Modifier
         .fillMaxSize()
-        .padding(horizontal = 4.dp, vertical = 4.dp),
+        .padding(vertical = 4.dp),
       horizontalAlignment = Alignment.CenterHorizontally,
     ) {
       // Optional Header
@@ -208,23 +208,28 @@ fun LyricsView(
         val displayTitle = mediaTitle?.takeIf { it.isNotBlank() } ?: "Current Track"
         val displayArtist = artistName?.takeIf { it.isNotBlank() } ?: ""
 
-        Text(
-          text = displayTitle,
-          style = MaterialTheme.typography.titleMedium,
-          fontWeight = FontWeight.ExtraBold,
-          fontFamily = fontFamilyForText(displayTitle),
-          color = MaterialTheme.colorScheme.onSurface,
-          maxLines = 1,
-        )
-        if (displayArtist.isNotBlank()) {
+        Column(
+          modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+          horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
           Text(
-            text = displayArtist,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Bold,
-            fontFamily = fontFamilyForText(displayArtist),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = displayTitle,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.ExtraBold,
+            fontFamily = fontFamilyForText(displayTitle),
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
           )
+          if (displayArtist.isNotBlank()) {
+            Text(
+              text = displayArtist,
+              style = MaterialTheme.typography.bodySmall,
+              fontWeight = FontWeight.Bold,
+              fontFamily = fontFamilyForText(displayArtist),
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              maxLines = 1,
+            )
+          }
         }
         Spacer(modifier = Modifier.height(4.dp))
       }
@@ -583,7 +588,7 @@ fun LyricsView(
         Row(
           modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 4.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
           verticalAlignment = Alignment.CenterVertically,
         ) {
           // Translate button on Left (40.dp square with rounded corners)

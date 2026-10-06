@@ -137,10 +137,12 @@ import app.gyrolet.mpvrx.ui.player.controls.components.tvFocusHighlight
 import app.gyrolet.mpvrx.ui.player.controls.components.tvInitialFocus
 import app.gyrolet.mpvrx.ui.player.NavigationAnimStyle
 import app.gyrolet.mpvrx.ui.utils.navigationDurationMillis
+import app.gyrolet.mpvrx.ui.utils.navigationTabAnimationSpec
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
+import app.gyrolet.mpvrx.ui.theme.AppMotion
 import app.gyrolet.mpvrx.ui.theme.wallpaperAwareBackgroundColor
 import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
@@ -198,6 +200,7 @@ object MainScreen : Screen {
     val navStyle by playerPreferences.appNavStyle.collectAsState()
     val animSpeed by playerPreferences.animationSpeed.collectAsState()
     val duration = navigationDurationMillis(animSpeed)
+    val reduceMotion = AppMotion.shouldReduceMotion()
     var persistentSelectedTab by rememberSaveable { mutableStateOf(MainTab.HOME) }
     val mediaServerPreferences = koinInject<MediaServerPreferences>()
     val musicSourceProvider by mediaServerPreferences.musicSourceProvider.collectAsState()
@@ -306,12 +309,12 @@ object MainScreen : Screen {
         if (!isAlreadySettled) {
           tabNavigationJob =
             coroutineScope.launch {
-              if (navStyle == NavigationAnimStyle.None) {
+              if (navStyle == NavigationAnimStyle.None || reduceMotion) {
                 pagerState.scrollToPage(targetIndex)
               } else {
                 pagerState.animateScrollToPage(
                   page = targetIndex,
-                  animationSpec = tween(duration, easing = FastOutSlowInEasing),
+                  animationSpec = navigationTabAnimationSpec(navStyle, animSpeed),
                 )
               }
             }
@@ -617,13 +620,13 @@ object MainScreen : Screen {
             enter = if (navStyle == NavigationAnimStyle.None) EnterTransition.None else
               slideInVertically(
                 animationSpec = tween(duration, easing = FastOutSlowInEasing),
-                initialOffsetY = { fullHeight -> fullHeight * 2 },
-              ) + fadeIn(tween(duration)),
+                initialOffsetY = { fullHeight -> fullHeight / 2 },
+              ) + fadeIn(tween((duration * 0.82f).roundToInt())),
             exit = if (navStyle == NavigationAnimStyle.None) ExitTransition.None else
               slideOutVertically(
-                animationSpec = tween(duration, easing = FastOutSlowInEasing),
-                targetOffsetY = { fullHeight -> fullHeight * 2 },
-              ) + fadeOut(tween(duration)),
+                animationSpec = tween((duration * 0.78f).roundToInt(), easing = FastOutSlowInEasing),
+                targetOffsetY = { fullHeight -> fullHeight / 2 },
+              ) + fadeOut(tween((duration * 0.62f).roundToInt())),
             modifier =
               Modifier
                 .fillMaxWidth()
@@ -639,7 +642,7 @@ object MainScreen : Screen {
               val containerWidth = maxWidth
               val density = LocalDensity.current
               val horizontalMargin by animateDpAsState(
-                targetValue = 58.dp - 30.dp * (if (isTablet) 0f else NavigationBarState.navLabelVisibility),
+                targetValue = 58.dp - 30.dp * NavigationBarState.navLabelVisibility,
                 animationSpec = if (navStyle == NavigationAnimStyle.None) snap() else tween(300, easing = NavigationBarEasing),
                 label = "navigation_margin",
               )
@@ -808,7 +811,7 @@ internal fun ExpressivePillNavigationBar(
   val motion = remember(visibleTabs, isRtl) { NavigationJellyMotion(visualIndex(selectedIndex), visibleTabs.size) }
   val playerPreferences = koinInject<PlayerPreferences>()
   val navStyle by playerPreferences.appNavStyle.collectAsState()
-  val reducedMotion = app.gyrolet.mpvrx.ui.theme.AppMotion.shouldReduceMotion() || navStyle == NavigationAnimStyle.None
+  val reducedMotion = AppMotion.shouldReduceMotion() || navStyle == NavigationAnimStyle.None
   val density = LocalDensity.current
   val currentSelectedTab by rememberUpdatedState(selectedTab)
   val currentOnTabSelected by rememberUpdatedState(onTabSelected)
@@ -823,7 +826,7 @@ internal fun ExpressivePillNavigationBar(
   val iconSize = if (compactIcons) 24.dp else MainNavigationIconSize
   val labelHeight = if (compactIcons) 14.dp else 16.dp
   val labelFraction by animateFloatAsState(
-    targetValue = if (compactIcons) 0f else NavigationBarState.navLabelVisibility,
+    targetValue = NavigationBarState.navLabelVisibility,
     animationSpec = if (reducedMotion) snap() else tween(300, easing = NavigationBarEasing),
     label = "navigation_labels",
   )

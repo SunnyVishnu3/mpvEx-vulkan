@@ -325,47 +325,20 @@ fun PlaylistSheet(
 
   var showAddToPlaylistDialog by rememberSaveable { mutableStateOf(false) }
 
-  // v2.5.0 layout: portrait list = 420.dp, landscape list = 640.dp,
-  // grid = 85% of screen width for tablet landscape covers.
-  val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-  val sheetWidth =
-    if (isListMode) {
-      if (LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
-        640.dp
-      } else {
-        420.dp
-      }
-    } else {
-      screenWidth * 0.85f
-    }
-
   PlayerSheet(
     onDismissRequest = onDismissRequest,
     modifier = Modifier.fillMaxWidth(),
-    customMaxWidth = sheetWidth,
-    customMaxHeight = if (isPortrait) LocalConfiguration.current.screenHeightDp.dp * 0.5f else null,
+    customMaxHeight = if (isPortrait) configuration.screenHeightDp.dp * 0.55f else null,
     isSwipeActive = isSwipeActive,
     swipeOffset = swipeOffset,
   ) {
-    Surface(
-      modifier = Modifier.fillMaxWidth(),
-      color = Color.Transparent,
-      shape =
-        RoundedCornerShape(
-          topStart = 16.dp,
-          topEnd = 16.dp,
-          bottomStart = 0.dp,
-          bottomEnd = 0.dp,
+    Column(
+      modifier =
+        modifier.padding(
+          vertical = MaterialTheme.spacing.smaller,
+          horizontal = if (!isListMode) MaterialTheme.spacing.medium else 0.dp,
         ),
-      tonalElevation = 0.dp,
     ) {
-      Column(
-        modifier =
-          modifier.padding(
-            vertical = MaterialTheme.spacing.smaller,
-            horizontal = if (!isListMode) MaterialTheme.spacing.medium else 0.dp,
-          ),
-      ) {
         // Header showing current playlist info with toggle button
         val currentItem = playlist.getOrNull(playingItemIndex)
         Row(
@@ -542,7 +515,6 @@ fun PlaylistSheet(
         }
       }
     }
-  }
 
   if (showAddToPlaylistDialog && playlist.isNotEmpty()) {
     val queueVideos = remember(playlist) { playlist.map { it.toVideo() } }
@@ -615,14 +587,11 @@ fun PlaylistTrackListItem(
       if (item.isAudio != isAudioItem) item.copy(isAudio = isAudioItem) else item
     }
 
-  // Use theme colors dynamically
-  val accentSecondary = MaterialTheme.colorScheme.tertiary
-
   val borderModifier =
     if (effectiveItem.isPlaying) {
       Modifier.border(
-        width = 2.dp,
-        brush = Brush.linearGradient(listOf(accentColor, accentSecondary)),
+        width = 1.5.dp,
+        color = accentColor.copy(alpha = 0.6f),
         shape = RoundedCornerShape(12.dp),
       )
     } else {
@@ -641,7 +610,7 @@ fun PlaylistTrackListItem(
         .clickable(onClick = onClick),
     color =
       if (effectiveItem.isPlaying) {
-        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
+        accentColor.copy(alpha = 0.12f)
       } else {
         Color.Transparent
       },
@@ -846,15 +815,13 @@ fun PlaylistTrackGridItem(
       if (item.isAudio != isAudioItem) item.copy(isAudio = isAudioItem) else item
     }
 
-  // Use theme colors dynamically
   val accentColor = MaterialTheme.colorScheme.primary
-  val accentSecondary = MaterialTheme.colorScheme.tertiary
 
   val borderModifier =
     if (effectiveItem.isPlaying) {
       Modifier.border(
-        width = 2.dp,
-        brush = Brush.linearGradient(listOf(accentColor, accentSecondary)),
+        width = 1.5.dp,
+        color = accentColor.copy(alpha = 0.6f),
         shape = RoundedCornerShape(12.dp),
       )
     } else {
@@ -869,7 +836,12 @@ fun PlaylistTrackGridItem(
         .clip(RoundedCornerShape(12.dp))
         .then(borderModifier)
         .clickable(onClick = onClick),
-    color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f),
+    color =
+      if (effectiveItem.isPlaying) {
+        accentColor.copy(alpha = 0.14f)
+      } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
+      },
     shape = RoundedCornerShape(12.dp),
   ) {
     Column(

@@ -674,17 +674,10 @@ class PlayerActivity :
     val animateArtwork =
       intent.action == MediaPlaybackService.ACTION_OPEN_PLAYER &&
         PlayerArtworkTransitions.motion?.destination == PlayerArtworkDestination.FULL
-    val launchSource = intent.getStringExtra("launch_source")
-    val isMusicLibraryLaunch =
-      launchSource == "music_library" ||
-        launchSource == "music_play_all" ||
-        launchSource == "music_shuffle"
-    val enterAnimation =
-      when {
-        animateArtwork -> 0
-        intent.action == MediaPlaybackService.ACTION_OPEN_PLAYER || isMusicLibraryLaunch -> R.anim.slide_in_up
-        else -> android.R.anim.fade_in
-      }
+    // Keep Activity motion orientation-neutral. Directional window translations fight the
+    // pre-launch orientation change on portrait media and can be dropped by WindowManager.
+    // A tiny centered scale + fade stays smooth in both portrait and landscape.
+    val enterAnimation = if (animateArtwork) 0 else R.anim.player_open_smooth
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
       overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, enterAnimation, 0)
@@ -1969,14 +1962,12 @@ class PlayerActivity :
       PlayerArtworkTransitions.begin(PlayerArtworkDestination.MINI, PlaybackSession.state.value.currentItem?.stableId)
     super.finish()
 
-    if (isMiniPlayerEnabled()) {
-      val exitAnimation = if (animateArtwork) 0 else R.anim.slide_out_down
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-        overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, 0, exitAnimation)
-      } else {
-        @Suppress("DEPRECATION")
-        overridePendingTransition(0, exitAnimation)
-      }
+    val exitAnimation = if (animateArtwork) 0 else R.anim.player_close_smooth
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+      overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, 0, exitAnimation)
+    } else {
+      @Suppress("DEPRECATION")
+      overridePendingTransition(0, exitAnimation)
     }
   }
 
@@ -6563,26 +6554,34 @@ private suspend fun restorePlaybackPosition(state: PlaybackStateEntity?, loadGen
             val retriever = android.media.MediaMetadataRetriever()
             try {
               retriever.setDataSource(this, uri)
-              if (width <= 0) {
-                width =
-                  retriever
-                    .extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
-                    ?.toIntOrNull()
-                    ?: 0
-              }
-              if (height <= 0) {
-                height =
-                  retriever
-                    .extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
-                    ?.toIntOrNull()
-                    ?: 0
-              }
+              val probedWidth =
+                retriever
+                  .extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
+                  ?.toIntOrNull()
+                  ?: 0
+              val probedHeight =
+                retriever
+                  .extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
+                  ?.toIntOrNull()
+                  ?: 0
+              val probedRotation =
+                retriever
+                  .extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+                  ?.toIntOrNull()
+                  ?: 0
+
+              if (width <= 0) width = probedWidth
+              if (height <= 0) height = probedHeight
               if (rotation == 0) {
-                rotation =
-                  retriever
-                    .extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
-                    ?.toIntOrNull()
-                    ?: 0
+                rotation = probedRotation
+                // Do not mix MediaStore dimensions with retriever rotation. Some providers expose
+                // display-oriented width/height while retriever reports encoded geometry + rotation;
+                // combining the two can preselect landscape for a portrait clip, then rotate again
+                // after mpv reports its aspect and interrupt the Activity open animation.
+                if (probedRotation != 0 && probedWidth > 0 && probedHeight > 0) {
+                  width = probedWidth
+                  height = probedHeight
+                }
               }
             } finally {
               retriever.release()

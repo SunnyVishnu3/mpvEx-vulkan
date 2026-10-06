@@ -217,6 +217,8 @@ object Icons {
     val ResetIso by lazy(LazyThreadSafetyMode.NONE) { AppIcon(MaterialSymbols.RoundedFilled.Reset_iso) }
     val Restore by lazy(LazyThreadSafetyMode.NONE) { AppIcon(MaterialSymbols.RoundedFilled.Undo) }
     val RoundedCorner by lazy(LazyThreadSafetyMode.NONE) { AppIcon(MaterialSymbols.RoundedFilled.Rounded_corner) }
+    val RotateLeft by lazy(LazyThreadSafetyMode.NONE) { AppIcon(MaterialSymbols.RoundedFilled.Rotate_left) }
+    val RotateRight by lazy(LazyThreadSafetyMode.NONE) { AppIcon(MaterialSymbols.RoundedFilled.Rotate_right) }
     val ScreenRotation by lazy(LazyThreadSafetyMode.NONE) { AppIcon(MaterialSymbols.RoundedFilled.Screen_rotation) }
     val Screenshot by lazy(LazyThreadSafetyMode.NONE) { AppIcon(MaterialSymbols.RoundedFilled.Screenshot) }
     val SdCard by lazy(LazyThreadSafetyMode.NONE) { AppIcon(MaterialSymbols.RoundedFilled.Sd_card) }
@@ -447,6 +449,8 @@ object Icons {
     val ResetIso get() = Shared.ResetIso
     val Restore get() = Shared.Restore
     val RoundedCorner get() = Shared.RoundedCorner
+    val RotateLeft get() = Shared.RotateLeft
+    val RotateRight get() = Shared.RotateRight
     val ScreenRotation get() = Shared.ScreenRotation
     val Screenshot get() = Shared.Screenshot
     val SdCard get() = Shared.SdCard

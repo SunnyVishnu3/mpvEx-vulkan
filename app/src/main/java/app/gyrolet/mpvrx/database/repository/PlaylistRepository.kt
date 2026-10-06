@@ -420,6 +420,9 @@ class PlaylistRepository(
   fun observeFirstPlaylistItem(playlistId: Int): Flow<PlaylistItemEntity?> =
     playlistDao.observeFirstPlaylistItem(playlistId)
 
+  fun observePlaylistPreviewItems(playlistId: Int, limit: Int = 2): Flow<List<PlaylistItemEntity>> =
+    playlistDao.observePlaylistPreviewItems(playlistId, limit)
+
   suspend fun getPlaylistItems(playlistId: Int): List<PlaylistItemEntity> = playlistDao.getPlaylistItems(playlistId)
 
   fun observePlaylistItemCount(playlistId: Int): Flow<Int> = playlistDao.observePlaylistItemCount(playlistId)

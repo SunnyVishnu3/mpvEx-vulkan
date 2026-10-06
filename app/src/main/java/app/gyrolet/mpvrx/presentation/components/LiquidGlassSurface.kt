@@ -4,6 +4,7 @@
 
 package app.gyrolet.mpvrx.presentation.components
 
+import android.os.Build
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -92,6 +93,7 @@ fun LiquidGlassSurface(
   val liquidOpacity by preferences.liquidButtonOpacity.collectAsState()
 
   val reducedMotion = AppMotion.shouldReduceMotion()
+  val liquidGlassSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
   val baseBlur = if (style == LiquidGlassStyle.MiniPlayer) 12.dp else 8.dp
   val blurRadius = (baseBlur * (liquidBlur / 26f)).coerceIn(4.dp, 32.dp)
   val baseRefractionFraction = if (style == LiquidGlassStyle.MiniPlayer) 0.30f else 0.28f
@@ -139,7 +141,7 @@ fun LiquidGlassSurface(
     }
 
   val surfaceModifier =
-    if (backdrop != null && roundedShape != null && glassStyle != null) {
+    if (liquidGlassSupported && backdrop != null && roundedShape != null && glassStyle != null) {
       modifier
         .shadow(shadowElevation, shape)
         .clip(shape)

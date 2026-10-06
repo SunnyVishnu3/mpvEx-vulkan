@@ -106,7 +106,7 @@ import kotlin.math.roundToInt
 fun PlayerSheet(
   onDismissRequest: () -> Unit,
   modifier: Modifier = Modifier,
-  tonalElevation: Dp = 1.dp,
+  tonalElevation: Dp = 0.dp,
   customMaxWidth: Dp? = null,
   customMaxHeight: Dp? = null,
   surfaceColor: Color? = null,
@@ -190,26 +190,29 @@ fun PlayerSheet(
     label = "alpha",
   )
 
-  val internalOnDismissRequest = {
-    if (anchoredDraggableState.currentValue == 0) {
-      scope.launch {
+  val internalOnDismissRequest: () -> Unit = {
+    scope.launch {
+      try {
         anchoredDraggableState.animateTo(1)
+      } finally {
+        latestOnDismissRequest()
       }
     }
   }
   Box(
     modifier =
       Modifier
+        .fillMaxSize()
+        .background(Color.Black.copy(alpha))
         // Before clickable so it targets the scrim's own focus node, not the sheet's descendants.
         .focusProperties { canFocus = false }
         .clickable(
           interactionSource = remember { MutableInteractionSource() },
           indication = null,
           onClick = internalOnDismissRequest,
-          ).fillMaxSize()
-          .background(Color.Black.copy(alpha))
-          // Lifts the whole sheet above the keyboard instead of padding inside a height-capped surface.
-          .imePadding()
+        )
+        // Lifts the whole sheet above the keyboard instead of padding inside a height-capped surface.
+        .imePadding()
         .onSizeChanged {
           val anchors =
             DraggableAnchors {
@@ -252,7 +255,7 @@ fun PlayerSheet(
             orientation = Orientation.Vertical,
           ).windowInsetsPadding(
             WindowInsets.systemBars
-              .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+              .only(WindowInsetsSides.Horizontal),
           ),
       shape = MaterialTheme.shapes.extraLarge.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize),
       color = surfaceColor ?: MaterialTheme.colorScheme.surface,

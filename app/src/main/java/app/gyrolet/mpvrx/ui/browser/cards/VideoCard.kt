@@ -783,8 +783,8 @@ fun VideoCard(
               )
             }
 
-            // Duration timestamp overlay at bottom-right of the thumbnail
-            if (hasDuration) {
+            // Duration timestamp overlay at bottom-right of the thumbnail (video only in list view)
+            if (hasDuration && !video.isAudio) {
               Box(
                 modifier =
                   Modifier
@@ -967,6 +967,14 @@ fun VideoCard(
                 }
               }
             }
+          }
+          if (video.isAudio && hasDuration) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+              text = video.durationFormatted,
+              style = MaterialTheme.typography.labelMedium,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
           }
         }
       }

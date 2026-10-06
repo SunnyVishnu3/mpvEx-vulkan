@@ -2594,7 +2594,7 @@ fun AudioPlayerControls(
             )
             .padding(end = controlsSidePadding)
             .clip(RoundedCornerShape(24.dp)),
-          color = MaterialTheme.colorScheme.surfaceContainerLow,
+          color = Color.Transparent,
           shape = RoundedCornerShape(24.dp),
         ) {
           DualPaneSidePanel(
@@ -2725,6 +2725,7 @@ private fun DualPaneSidePanel(
           )
         },
         colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+          containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.4f),
           selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
           selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ),
@@ -2734,6 +2735,7 @@ private fun DualPaneSidePanel(
         onClick = { onTabSelected(1) },
         label = { Text(stringResource(R.string.player_lyrics_title), fontWeight = FontWeight.Bold) },
         colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+          containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.4f),
           selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
           selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ),
@@ -2836,7 +2838,7 @@ private fun UpNextPlaylistContent(
             val bgColor = if (isSelected) {
               MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
             } else {
-              MaterialTheme.colorScheme.surfaceContainer
+              MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.4f)
             }
             Surface(
               modifier = Modifier
@@ -3008,7 +3010,7 @@ private fun UpNextPlaylistItemRow(
   val bgColor = if (isPlaying) {
     MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
   } else {
-    MaterialTheme.colorScheme.surfaceContainer
+    MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.4f)
   }
 
   val itemCoverArt =
