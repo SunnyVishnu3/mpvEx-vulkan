@@ -100,6 +100,15 @@ object SearchablePreferences {
       )
       add(
         SearchablePreference(
+          titleRes = R.string.pref_anim_liquid_glass_title,
+          summaryRes = R.string.pref_anim_liquid_glass_summary,
+          keywords = listOf("liquid glass effects", "liquid", "customization", "blur", "refraction", "glass", "lens", "seekbar", "bottom bar"),
+          category = "Appearance",
+          screen = AppearancePreferencesScreen,
+        ),
+      )
+      add(
+        SearchablePreference(
           titleRes = R.string.pref_appearance_app_font_title,
           summaryRes = R.string.pref_appearance_app_font_summary_search,
           keywords = listOf("font", "system", "typeface", "google sans", "google fonts", "download", "ui", "appearance"),

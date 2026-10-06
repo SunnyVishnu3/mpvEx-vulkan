@@ -56,6 +56,7 @@ import app.gyrolet.mpvrx.preferences.TreeFlattenDepth
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.presentation.Screen
 import app.gyrolet.mpvrx.presentation.components.ConfirmDialog
+import app.gyrolet.mpvrx.ui.liquidglass.LiquidSettingsScreen
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
 import app.gyrolet.mpvrx.ui.player.ControlsAnimationStyle
@@ -408,6 +409,21 @@ object AppearancePreferencesScreen : Screen {
                       )
                     },
                     enabled = liquidGlassSupported,
+                  )
+
+                  PreferenceDivider()
+
+                  Preference(
+                    modifier = Modifier.settingsSearchTarget(R.string.pref_anim_liquid_glass_title),
+                    title = { Text(stringResource(R.string.pref_anim_liquid_glass_title)) },
+                    summary = {
+                      Text(
+                        stringResource(R.string.pref_anim_liquid_glass_summary),
+                        color = MaterialTheme.colorScheme.outline,
+                      )
+                    },
+                    enabled = liquidGlassSupported,
+                    onClick = { backstack.navigateTo(LiquidSettingsScreen) },
                   )
 
                   PreferenceDivider()

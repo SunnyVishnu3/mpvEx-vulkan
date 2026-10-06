@@ -226,12 +226,6 @@ object PreferencesScreen : Screen {
               icon = Icons.RoundedFilled.Palette,
               screen = AppearancePreferencesScreen,
             ),
-            SettingsDestination(
-              title = stringResource(R.string.pref_anim_liquid_glass_title),
-              summary = stringResource(R.string.pref_anim_liquid_glass_summary),
-              icon = Icons.RoundedFilled.BlurOn,
-              screen = app.gyrolet.mpvrx.ui.liquidglass.LiquidSettingsScreen,
-            ),
           ),
       ),
       SettingsSection(
