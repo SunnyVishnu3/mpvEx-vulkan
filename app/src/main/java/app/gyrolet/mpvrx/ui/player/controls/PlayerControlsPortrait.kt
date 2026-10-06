@@ -36,9 +36,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.R
+import app.gyrolet.mpvrx.preferences.AppearancePreferences
 import app.gyrolet.mpvrx.preferences.PlayerButton
+import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
+import app.gyrolet.mpvrx.ui.liquidglass.LiquidPillButton
+import org.koin.compose.koinInject
 import app.gyrolet.mpvrx.ui.player.Panels
 import app.gyrolet.mpvrx.ui.player.PlayerActivity
 import app.gyrolet.mpvrx.ui.player.PlayerViewModel
@@ -91,37 +95,20 @@ fun TopPlayerControlsPortrait(
           Column(
             modifier = Modifier.padding(start = 4.dp),
           ) {
-            val titleInteractionSource =
-              remember {
-                androidx.compose.foundation.interaction
-                  .MutableInteractionSource()
-              }
+            val appearancePreferences = koinInject<AppearancePreferences>()
+            val enableLiquidGlass by appearancePreferences.enableLiquidGlass.collectAsState()
 
-            Surface(
-              shape = CircleShape,
-              color =
-                if (hideBackground) {
-                  Color.Transparent
-                } else {
-                  playerButtonContainerColor()
+            if (enableLiquidGlass) {
+              LiquidPillButton(
+                onClick = {
+                  if (playlistModeEnabled) {
+                    clickEvent()
+                    onOpenSheet(Sheets.Playlist)
+                  }
                 },
-              contentColor = if (hideBackground) controlColor else playerButtonContentColor(),
-              onClick = {
-                clickEvent()
-                onOpenSheet(Sheets.Playlist)
-              },
-              enabled = playlistModeEnabled,
-              border =
-                if (hideBackground) {
-                  null
-                } else {
-                  BorderStroke(1.dp, playerButtonBorderColor())
-                },
-              modifier = Modifier.height(45.dp),
-            ) {
-              Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 14.dp),
+                isInteractive = playlistModeEnabled,
+                height = 45.dp,
+                horizontalPadding = 14.dp,
               ) {
                 Text(
                   mediaTitle ?: "",
@@ -137,6 +124,56 @@ fun TopPlayerControlsPortrait(
                     style = MaterialTheme.typography.bodySmall,
                     color = LocalContentColor.current.copy(alpha = 0.7f),
                   )
+                }
+              }
+            } else {
+              val titleInteractionSource =
+                remember {
+                  androidx.compose.foundation.interaction
+                    .MutableInteractionSource()
+                }
+
+              Surface(
+                shape = CircleShape,
+                color =
+                  if (hideBackground) {
+                    Color.Transparent
+                  } else {
+                    playerButtonContainerColor()
+                  },
+                contentColor = if (hideBackground) controlColor else playerButtonContentColor(),
+                onClick = {
+                  clickEvent()
+                  onOpenSheet(Sheets.Playlist)
+                },
+                enabled = playlistModeEnabled,
+                border =
+                  if (hideBackground) {
+                    null
+                  } else {
+                    BorderStroke(1.dp, playerButtonBorderColor())
+                  },
+                modifier = Modifier.height(45.dp),
+              ) {
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  modifier = Modifier.padding(horizontal = 14.dp),
+                ) {
+                  Text(
+                    mediaTitle ?: "",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f, fill = false),
+                  )
+                  viewModel.getPlaylistInfo()?.let { playlistInfo ->
+                    Text(
+                      " • $playlistInfo",
+                      maxLines = 1,
+                      style = MaterialTheme.typography.bodySmall,
+                      color = LocalContentColor.current.copy(alpha = 0.7f),
+                    )
+                  }
                 }
               }
             }

@@ -80,6 +80,7 @@ class AppearancePreferences(
   val liquidButtonLensDepth = preferenceStore.getFloat("liquid_button_lens_depth", 72f)
   val liquidButtonOpacity = preferenceStore.getFloat("liquid_button_opacity", 0.15f)
   val liquidButtonTint = preferenceStore.getInt("liquid_button_tint", 0x26FFFFFF)
+  val liquidBottomBarStyle = preferenceStore.getEnum("liquid_bottom_bar_style", LiquidBottomBarStyle.StyleA)
   val navigationBarGlow = preferenceStore.getBoolean("navigation_bar_glow", true)
   val useSystemFont = preferenceStore.getBoolean("use_system_font", false)
   val googleFontFamily = preferenceStore.getString("google_font_family", "")
@@ -265,4 +266,9 @@ fun MultiChoiceSegmentedButton(
       }
     }
   }
+}
+
+enum class LiquidBottomBarStyle(val displayName: String) {
+  StyleA("Option A"),
+  StyleB("Option B"),
 }

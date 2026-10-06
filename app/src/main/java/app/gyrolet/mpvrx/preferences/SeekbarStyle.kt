@@ -15,4 +15,5 @@ enum class SeekbarStyle {
   Wavy,
   Thick,
   Slim,
+  Liquid,
 }

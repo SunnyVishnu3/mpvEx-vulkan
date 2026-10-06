@@ -178,6 +178,7 @@ import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 import app.gyrolet.mpvrx.ui.liquidglass.AdaptiveControlsButton
 import app.gyrolet.mpvrx.ui.liquidglass.AdaptiveControlsContainer
+import app.gyrolet.mpvrx.ui.liquidglass.LiquidPillButton
 import app.gyrolet.mpvrx.ui.liquidglass.LocalPlayerBackdrop
 import app.gyrolet.mpvrx.ui.liquidglass.PlayerLiquidTokens
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -1188,38 +1189,61 @@ is PlayerUpdates.FrameInfo -> {
             ) {
               leftCustomButtons.forEach { button ->
                 key(button.id) {
-                  val buttonInteractionSource = remember { MutableInteractionSource() }
-                  Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-                    modifier =
-                      Modifier
-                        .clip(CircleShape)
-                        .combinedClickable(
-                          interactionSource = buttonInteractionSource,
-                          indication = ripple(),
-                          onClick = {
-                            resetControlsTimestamp = System.currentTimeMillis()
-                            viewModel.callCustomButton(button.id)
-                          },
-                          onLongClick = {
-                            resetControlsTimestamp = System.currentTimeMillis()
-                            viewModel.callCustomButtonLongPress(button.id)
-                          },
-                        ),
-                  ) {
-                    Text(
-                      text = button.label,
+                  if (enableLiquidGlass) {
+                    LiquidPillButton(
+                      onClick = {
+                        resetControlsTimestamp = System.currentTimeMillis()
+                        viewModel.callCustomButton(button.id)
+                      },
+                      onLongClick = {
+                        resetControlsTimestamp = System.currentTimeMillis()
+                        viewModel.callCustomButtonLongPress(button.id)
+                      },
+                      height = 36.dp,
+                      horizontalPadding = 12.dp,
+                    ) {
+                      Text(
+                        text = button.label,
+                        modifier = Modifier.basicMarquee(),
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                        softWrap = false,
+                      )
+                    }
+                  } else {
+                    val buttonInteractionSource = remember { MutableInteractionSource() }
+                    Surface(
+                      shape = CircleShape,
+                      color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+                      contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                      border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
                       modifier =
                         Modifier
-                          .padding(horizontal = 12.dp, vertical = 6.dp)
-                          .basicMarquee(),
-                      style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                      maxLines = 1,
-                      softWrap = false,
-                    )
+                          .clip(CircleShape)
+                          .combinedClickable(
+                            interactionSource = buttonInteractionSource,
+                            indication = ripple(),
+                            onClick = {
+                              resetControlsTimestamp = System.currentTimeMillis()
+                              viewModel.callCustomButton(button.id)
+                            },
+                            onLongClick = {
+                              resetControlsTimestamp = System.currentTimeMillis()
+                              viewModel.callCustomButtonLongPress(button.id)
+                            },
+                          ),
+                    ) {
+                      Text(
+                        text = button.label,
+                        modifier =
+                          Modifier
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .basicMarquee(),
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                        softWrap = false,
+                      )
+                    }
                   }
                 }
               }
@@ -1251,38 +1275,61 @@ is PlayerUpdates.FrameInfo -> {
             ) {
               rightCustomButtons.forEach { button ->
                 key(button.id) {
-                  val buttonInteractionSource = remember { MutableInteractionSource() }
-                  Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-                    modifier =
-                      Modifier
-                        .clip(CircleShape)
-                        .combinedClickable(
-                          interactionSource = buttonInteractionSource,
-                          indication = ripple(),
-                          onClick = {
-                            resetControlsTimestamp = System.currentTimeMillis()
-                            viewModel.callCustomButton(button.id)
-                          },
-                          onLongClick = {
-                            resetControlsTimestamp = System.currentTimeMillis()
-                            viewModel.callCustomButtonLongPress(button.id)
-                          },
-                        ),
-                  ) {
-                    Text(
-                      text = button.label,
+                  if (enableLiquidGlass) {
+                    LiquidPillButton(
+                      onClick = {
+                        resetControlsTimestamp = System.currentTimeMillis()
+                        viewModel.callCustomButton(button.id)
+                      },
+                      onLongClick = {
+                        resetControlsTimestamp = System.currentTimeMillis()
+                        viewModel.callCustomButtonLongPress(button.id)
+                      },
+                      height = 36.dp,
+                      horizontalPadding = 12.dp,
+                    ) {
+                      Text(
+                        text = button.label,
+                        modifier = Modifier.basicMarquee(),
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                        softWrap = false,
+                      )
+                    }
+                  } else {
+                    val buttonInteractionSource = remember { MutableInteractionSource() }
+                    Surface(
+                      shape = CircleShape,
+                      color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+                      contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                      border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
                       modifier =
                         Modifier
-                          .padding(horizontal = 12.dp, vertical = 6.dp)
-                          .basicMarquee(),
-                      style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                      maxLines = 1,
-                      softWrap = false,
-                    )
+                          .clip(CircleShape)
+                          .combinedClickable(
+                            interactionSource = buttonInteractionSource,
+                            indication = ripple(),
+                            onClick = {
+                              resetControlsTimestamp = System.currentTimeMillis()
+                              viewModel.callCustomButton(button.id)
+                            },
+                            onLongClick = {
+                              resetControlsTimestamp = System.currentTimeMillis()
+                              viewModel.callCustomButtonLongPress(button.id)
+                            },
+                          ),
+                    ) {
+                      Text(
+                        text = button.label,
+                        modifier =
+                          Modifier
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .basicMarquee(),
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                        softWrap = false,
+                      )
+                    }
                   }
                 }
               }
@@ -1315,38 +1362,61 @@ is PlayerUpdates.FrameInfo -> {
             ) {
               customButtons.forEach { button ->
                 key(button.id) {
-                  val buttonInteractionSource = remember { MutableInteractionSource() }
-                  Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-                    modifier =
-                      Modifier
-                        .clip(CircleShape)
-                        .combinedClickable(
-                          interactionSource = buttonInteractionSource,
-                          indication = ripple(),
-                          onClick = {
-                            resetControlsTimestamp = System.currentTimeMillis()
-                            viewModel.callCustomButton(button.id)
-                          },
-                          onLongClick = {
-                            resetControlsTimestamp = System.currentTimeMillis()
-                            viewModel.callCustomButtonLongPress(button.id)
-                          },
-                        ),
-                  ) {
-                    Text(
-                      text = button.label,
+                  if (enableLiquidGlass) {
+                    LiquidPillButton(
+                      onClick = {
+                        resetControlsTimestamp = System.currentTimeMillis()
+                        viewModel.callCustomButton(button.id)
+                      },
+                      onLongClick = {
+                        resetControlsTimestamp = System.currentTimeMillis()
+                        viewModel.callCustomButtonLongPress(button.id)
+                      },
+                      height = 36.dp,
+                      horizontalPadding = 12.dp,
+                    ) {
+                      Text(
+                        text = button.label,
+                        modifier = Modifier.basicMarquee(),
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                        softWrap = false,
+                      )
+                    }
+                  } else {
+                    val buttonInteractionSource = remember { MutableInteractionSource() }
+                    Surface(
+                      shape = CircleShape,
+                      color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+                      contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                      border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
                       modifier =
                         Modifier
-                          .padding(horizontal = 12.dp, vertical = 6.dp)
-                          .basicMarquee(),
-                      style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                      maxLines = 1,
-                      softWrap = false,
-                    )
+                          .clip(CircleShape)
+                          .combinedClickable(
+                            interactionSource = buttonInteractionSource,
+                            indication = ripple(),
+                            onClick = {
+                              resetControlsTimestamp = System.currentTimeMillis()
+                              viewModel.callCustomButton(button.id)
+                            },
+                            onLongClick = {
+                              resetControlsTimestamp = System.currentTimeMillis()
+                              viewModel.callCustomButtonLongPress(button.id)
+                            },
+                          ),
+                    ) {
+                      Text(
+                        text = button.label,
+                        modifier =
+                          Modifier
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .basicMarquee(),
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                        softWrap = false,
+                      )
+                    }
                   }
                 }
               }
@@ -1425,24 +1495,41 @@ is PlayerUpdates.FrameInfo -> {
                 blue = segmentColor.blue * 0.72f,
                 alpha = 0.96f,
               )
-            Surface(
-              shape = RoundedCornerShape(999.dp),
-              color = segmentSurfaceColor,
-              border = BorderStroke(1.5.dp, segmentBorderColor),
-              modifier =
-                Modifier
-                  .clip(RoundedCornerShape(999.dp))
-                  .clickable {
-                    resetControlsTimestamp = System.currentTimeMillis()
-                    viewModel.skipActiveSegment()
-                  },
-            ) {
-              Text(
-                text = segment.label,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                color = segmentColor.copy(alpha = 1f),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-              )
+            if (enableLiquidGlass) {
+              LiquidPillButton(
+                onClick = {
+                  resetControlsTimestamp = System.currentTimeMillis()
+                  viewModel.skipActiveSegment()
+                },
+                horizontalPadding = 16.dp,
+                height = 40.dp,
+              ) {
+                Text(
+                  text = segment.label,
+                  style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                  color = segmentColor.copy(alpha = 1f),
+                )
+              }
+            } else {
+              Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = segmentSurfaceColor,
+                border = BorderStroke(1.5.dp, segmentBorderColor),
+                modifier =
+                  Modifier
+                    .clip(RoundedCornerShape(999.dp))
+                    .clickable {
+                      resetControlsTimestamp = System.currentTimeMillis()
+                      viewModel.skipActiveSegment()
+                    },
+              ) {
+                Text(
+                  text = segment.label,
+                  style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                  color = segmentColor.copy(alpha = 1f),
+                  modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+              }
             }
           }
 
@@ -1490,15 +1577,12 @@ is PlayerUpdates.FrameInfo -> {
                     "Buffering (${String.format(java.util.Locale.ROOT, "%.1f", cacheSeconds)}s)"
                   else -> stringResource(R.string.ui_buffering)
                 }
-              Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
-              ) {
-                Row(
-                  modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                  verticalAlignment = Alignment.CenterVertically,
-                  horizontalArrangement = Arrangement.spacedBy(6.dp),
+              if (enableLiquidGlass) {
+                LiquidPillButton(
+                  onClick = {},
+                  isInteractive = false,
+                  horizontalPadding = 12.dp,
+                  height = 32.dp,
                 ) {
                   Box(
                     modifier =
@@ -1512,7 +1596,34 @@ is PlayerUpdates.FrameInfo -> {
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
                   )
+                }
+              } else {
+                Surface(
+                  shape = CircleShape,
+                  color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                  border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                ) {
+                  Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                  ) {
+                    Box(
+                      modifier =
+                        Modifier
+                          .size(6.dp)
+                          .clip(CircleShape)
+                          .background(MaterialTheme.colorScheme.primary),
+                    )
+                    Text(
+                      text = bufferText,
+                      style = MaterialTheme.typography.labelMedium,
+                      color = MaterialTheme.colorScheme.onPrimaryContainer,
+                      fontWeight = FontWeight.SemiBold,
+                    )
+                  }
                 }
               }
             }

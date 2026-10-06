@@ -27,13 +27,24 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.R
+import app.gyrolet.mpvrx.preferences.AppearancePreferences
+import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
+import app.gyrolet.mpvrx.ui.liquidglass.LocalPlayerBackdrop
 import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import app.gyrolet.mpvrx.ui.theme.spacing
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.shadow.InnerShadow
+import com.kyant.backdrop.shadow.Shadow
+import org.koin.compose.koinInject
 
 fun percentage(
   value: Float,
@@ -153,10 +164,31 @@ fun BrightnessSlider(
   val coercedBrightness = brightness.coerceIn(-negativeRange.endInclusive, positiveRange.endInclusive)
   val percentInt = (coercedBrightness * 100).toInt()
   val percentText = remember(percentInt) { "$percentInt%" }
+  val appearancePreferences = koinInject<AppearancePreferences>()
+  val enableLiquidGlass by appearancePreferences.enableLiquidGlass.collectAsState()
+  val playerBackdrop = LocalPlayerBackdrop.current ?: rememberLayerBackdrop()
+  val sliderShape = AppShapeScale.extraLarge
+  val density = LocalDensity.current
+  val glassModifier = if (enableLiquidGlass) {
+    modifier
+      .clip(sliderShape)
+      .drawBackdrop(
+        backdrop = playerBackdrop,
+        shape = { sliderShape },
+        effects = {
+          blur(with(density) { 16.dp.toPx() })
+          lens(with(density) { 16.dp.toPx() }, with(density) { 24.dp.toPx() })
+        },
+        shadow = { Shadow(color = Color.Black.copy(alpha = 0.25f), radius = 12.dp) },
+        innerShadow = { InnerShadow(color = Color.White.copy(alpha = 0.15f), radius = 2.dp) },
+      )
+  } else {
+    modifier
+  }
   Surface(
-    modifier = modifier,
-    shape = AppShapeScale.extraLarge,
-    color = Color.Black.copy(alpha = 0.5f),
+    modifier = glassModifier,
+    shape = sliderShape,
+    color = if (enableLiquidGlass) Color.Black.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.5f),
     contentColor = Color.White,
   ) {
     Column(
@@ -204,10 +236,31 @@ fun VolumeSlider(
   displayAsPercentage: Boolean = false,
 ) {
   val percentage = volumePercentage.coerceIn(0, 100)
+  val appearancePreferences = koinInject<AppearancePreferences>()
+  val enableLiquidGlass by appearancePreferences.enableLiquidGlass.collectAsState()
+  val playerBackdrop = LocalPlayerBackdrop.current ?: rememberLayerBackdrop()
+  val sliderShape = AppShapeScale.extraLarge
+  val density = LocalDensity.current
+  val glassModifier = if (enableLiquidGlass) {
+    modifier
+      .clip(sliderShape)
+      .drawBackdrop(
+        backdrop = playerBackdrop,
+        shape = { sliderShape },
+        effects = {
+          blur(with(density) { 16.dp.toPx() })
+          lens(with(density) { 16.dp.toPx() }, with(density) { 24.dp.toPx() })
+        },
+        shadow = { Shadow(color = Color.Black.copy(alpha = 0.25f), radius = 12.dp) },
+        innerShadow = { InnerShadow(color = Color.White.copy(alpha = 0.15f), radius = 2.dp) },
+      )
+  } else {
+    modifier
+  }
   Surface(
-    modifier = modifier,
-    shape = AppShapeScale.extraLarge,
-    color = Color.Black.copy(alpha = 0.5f),
+    modifier = glassModifier,
+    shape = sliderShape,
+    color = if (enableLiquidGlass) Color.Black.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.5f),
     contentColor = Color.White,
   ) {
     Column(

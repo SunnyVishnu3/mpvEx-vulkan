@@ -20,12 +20,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import app.gyrolet.mpvrx.preferences.LiquidBottomBarStyle
+import app.gyrolet.mpvrx.preferences.SeekbarStyle
+import app.gyrolet.mpvrx.ui.player.controls.components.SeekbarStyleLivePreview
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -241,80 +248,73 @@ object LiquidSettingsScreen : Screen {
             }
 
             item {
-              PreferenceSectionHeader(title = "Dialogs And Sheets")
+              PreferenceSectionHeader(title = "Navigation Bar Style")
             }
 
             item {
+              val liquidBottomBarStyle by preferences.liquidBottomBarStyle.collectAsState()
               PreferenceCard {
-                AdaptiveSwitchPreference(
-                  value = liquidDialogDarkText,
-                  onValueChange = preferences.liquidDialogDarkText::set,
-                  title = { Text("Dark text on glass") },
-                  summary = {
-                    Text(
-                      text = "Use black text when the glass layer sits over bright video frames",
-                      color = MaterialTheme.colorScheme.outline,
-                    )
-                  },
-                )
-                PreferenceDivider()
-                SliderPreferenceRow(
-                  title = "Blur",
-                  summary = "Backdrop diffusion behind dialogs and sheets",
-                  value = liquidDialogBlur,
-                  valueRange = 0f..64f,
-                  icon = Icons.RoundedFilled.BlurOn,
-                  suffix = "dp",
-                  onValueChange = preferences.liquidDialogBlur::set,
-                )
-                PreferenceDivider()
-                SliderPreferenceRow(
-                  title = "Saturation",
-                  summary = "Color intensity preserved through the glass",
-                  value = liquidDialogSaturation,
-                  valueRange = 0f..3f,
-                  icon = Icons.RoundedFilled.AutoAwesome,
-                  onValueChange = preferences.liquidDialogSaturation::set,
-                )
-                PreferenceDivider()
-                SliderPreferenceRow(
-                  title = "Brightness",
-                  summary = "Exposure offset applied to the backdrop",
-                  value = liquidDialogBrightness,
-                  valueRange = -1f..1f,
-                  icon = Icons.RoundedFilled.BrightnessMedium,
-                  onValueChange = preferences.liquidDialogBrightness::set,
-                )
-                PreferenceDivider()
-                SliderPreferenceRow(
-                  title = "Lens radius",
-                  summary = "Curvature size for dialog panels",
-                  value = liquidDialogLensRadius,
-                  valueRange = 0f..100f,
-                  icon = Icons.RoundedFilled.AspectRatio,
-                  suffix = "dp",
-                  onValueChange = preferences.liquidDialogLensRadius::set,
-                )
-                PreferenceDivider()
-                SliderPreferenceRow(
-                  title = "Lens depth",
-                  summary = "Refraction strength for dialogs and sheets",
-                  value = liquidDialogLensDepth,
-                  valueRange = 0f..200f,
-                  icon = Icons.RoundedFilled.BlurOff,
-                  suffix = "dp",
-                  onValueChange = preferences.liquidDialogLensDepth::set,
-                )
-                PreferenceDivider()
-                SliderPreferenceRow(
-                  title = "Container alpha",
-                  summary = "Opacity of the dialog backing plate",
-                  value = liquidDialogContainerAlpha,
-                  valueRange = 0f..1f,
-                  icon = Icons.RoundedFilled.Opacity,
-                  onValueChange = preferences.liquidDialogContainerAlpha::set,
-                )
-                ResetRow(onClick = { resetDialogGlass(preferences) })
+                LiquidBottomBarStyle.entries.forEachIndexed { index, style ->
+                  if (index > 0) PreferenceDivider()
+                  ListItem(
+                    headlineContent = {
+                      Text(
+                        text = style.displayName,
+                        style = MaterialTheme.typography.titleMedium,
+                      )
+                    },
+                    trailingContent = {
+                      RadioButton(
+                        selected = liquidBottomBarStyle == style,
+                        onClick = null,
+                      )
+                    },
+                    modifier = Modifier.clickable {
+                      preferences.liquidBottomBarStyle.set(style)
+                    },
+                    colors = ListItemDefaults.colors(
+                      containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
+                  )
+                }
+              }
+            }
+
+            item {
+              PreferenceSectionHeader(title = stringResource(R.string.pref_section_seekbar_style))
+            }
+
+            item {
+              val seekbarStyle by preferences.seekbarStyle.collectAsState()
+              PreferenceCard {
+                SeekbarStyle.entries.forEachIndexed { index, style ->
+                  if (index > 0) PreferenceDivider()
+                  ListItem(
+                    headlineContent = {
+                      Text(text = style.name, style = MaterialTheme.typography.titleMedium)
+                    },
+                    supportingContent = {
+                      SeekbarStyleLivePreview(
+                        style = style,
+                        modifier = Modifier
+                          .fillMaxWidth()
+                          .padding(top = 6.dp, bottom = 2.dp),
+                      )
+                    },
+                    trailingContent = {
+                      RadioButton(
+                        selected = seekbarStyle == style,
+                        onClick = null,
+                      )
+                    },
+                    modifier = Modifier.clickable {
+                      preferences.seekbarStyle.set(style)
+                    },
+                    colors = ListItemDefaults.colors(
+                      containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
+                  )
+                }
               }
             }
           }
@@ -467,19 +467,18 @@ private fun LiquidPreviewPanel(
         Surface(
           modifier = Modifier.fillMaxWidth(),
           shape = RoundedCornerShape(18.dp),
-          color = MaterialTheme.colorScheme.primary.copy(alpha = dialogAlpha.coerceIn(0.12f, 0.65f)),
+          color = MaterialTheme.colorScheme.surfaceContainer,
         ) {
-          Column(modifier = Modifier.padding(14.dp)) {
+          Row(
+            modifier = Modifier.padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+          ) {
             Text(
-              text = "Dialog glass",
+              text = "Liquid Surface Active",
               style = MaterialTheme.typography.titleSmall,
-              color = MaterialTheme.colorScheme.onPrimary,
             )
-            Text(
-              text = "Alpha ${formatLiquidValue(dialogAlpha)}",
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.78f),
-            )
+            ColorDot(color = seekbarColor, size = 16.dp)
           }
         }
       }
@@ -497,7 +496,7 @@ private fun ColorPreferenceBlock(
   onColorChange: (Int) -> Unit,
 ) {
   val isPreset = presets.any { it.color == selectedColor }
-  val showCustom = !isPreset
+  var isCustomActive by remember { mutableStateOf(!isPreset) }
 
   Column(
     modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
@@ -530,26 +529,31 @@ private fun ColorPreferenceBlock(
       horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
       presets.forEach { preset ->
+        val selected = !isCustomActive && selectedColor == preset.color
         ColorChip(
           label = preset.name,
           color = Color(preset.color),
-          selected = selectedColor == preset.color,
-          onClick = { onColorChange(preset.color) },
+          selected = selected,
+          onClick = {
+            isCustomActive = false
+            onColorChange(preset.color)
+          },
         )
       }
       ColorChip(
         label = "Custom",
         color = Color(selectedColor),
-        selected = showCustom,
+        selected = isCustomActive,
         onClick = {
-          if (!showCustom) {
+          isCustomActive = true
+          if (isPreset) {
             onColorChange(defaultCustomColor)
           }
         },
       )
     }
 
-    AnimatedVisibility(visible = showCustom) {
+    AnimatedVisibility(visible = isCustomActive) {
       CompactColorSliders(
         color = selectedColor,
         onColorChange = onColorChange,
@@ -590,13 +594,52 @@ private fun CompactColorSliders(
   Column(
     modifier = Modifier
       .fillMaxWidth()
-      .padding(top = 2.dp),
-    verticalArrangement = Arrangement.spacedBy(6.dp),
+      .padding(top = 4.dp),
+    verticalArrangement = Arrangement.spacedBy(8.dp),
   ) {
-    ChannelSlider("Red", r, Color(0xFFFF453A)) { updateColor(nr = it) }
-    ChannelSlider("Green", g, Color(0xFF30D158)) { updateColor(ng = it) }
-    ChannelSlider("Blue", b, Color(0xFF0A84FF)) { updateColor(nb = it) }
-    ChannelSlider("Alpha", a, MaterialTheme.colorScheme.primary) { updateColor(na = it) }
+    val hexString = String.format("#%02X%02X%02X%02X", a, r, g, b)
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text(
+        text = "Color Hex: $hexString",
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+      )
+      ColorDot(color = Color(color), size = 18.dp)
+    }
+
+    ChannelSlider(
+      label = "Red",
+      value = r,
+      gradientColors = listOf(Color.Black, Color(0xFFFF3B30)),
+      thumbColor = Color(0xFFFF3B30),
+      onValueChange = { updateColor(nr = it) },
+    )
+    ChannelSlider(
+      label = "Green",
+      value = g,
+      gradientColors = listOf(Color.Black, Color(0xFF34C759)),
+      thumbColor = Color(0xFF34C759),
+      onValueChange = { updateColor(ng = it) },
+    )
+    ChannelSlider(
+      label = "Blue",
+      value = b,
+      gradientColors = listOf(Color.Black, Color(0xFF007AFF)),
+      thumbColor = Color(0xFF007AFF),
+      onValueChange = { updateColor(nb = it) },
+    )
+    ChannelSlider(
+      label = "Alpha",
+      value = a,
+      gradientColors = listOf(Color.Transparent, Color.White),
+      thumbColor = MaterialTheme.colorScheme.primary,
+      onValueChange = { updateColor(na = it) },
+    )
   }
 }
 
@@ -604,7 +647,8 @@ private fun CompactColorSliders(
 private fun ChannelSlider(
   label: String,
   value: Int,
-  color: Color,
+  gradientColors: List<Color>,
+  thumbColor: Color,
   onValueChange: (Int) -> Unit,
 ) {
   Row(
@@ -617,16 +661,37 @@ private fun ChannelSlider(
       style = MaterialTheme.typography.labelMedium,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    Slider(
-      value = value.toFloat(),
-      onValueChange = { onValueChange(it.roundToInt().coerceIn(0, 255)) },
-      valueRange = 0f..255f,
-      modifier = Modifier.weight(1f),
-      colors = SliderDefaults.colors(
-        activeTrackColor = color,
-        thumbColor = color,
-      ),
-    )
+    Box(
+      modifier = Modifier
+        .weight(1f)
+        .padding(horizontal = 4.dp),
+    ) {
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(8.dp)
+          .align(Alignment.Center)
+          .background(
+            brush = Brush.horizontalGradient(gradientColors),
+            shape = RoundedCornerShape(4.dp),
+          )
+          .border(
+            width = 0.5.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+            shape = RoundedCornerShape(4.dp),
+          ),
+      )
+      Slider(
+        value = value.toFloat(),
+        onValueChange = { onValueChange(it.roundToInt().coerceIn(0, 255)) },
+        valueRange = 0f..255f,
+        colors = SliderDefaults.colors(
+          activeTrackColor = Color.Transparent,
+          inactiveTrackColor = Color.Transparent,
+          thumbColor = thumbColor,
+        ),
+      )
+    }
     Text(
       text = value.toString(),
       modifier = Modifier.width(36.dp),

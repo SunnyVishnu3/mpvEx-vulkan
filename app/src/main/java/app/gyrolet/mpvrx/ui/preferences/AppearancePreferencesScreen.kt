@@ -410,16 +410,6 @@ object AppearancePreferencesScreen : Screen {
                     enabled = liquidGlassSupported,
                   )
 
-                  if (liquidGlassEnabled && liquidGlassSupported) {
-                    PreferenceDivider()
-                    Preference(
-                      title = { Text(text = "Customise Liquid Glass") },
-                      summary = { Text(text = "Adjust blur, lens curvature, refraction depth, and glass tints", color = MaterialTheme.colorScheme.outline) },
-                      icon = { Icon(Icons.RoundedFilled.AutoAwesome, null) },
-                      onClick = { backstack.navigateTo(app.gyrolet.mpvrx.ui.liquidglass.LiquidSettingsScreen) },
-                    )
-                  }
-
                   PreferenceDivider()
 
                   val navigationBarGlow by preferences.navigationBarGlow.collectAsState()

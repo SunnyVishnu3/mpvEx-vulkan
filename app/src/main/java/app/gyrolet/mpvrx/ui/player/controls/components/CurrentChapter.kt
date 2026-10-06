@@ -40,7 +40,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.preferences.AppearancePreferences
+import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.R
+import app.gyrolet.mpvrx.ui.liquidglass.LiquidPillButton
 import app.gyrolet.mpvrx.ui.theme.AppShapeScale
 import app.gyrolet.mpvrx.ui.theme.spacing
 import dev.vivvvek.seeker.Segment
@@ -55,27 +57,10 @@ fun CurrentChapter(
   onClick: () -> Unit = {},
   onLongClick: () -> Unit = {},
 ) {
-  Surface(
-    modifier =
-      modifier
-        .height(45.dp)
-        .widthIn(max = 220.dp)
-        .clip(AppShapeScale.full)
-        .combinedClickable(onClick = onClick, onLongClick = onLongClick,
-          onLongClickLabel = stringResource(R.string.audiobook_add_bookmark)),
-    shape = AppShapeScale.full,
-    color =
-      MaterialTheme.colorScheme.surfaceContainer.copy(
-        alpha = 0.55f,
-      ),
-    contentColor = MaterialTheme.colorScheme.onSurface,
-    tonalElevation = 0.dp,
-    border =
-      BorderStroke(
-        1.dp,
-        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-      ),
-  ) {
+  val appearancePreferences = koinInject<AppearancePreferences>()
+  val enableLiquidGlass by appearancePreferences.enableLiquidGlass.collectAsState()
+
+  val chapterContent: @Composable () -> Unit = {
     AnimatedContent(
       targetState = chapter,
       modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium, vertical = MaterialTheme.spacing.small),
@@ -127,6 +112,45 @@ fun CurrentChapter(
           )
         }
       }
+    }
+  }
+
+  if (enableLiquidGlass) {
+    LiquidPillButton(
+      onClick = onClick,
+      onLongClick = onLongClick,
+      height = 45.dp,
+      modifier = modifier.widthIn(max = 220.dp),
+      horizontalPadding = MaterialTheme.spacing.medium,
+    ) {
+      chapterContent()
+    }
+  } else {
+    Surface(
+      modifier =
+        modifier
+          .height(45.dp)
+          .widthIn(max = 220.dp)
+          .clip(AppShapeScale.full)
+          .combinedClickable(
+            onClick = onClick,
+            onLongClick = onLongClick,
+            onLongClickLabel = stringResource(R.string.audiobook_add_bookmark),
+          ),
+      shape = AppShapeScale.full,
+      color =
+        MaterialTheme.colorScheme.surfaceContainer.copy(
+          alpha = 0.55f,
+        ),
+      contentColor = MaterialTheme.colorScheme.onSurface,
+      tonalElevation = 0.dp,
+      border =
+        BorderStroke(
+          1.dp,
+          MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+        ),
+    ) {
+      chapterContent()
     }
   }
 }

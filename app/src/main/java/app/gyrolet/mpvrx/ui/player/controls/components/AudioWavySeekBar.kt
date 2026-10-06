@@ -161,6 +161,11 @@ fun SeekbarWavyVisualizerOverlay(
       else -> 8.dp
     }
     SeekbarStyle.Wavy -> 8.dp
+    SeekbarStyle.Liquid -> when {
+      isScrubbing -> 14.dp
+      isPaused -> 8.dp
+      else -> 10.dp
+    }
   }
 
   val animatedTrackHeight by animateDpAsState(
@@ -254,6 +259,7 @@ fun SeekbarWavyVisualizerOverlay(
       SeekbarStyle.Normal -> if (isScrubbing) 9.dp.toPx() else 6.5.dp.toPx()
       SeekbarStyle.Slim -> halfThickness
       SeekbarStyle.Wavy -> 4.dp.toPx()
+      SeekbarStyle.Liquid -> if (isScrubbing) 9.dp.toPx() else 6.dp.toPx()
     }
 
     // Wave stops gracefully just before the thumb tip so it never overlaps or covers the seekbar thumb
