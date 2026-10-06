@@ -83,6 +83,24 @@ import androidx.compose.ui.graphics.Path
 import app.gyrolet.mpvrx.preferences.AppearancePreferences
 import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import org.koin.compose.koinInject
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.util.fastCoerceIn
+import androidx.compose.ui.util.lerp
+import androidx.compose.ui.graphics.drawscope.scale
+import app.gyrolet.mpvrx.ui.liquidglass.LocalPlayerBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberBackdrop
+import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.shadow.InnerShadow
+import com.kyant.backdrop.shadow.Shadow
+import com.kyant.shapes.Capsule
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -1616,6 +1634,23 @@ private fun LiquidSeekbar(
   val isDragged by interactionSource.collectIsDraggedAsState()
   val isThumbInteracting = isPressed || isDragged || isScrubbing
 
+  val pressProgress by animateFloatAsState(
+    targetValue = if (isThumbInteracting) 1f else 0f,
+    animationSpec = spring(stiffness = 500f, dampingRatio = 0.75f),
+    label = "liquid_thumb_press_progress",
+  )
+
+  val thumbScaleX by animateFloatAsState(
+    targetValue = if (isThumbInteracting) 1.25f else 1f,
+    animationSpec = spring(0.6f, 250f, 0.001f),
+    label = "liquid_thumb_scale_x",
+  )
+  val thumbScaleY by animateFloatAsState(
+    targetValue = if (isThumbInteracting) 1.25f else 1f,
+    animationSpec = spring(0.7f, 250f, 0.001f),
+    label = "liquid_thumb_scale_y",
+  )
+
   val trackHeight by animateDpAsState(
     targetValue =
       when {
@@ -1631,12 +1666,6 @@ private fun LiquidSeekbar(
     label = "liquid_track_height",
   )
 
-  val thumbWidth by animateDpAsState(
-    targetValue = if (isThumbInteracting) 18.dp else 12.dp,
-    animationSpec = spring(stiffness = 800f, dampingRatio = 0.85f),
-    label = "liquid_thumb_width",
-  )
-
   val chapterGapHalfDp by animateDpAsState(
     targetValue = if (isThumbInteracting) 2.5.dp else 1.5.dp,
     animationSpec = spring(
@@ -1647,159 +1676,210 @@ private fun LiquidSeekbar(
   )
 
   val chapterStarts = remember(chapters) { chapters.map(Segment::start) }
+  val playerBackdrop = LocalPlayerBackdrop.current ?: rememberLayerBackdrop()
+  val trackBackdrop = rememberLayerBackdrop()
+  val density = LocalDensity.current
+  val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
 
-  Canvas(modifier = modifier.fillMaxWidth().height(36.dp)) {
-    val currentPosition = positionProvider()
+  BoxWithConstraints(
+    modifier = modifier.fillMaxWidth().height(48.dp),
+    contentAlignment = Alignment.CenterStart,
+  ) {
+    val trackWidthPx = constraints.maxWidth.toFloat()
     val safeDuration = duration.takeIf { it.isFinite() && it > 0f } ?: 0f
+    val currentPosition = positionProvider()
     val playedFraction =
-      if (safeDuration > 0f) {
-        currentPosition.takeIf { it.isFinite() }?.div(safeDuration)?.coerceIn(0f, 1f) ?: 0f
+      if (safeDuration > 0f && currentPosition.isFinite()) {
+        (currentPosition / safeDuration).coerceIn(0f, 1f)
       } else {
         0f
       }
-    val playedPx = size.width * playedFraction
-    val bufferPx = bufferedEndPx(bufferDuration, safeDuration, size.width, playedPx)
-    val centerY = size.height / 2f
-    val heightPx = trackHeight.toPx()
-    val radiusPx = heightPx / 2f
 
-    val thumbW = thumbWidth.toPx()
-    val thumbGapHalf = (thumbW + 8.dp.toPx()) / 2f
-    val thumbGapStart = (playedPx - thumbGapHalf).coerceIn(0f, size.width)
-    val thumbGapEnd = (playedPx + thumbGapHalf).coerceIn(0f, size.width)
+    // 1. The Track Layer with its own LayerBackdrop for refraction sampling
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(48.dp)
+        .layerBackdrop(trackBackdrop),
+      contentAlignment = Alignment.Center,
+    ) {
+      Canvas(modifier = Modifier.fillMaxWidth().height(48.dp)) {
+        val playedPx = size.width * playedFraction
+        val bufferPx = bufferedEndPx(bufferDuration, safeDuration, size.width, playedPx)
+        val centerY = size.height / 2f
+        val heightPx = trackHeight.toPx()
+        val radiusPx = heightPx / 2f
 
-    val segments = seekbarTrackSegments(
-      chapterStarts = chapterStarts,
-      duration = safeDuration,
-      trackWidth = size.width,
-      chapterGapHalf = chapterGapHalfDp.toPx(),
-      extraGaps = listOf(thumbGapStart to thumbGapEnd),
-    )
-
-    // 1. Draw glass trough / unplayed tracks
-    segments.forEach { segment ->
-      val segStart = segment.start
-      val segEnd = segment.end
-      val segWidth = segEnd - segStart
-      if (segWidth > 0f) {
-        drawRoundRect(
-          color = Color.White.copy(alpha = 0.12f),
-          topLeft = Offset(segStart, centerY - radiusPx),
-          size = Size(segWidth, heightPx),
-          cornerRadius = CornerRadius(radiusPx),
+        val segments = seekbarTrackSegments(
+          chapterStarts = chapterStarts,
+          duration = safeDuration,
+          trackWidth = size.width,
+          chapterGapHalf = chapterGapHalfDp.toPx(),
         )
-        drawRoundRect(
-          color = Color.White.copy(alpha = 0.22f),
-          topLeft = Offset(segStart + 1.dp.toPx(), centerY - radiusPx),
-          size = Size((segWidth - 2.dp.toPx()).coerceAtLeast(0f), 1.5.dp.toPx()),
-          cornerRadius = CornerRadius(1.dp.toPx()),
-        )
-      }
-    }
 
-    // 2. Draw buffered track
-    if (bufferPx > 0f) {
-      segments.forEach { segment ->
-        val segStart = segment.start
-        val segEnd = segment.end.coerceAtMost(bufferPx)
-        val segWidth = segEnd - segStart
-        if (segWidth > 0f) {
-          drawRoundRect(
-            color = accentColor.copy(alpha = 0.32f),
-            topLeft = Offset(segStart, centerY - radiusPx),
-            size = Size(segWidth, heightPx),
-            cornerRadius = CornerRadius(radiusPx),
+        // Draw glass trough / unplayed tracks
+        segments.forEach { segment ->
+          val segStart = segment.start
+          val segEnd = segment.end
+          val segWidth = segEnd - segStart
+          if (segWidth > 0f) {
+            drawRoundRect(
+              color = Color.White.copy(alpha = 0.12f),
+              topLeft = Offset(segStart, centerY - radiusPx),
+              size = Size(segWidth, heightPx),
+              cornerRadius = CornerRadius(radiusPx),
+            )
+            drawRoundRect(
+              color = Color.White.copy(alpha = 0.22f),
+              topLeft = Offset(segStart + 1.dp.toPx(), centerY - radiusPx),
+              size = Size((segWidth - 2.dp.toPx()).coerceAtLeast(0f), 1.5.dp.toPx()),
+              cornerRadius = CornerRadius(1.dp.toPx()),
+            )
+          }
+        }
+
+        // Draw buffered track
+        if (bufferPx > 0f) {
+          segments.forEach { segment ->
+            val segStart = segment.start
+            val segEnd = segment.end.coerceAtMost(bufferPx)
+            val segWidth = segEnd - segStart
+            if (segWidth > 0f) {
+              drawRoundRect(
+                color = accentColor.copy(alpha = 0.32f),
+                topLeft = Offset(segStart, centerY - radiusPx),
+                size = Size(segWidth, heightPx),
+                cornerRadius = CornerRadius(radiusPx),
+              )
+            }
+          }
+        }
+
+        // Draw played liquid flow
+        if (playedPx > 0f) {
+          val gradientBrush = Brush.horizontalGradient(
+            colors = listOf(
+              accentColor.copy(alpha = 0.82f),
+              accentColor,
+            ),
+            startX = 0f,
+            endX = playedPx.coerceAtLeast(1f),
           )
+          segments.forEach { segment ->
+            val segStart = segment.start
+            val segEnd = segment.end.coerceAtMost(playedPx)
+            val segWidth = segEnd - segStart
+            if (segWidth > 0f) {
+              drawRoundRect(
+                brush = gradientBrush,
+                topLeft = Offset(segStart, centerY - radiusPx),
+                size = Size(segWidth, heightPx),
+                cornerRadius = CornerRadius(radiusPx),
+              )
+              drawRoundRect(
+                color = Color.White.copy(alpha = 0.40f),
+                topLeft = Offset(segStart + 1.dp.toPx(), centerY - radiusPx + 1.dp.toPx()),
+                size = Size((segWidth - 2.dp.toPx()).coerceAtLeast(0f), (heightPx * 0.32f).coerceAtLeast(1f)),
+                cornerRadius = CornerRadius(radiusPx * 0.5f),
+              )
+            }
+          }
+        }
+
+        // Loop markers
+        if ((loopStart != null || loopEnd != null) && safeDuration > 0f) {
+          val loopColor = Color(0xFFFFB300)
+          val markerWidth = 2.dp.toPx()
+          val trackTop = centerY - radiusPx
+          val trackBottom = centerY + radiusPx
+
+          loopStart?.let { start ->
+            val startPx = (start / safeDuration).coerceIn(0f, 1f) * size.width
+            drawLine(loopColor, Offset(startPx, trackTop), Offset(startPx, trackBottom), markerWidth)
+          }
+          loopEnd?.let { end ->
+            val endPx = (end / safeDuration).coerceIn(0f, 1f) * size.width
+            drawLine(loopColor, Offset(endPx, trackTop), Offset(endPx, trackBottom), markerWidth)
+          }
+          if (loopStart != null && loopEnd != null) {
+            val minPx = (minOf(loopStart, loopEnd) / safeDuration).coerceIn(0f, 1f) * size.width
+            val maxPx = (maxOf(loopStart, loopEnd) / safeDuration).coerceIn(0f, 1f) * size.width
+            drawRect(
+              color = loopColor.copy(alpha = 0.2f),
+              topLeft = Offset(minPx, trackTop),
+              size = Size(maxPx - minPx, heightPx),
+            )
+          }
         }
       }
     }
 
-    // 3. Draw played liquid flow
-    if (playedPx > 0f) {
-      val gradientBrush = Brush.horizontalGradient(
-        colors = listOf(
-          accentColor.copy(alpha = 0.82f),
-          accentColor,
-        ),
-        startX = 0f,
-        endX = playedPx.coerceAtLeast(1f),
-      )
-      segments.forEach { segment ->
-        val segStart = segment.start
-        val segEnd = segment.end.coerceAtMost(playedPx)
-        val segWidth = segEnd - segStart
-        if (segWidth > 0f) {
-          drawRoundRect(
-            brush = gradientBrush,
-            topLeft = Offset(segStart, centerY - radiusPx),
-            size = Size(segWidth, heightPx),
-            cornerRadius = CornerRadius(radiusPx),
-          )
-          drawRoundRect(
-            color = Color.White.copy(alpha = 0.40f),
-            topLeft = Offset(segStart + 1.dp.toPx(), centerY - radiusPx + 1.dp.toPx()),
-            size = Size((segWidth - 2.dp.toPx()).coerceAtLeast(0f), (heightPx * 0.32f).coerceAtLeast(1f)),
-            cornerRadius = CornerRadius(radiusPx * 0.5f),
-          )
+    // 2. The Exact Liquid Glass Thumb from AndroidLiquidGlass
+    val thumbWidthDp = 40.dp
+    val thumbHeightDp = 24.dp
+    Box(
+      modifier = Modifier
+        .align(Alignment.CenterStart)
+        .graphicsLayer {
+          val thumbWidthPx = with(density) { thumbWidthDp.toPx() }
+          translationX =
+            (-thumbWidthPx / 2f + trackWidthPx * playedFraction)
+              .fastCoerceIn(-thumbWidthPx / 4f, trackWidthPx - thumbWidthPx * 3f / 4f) * if (isLtr) 1f else -1f
         }
-      }
-    }
-
-    // 4. Draw liquid thumb
-    val thumbLeft = (playedPx - thumbW / 2f).coerceIn(0f, (size.width - thumbW).coerceAtLeast(0f))
-    val thumbHeightPx = heightPx + 4.dp.toPx()
-    val thumbRadiusPx = thumbHeightPx / 2f
-
-    drawRoundRect(
-      color = accentColor.copy(alpha = 0.45f),
-      topLeft = Offset(thumbLeft - 2.dp.toPx(), centerY - thumbRadiusPx - 1.dp.toPx()),
-      size = Size(thumbW + 4.dp.toPx(), thumbHeightPx + 2.dp.toPx()),
-      cornerRadius = CornerRadius(thumbRadiusPx + 1.dp.toPx()),
-    )
-    drawRoundRect(
-      brush = Brush.verticalGradient(
-        colors = listOf(
-          Color.White,
-          accentColor,
-        ),
-        startY = centerY - thumbRadiusPx,
-        endY = centerY + thumbRadiusPx,
-      ),
-      topLeft = Offset(thumbLeft, centerY - thumbRadiusPx),
-      size = Size(thumbW, thumbHeightPx),
-      cornerRadius = CornerRadius(thumbRadiusPx),
-    )
-    drawCircle(
-      color = Color.White.copy(alpha = 0.85f),
-      radius = (thumbW * 0.22f).coerceAtLeast(1.5f),
-      center = Offset(thumbLeft + thumbW * 0.42f, centerY - thumbRadiusPx * 0.35f),
-    )
-
-    // 5. Loop markers
-    if ((loopStart != null || loopEnd != null) && safeDuration > 0f) {
-      val loopColor = Color(0xFFFFB300)
-      val markerWidth = 2.dp.toPx()
-      val trackTop = centerY - radiusPx
-      val trackBottom = centerY + radiusPx
-
-      loopStart?.let { start ->
-        val startPx = (start / safeDuration).coerceIn(0f, 1f) * size.width
-        drawLine(loopColor, Offset(startPx, trackTop), Offset(startPx, trackBottom), markerWidth)
-      }
-      loopEnd?.let { end ->
-        val endPx = (end / safeDuration).coerceIn(0f, 1f) * size.width
-        drawLine(loopColor, Offset(endPx, trackTop), Offset(endPx, trackBottom), markerWidth)
-      }
-      if (loopStart != null && loopEnd != null) {
-        val minPx = (minOf(loopStart, loopEnd) / safeDuration).coerceIn(0f, 1f) * size.width
-        val maxPx = (maxOf(loopStart, loopEnd) / safeDuration).coerceIn(0f, 1f) * size.width
-        drawRect(
-          color = loopColor.copy(alpha = 0.2f),
-          topLeft = Offset(minPx, trackTop),
-          size = Size(maxPx - minPx, heightPx),
+        .drawBackdrop(
+          backdrop = rememberCombinedBackdrop(
+            playerBackdrop,
+            rememberBackdrop(trackBackdrop) { drawBackdrop ->
+              val progress = pressProgress
+              val scaleX = lerp(2f / 3f, 1f, progress)
+              val scaleY = lerp(0f, 1f, progress)
+              scale(scaleX, scaleY) {
+                drawBackdrop()
+              }
+            }
+          ),
+          shape = { Capsule() },
+          effects = {
+            val progress = pressProgress
+            blur(with(density) { 8.dp.toPx() * (1f - progress) })
+            lens(
+              with(density) { 10.dp.toPx() * progress },
+              with(density) { 14.dp.toPx() * progress },
+              chromaticAberration = true,
+            )
+          },
+          highlight = {
+            val progress = pressProgress
+            Highlight.Ambient.copy(
+              width = Highlight.Ambient.width / 1.5f,
+              blurRadius = Highlight.Ambient.blurRadius / 1.5f,
+              alpha = progress,
+            )
+          },
+          shadow = {
+            Shadow(
+              radius = 4.dp,
+              color = Color.Black.copy(alpha = 0.05f),
+            )
+          },
+          innerShadow = {
+            val progress = pressProgress
+            InnerShadow(
+              radius = 4.dp * progress,
+              alpha = progress,
+            )
+          },
+          layerBlock = {
+            scaleX = thumbScaleX
+            scaleY = thumbScaleY
+          },
+          onDrawSurface = {
+            val progress = pressProgress
+            drawRect(Color.White.copy(alpha = 1f - progress))
+          },
         )
-      }
-    }
+        .size(thumbWidthDp, thumbHeightDp),
+    )
   }
 }
 
@@ -1830,6 +1910,15 @@ fun SeekbarStylePreview(
       seekbarStyle = SeekbarStyle.Wavy,
       onSeek = {},
       onSeekFinished = {},
+      modifier = modifier,
+    )
+  } else if (style == SeekbarStyle.Liquid) {
+    LiquidSeekbar(
+      positionProvider = { previewProgress * 100f },
+      duration = 100f,
+      chapters = persistentListOf(),
+      isPaused = false,
+      isScrubbing = false,
       modifier = modifier,
     )
   } else {
@@ -1968,77 +2057,9 @@ fun SeekbarStylePreview(
             cornerRadius = CornerRadius(thumbW / 2f),
           )
         }
-        SeekbarStyle.Wavy -> {
-          // Handled in parent branch
-        }
+        SeekbarStyle.Wavy,
         SeekbarStyle.Liquid -> {
-          val height = 12.dp.toPx()
-          val radius = height / 2f
-          val thumbW = 14.dp.toPx()
-          val thumbH = height + 4.dp.toPx()
-          val thumbR = thumbH / 2f
-          val gapHalf = (thumbW + 8.dp.toPx()) / 2f
-          val thumbStart = (playedPx - gapHalf).coerceIn(0f, size.width)
-          val thumbEnd = (playedPx + gapHalf).coerceIn(0f, size.width)
-
-          // Unplayed glass trough
-          drawRoundRect(
-            color = Color.White.copy(alpha = 0.12f),
-            topLeft = Offset(thumbEnd, centerY - radius),
-            size = Size((size.width - thumbEnd).coerceAtLeast(0f), height),
-            cornerRadius = CornerRadius(radius),
-          )
-          drawRoundRect(
-            color = Color.White.copy(alpha = 0.22f),
-            topLeft = Offset(thumbEnd + 1.dp.toPx(), centerY - radius),
-            size = Size((size.width - thumbEnd - 2.dp.toPx()).coerceAtLeast(0f), 1.5.dp.toPx()),
-            cornerRadius = CornerRadius(1.dp.toPx()),
-          )
-
-          // Played liquid stream
-          if (thumbStart > 0f) {
-            val gradientBrush = Brush.horizontalGradient(
-              colors = listOf(liquidColor.copy(alpha = 0.8f), liquidColor),
-              startX = 0f,
-              endX = thumbStart.coerceAtLeast(1f),
-            )
-            drawRoundRect(
-              brush = gradientBrush,
-              topLeft = Offset(0f, centerY - radius),
-              size = Size(thumbStart, height),
-              cornerRadius = CornerRadius(radius),
-            )
-            drawRoundRect(
-              color = Color.White.copy(alpha = 0.4f),
-              topLeft = Offset(1.dp.toPx(), centerY - radius + 1.dp.toPx()),
-              size = Size((thumbStart - 2.dp.toPx()).coerceAtLeast(0f), (height * 0.32f).coerceAtLeast(1f)),
-              cornerRadius = CornerRadius(radius * 0.5f),
-            )
-          }
-
-          // Liquid thumb droplet
-          val thumbLeft = (playedPx - thumbW / 2f).coerceIn(0f, (size.width - thumbW).coerceAtLeast(0f))
-          drawRoundRect(
-            color = liquidColor.copy(alpha = 0.45f),
-            topLeft = Offset(thumbLeft - 2.dp.toPx(), centerY - thumbR - 1.dp.toPx()),
-            size = Size(thumbW + 4.dp.toPx(), thumbH + 2.dp.toPx()),
-            cornerRadius = CornerRadius(thumbR + 1.dp.toPx()),
-          )
-          drawRoundRect(
-            brush = Brush.verticalGradient(
-              colors = listOf(Color.White, liquidColor),
-              startY = centerY - thumbR,
-              endY = centerY + thumbR,
-            ),
-            topLeft = Offset(thumbLeft, centerY - thumbR),
-            size = Size(thumbW, thumbH),
-            cornerRadius = CornerRadius(thumbR),
-          )
-          drawCircle(
-            color = Color.White.copy(alpha = 0.85f),
-            radius = thumbW * 0.22f,
-            center = Offset(thumbLeft + thumbW * 0.42f, centerY - thumbR * 0.35f),
-          )
+          // Handled in parent branch
         }
       }
     }
