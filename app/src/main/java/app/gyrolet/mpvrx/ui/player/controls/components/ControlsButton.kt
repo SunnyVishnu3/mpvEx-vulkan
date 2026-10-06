@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -31,12 +32,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import app.gyrolet.mpvrx.preferences.AppearancePreferences
+import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.ui.icons.AppIcon
 import app.gyrolet.mpvrx.ui.icons.Icon
 import app.gyrolet.mpvrx.ui.icons.Icons
+import app.gyrolet.mpvrx.ui.liquidglass.AdaptiveControlsButton
 import app.gyrolet.mpvrx.ui.player.controls.LocalPlayerButtonsClickEvent
 import app.gyrolet.mpvrx.ui.theme.LocalDarkAppColorScheme
 import app.gyrolet.mpvrx.ui.theme.spacing
+import org.koin.compose.koinInject
 
 @Suppress("CompositionLocalAllowlist")
 internal val LocalForceDarkPlayerButtonsBackground = staticCompositionLocalOf { false }
@@ -75,10 +80,26 @@ fun ControlsButton(
   enabled: Boolean = true,
   onLongClickLabel: String? = null,
 ) {
-  val interactionSource = remember { MutableInteractionSource() }
-  val hideBackground = LocalHidePlayerButtonsBackground.current
+  val appearancePreferences = koinInject<AppearancePreferences>()
+  val enableLiquidGlass by appearancePreferences.enableLiquidGlass.collectAsState()
   val resolvedColor = color ?: playerButtonContentColor()
 
+  if (enableLiquidGlass) {
+    AdaptiveControlsButton(
+      icon = icon,
+      onClick = onClick,
+      modifier = modifier.tvFocusHighlight(CircleShape, enabled),
+      onLongClick = onLongClick,
+      title = title,
+      color = if (enabled) resolvedColor else resolvedColor.copy(alpha = 0.38f),
+      useGlass = true,
+      buttonSize = 40.dp,
+    )
+    return
+  }
+
+  val interactionSource = remember { MutableInteractionSource() }
+  val hideBackground = LocalHidePlayerButtonsBackground.current
   val clickEvent = LocalPlayerButtonsClickEvent.current
   Surface(
     modifier =

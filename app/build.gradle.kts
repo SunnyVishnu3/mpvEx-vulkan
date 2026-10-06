@@ -316,6 +316,8 @@ dependencies {
   implementation(libs.telephoto.zoomable)
   implementation(libs.haze.blur)
   implementation(libs.haze.glass)
+  implementation(libs.kyant.backdrop)
+  implementation(libs.kyant.shapes)
 
   // libtorrent4j's Java API plus the native library for every enabled APK ABI.
   implementation(libs.libtorrent4j)

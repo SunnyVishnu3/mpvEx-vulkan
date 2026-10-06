@@ -53,6 +53,12 @@ import app.gyrolet.mpvrx.ui.icons.Icons
 import app.gyrolet.mpvrx.ui.theme.AppMotion
 import app.gyrolet.mpvrx.ui.utils.rememberAppHaptics
 
+import app.gyrolet.mpvrx.preferences.AppearancePreferences
+import app.gyrolet.mpvrx.preferences.preference.collectAsState
+import app.gyrolet.mpvrx.ui.liquidglass.LiquidToggle
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import org.koin.compose.koinInject
+
 private const val SWITCH_MOTION_DURATION_MS = 250
 private const val SWITCH_PRESSED_DURATION_MS = 100
 private val SwitchWidth = 52.dp
@@ -83,6 +89,29 @@ fun IconSwitch(
   enabled: Boolean = true,
 ) {
   val haptics = rememberAppHaptics()
+  val appearancePreferences = koinInject<AppearancePreferences>()
+  val enableLiquidGlass by appearancePreferences.enableLiquidGlass.collectAsState()
+  val liquidToggleColor by appearancePreferences.liquidToggleColor.collectAsState()
+
+  if (enableLiquidGlass) {
+    val backdrop = rememberLayerBackdrop()
+    LiquidToggle(
+      selected = { checked },
+      onSelect = { newValue ->
+        if (enabled && newValue != checked) {
+          onCheckedChange?.invoke(newValue)
+          haptics.selection(newValue)
+        }
+      },
+      backdrop = backdrop,
+      modifier = modifier,
+      accentColor = Color(liquidToggleColor),
+      enabled = enabled,
+      isInteractive = onCheckedChange != null,
+    )
+    return
+  }
+
   val interactionSource = remember { MutableInteractionSource() }
   val isPressed by interactionSource.collectIsPressedAsState()
   val reducedMotion = AppMotion.shouldReduceMotion()

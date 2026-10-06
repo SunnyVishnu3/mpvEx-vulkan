@@ -82,7 +82,12 @@ fun SwitchPreference(
 
     IconSwitch(
       checked = value,
-      onCheckedChange = null,
+      onCheckedChange = { checked ->
+        if (checked != value) {
+          onValueChange(checked)
+          haptics.selection(checked)
+        }
+      },
       enabled = enabled,
       modifier = switchModifier,
     )
