@@ -144,68 +144,68 @@ fun AmbientSheet(
         modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
       )
 
-      HorizontalDivider(
-        modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-      )
+      if (ambientStyle == AmbientStyle.Glow) {
+        HorizontalDivider(
+          modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
+          color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+        )
 
-      SliderItem(
-        label = stringResource(R.string.ambient_edge_blend),
-        valueText = "%.1f%%".format(edgeBlend * 100f),
-        value = edgeBlend,
-        onChange = { viewModel.setAmbientEdgeBlend(ambientStyle, it) },
-        min = 0f,
-        max = 0.1f,
-        steps = 19,
-        icon = {
-          AppSymbolIcon(
-            imageVector = Icons.RoundedFilled.Gradient,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp),
+        SliderItem(
+          label = stringResource(R.string.ambient_edge_blend),
+          valueText = "%.1f%%".format(edgeBlend * 100f),
+          value = edgeBlend,
+          onChange = { viewModel.setAmbientEdgeBlend(ambientStyle, it) },
+          min = 0f,
+          max = 0.1f,
+          steps = 19,
+          icon = {
+            AppSymbolIcon(
+              imageVector = Icons.RoundedFilled.Gradient,
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.size(20.dp),
+            )
+          },
+        )
+
+        // ── Quality Presets ──────────────────────────────────────────────
+        Row(
+          modifier =
+            Modifier
+              .fillMaxWidth()
+              .padding(horizontal = MaterialTheme.spacing.medium),
+          horizontalArrangement = Arrangement.spacedBy(6.dp),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          ExpressivePresetButton(
+            label = "Fast",
+            selected = isFast,
+            onClick = { viewModel.applyAmbientProfileFast() },
           )
-        },
-      )
+          ExpressivePresetButton(
+            label = "Balanced",
+            selected = isBalanced,
+            onClick = { viewModel.applyAmbientProfileBalanced() },
+          )
+          ExpressivePresetButton(
+            label = "HQ",
+            selected = isHQ,
+            onClick = { viewModel.applyAmbientProfileHighQuality() },
+          )
+        }
 
-      if (ambientStyle.isShader) {
-      // ── Quality Presets ──────────────────────────────────────────────
-      Row(
-        modifier =
-          Modifier
-            .fillMaxWidth()
-            .padding(horizontal = MaterialTheme.spacing.medium),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        ExpressivePresetButton(
-          label = "Fast",
-          selected = isFast,
-          onClick = { viewModel.applyAmbientProfileFast() },
+        HorizontalDivider(
+          modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
+          color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
         )
-        ExpressivePresetButton(
-          label = "Balanced",
-          selected = isBalanced,
-          onClick = { viewModel.applyAmbientProfileBalanced() },
-        )
-        ExpressivePresetButton(
-          label = "HQ",
-          selected = isHQ,
-          onClick = { viewModel.applyAmbientProfileHighQuality() },
-        )
-      }
 
-      HorizontalDivider(
-        modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-      )
-
-      // ── Section: Parameters ──────────────────────────────────────────
-      var glowExpanded by remember { mutableStateOf(true) }
-      SectionHeader(
-        title = stringResource(ambientStyle.titleRes),
-        isExpanded = glowExpanded,
-        onClick = { glowExpanded = !glowExpanded },
-      )
+        // ── Section: Parameters ──────────────────────────────────────────
+        var glowExpanded by remember { mutableStateOf(true) }
+        SectionHeader(
+          title = stringResource(R.string.ambient_glow),
+          isExpanded = glowExpanded,
+          onClick = { glowExpanded = !glowExpanded },
+        )
       AnimatedVisibility(
         visible = glowExpanded,
         enter =

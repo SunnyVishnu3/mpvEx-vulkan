@@ -12,12 +12,13 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * Generates custom MPV user shaders for the new ambient light modes
- * inspired by fx_ambient (Cinema, Echo, and Mirror).
+ * Generates custom MPV user shaders for the ambient light modes
+ * implemented directly as in fx_ambient (Cinema, Echo, Mirror, Ambilight).
  *
- * Each mode is rendered as an OUTPUT pass that lights the black bars
- * around the video:
+ * Each mode is self-contained with fixed, authentic parameters from fx_ambient.frag,
+ * lighting the black bars around the video without altering the picture:
  *
+ * - Ambilight (FX Glow): Edge-sampled soft emitter curve with bright core relaxing into quiet tail.
  * - Cinema: Enlarged, dissolved backdrop wash behind the picture (YouTube style).
  * - Echo: Outward-propagating light diffusion along the edges.
  * - Mirror: Polished glass reflection continuing the frame into the bars.
@@ -68,13 +69,12 @@ object FxAmbientShaderBuilder {
   }
 
   /**
-   * Common GLSL utilities adapted from fx_common.glsl:
+   * Common GLSL utilities adapted directly from fx_common.glsl:
    * - luma: standard Rec. 709 luminance
    * - vibrance: saturation adjustment around local luma
    * - rolloff: highlight roll-off curve preventing glare in the bars
    * - ign: Jimenez 2014 Interleaved Gradient Noise for screen-space dither
    * - ditherOut: dynamic amplitude dither eliminating banding on OLED displays
-   * - apply_warmth: color temperature shift
    * - barGeom: distance & bar thickness geometry calculation
    */
   private val GLSL_FX_COMMON =
@@ -101,13 +101,6 @@ mediump vec3 ditherOut(mediump vec3 c, highp vec2 p) {
     return c + (ign(p) - 0.5) * (amp / 255.0);
 }
 
-mediump vec3 apply_warmth(mediump vec3 rgb, mediump float amount) {
-    rgb.r = clamp(rgb.r + amount * 0.060, 0.0, 1.0);
-    rgb.g = clamp(rgb.g + amount * 0.025, 0.0, 1.0);
-    rgb.b = clamp(rgb.b - amount * 0.080, 0.0, 1.0);
-    return rgb;
-}
-
 void barGeom(highp vec2 p, highp vec4 rect, highp vec2 screen,
              out highp vec2 q, out highp float d, out highp float thick, out bool inTopBottom) {
     q = clamp(p, rect.xy, rect.zw);
@@ -121,7 +114,7 @@ void barGeom(highp vec2 p, highp vec4 rect, highp vec2 screen,
 
   /**
    * Video sampling prologue:
-   * Maps screen UV to decoded video coordinate space, handles inner edge blending,
+   * Maps screen UV to decoded video coordinate space, ensures video pixels remain 100% untouched,
    * and computes bounding rectangles for the video and bars.
    */
   private fun buildPrologue(): String =
@@ -135,21 +128,8 @@ void barGeom(highp vec2 p, highp vec4 rect, highp vec2 screen,
 
     bool inside_video = video_uv.x >= 0.0 && video_uv.x <= 1.0 &&
                         video_uv.y >= 0.0 && video_uv.y <= 1.0;
-    mediump float video_weight = 0.0;
     if (inside_video) {
-        highp vec2 video_size = HOOKED_size / vec2(SCALE_X, SCALE_Y);
-        mediump float blend_width = EDGE_BLEND * min(video_size.x, video_size.y);
-        mediump float inside_dist = blend_width;
-        if (SCALE_X > 1.0) {
-            inside_dist = min(inside_dist, min(video_uv.x, 1.0 - video_uv.x) * video_size.x);
-        }
-        if (SCALE_Y > 1.0) {
-            inside_dist = min(inside_dist, min(video_uv.y, 1.0 - video_uv.y) * video_size.y);
-        }
-        if (EDGE_BLEND <= 0.0 || inside_dist >= blend_width) {
-            return HOOKED_tex(clamp(video_uv, safe_min, safe_max));
-        }
-        video_weight = smoothstep(0.0, blend_width, inside_dist);
+        return HOOKED_tex(clamp(video_uv, safe_min, safe_max));
     }
 
     highp vec2 inv_scale = vec2(1.0 / SCALE_X, 1.0 / SCALE_Y);
@@ -170,27 +150,19 @@ void barGeom(highp vec2 p, highp vec4 rect, highp vec2 screen,
 
   /**
    * Ambient epilogue:
-   * Applies vignette, opacity, dithering, and blends back into video if inside edge margin.
+   * Dithers and returns the bar light.
    */
   private fun buildEpilogue(): String =
     """
-    mediump float vig_r = length(uv - 0.5) * 2.0;
-    ambient_rgb *= mix(1.0, smoothstep(1.3, 0.1, vig_r), VIGNETTE_STR);
-
-    mediump vec4 ambient_out = vec4(ambient_rgb * OPACITY, 1.0);
-    if (inside_video) {
-        return mix(ambient_out, HOOKED_tex(clamp(video_uv, safe_min, safe_max)), video_weight);
-    }
-    return ambient_out;
+    return vec4(ditherOut(ambient_rgb, p), 1.0);
     """.trimIndent().prependIndent("    ")
 
   /**
-   * Cinema Mode:
+   * Cinema Mode (Mode 2 from fx_ambient.frag):
    * Enlarges the whole frame and dissolves it into a soft, calm wash behind the picture.
-   * Based on fx_ambient.frag mode 2 (cinema).
    */
   fun buildCinema(spec: AmbientGlowShaderSpec): String {
-    val tapsTable = buildSpiralTapTable(spec.blurSamples, spec.maxRadius)
+    val tapsTable = buildSpiralTapTable(18, 0.28f)
 
     return """
 //!HOOK OUTPUT
@@ -206,14 +178,7 @@ precision highp int;
 #define lowp
 #endif
 
-#define BLUR_SAMPLES     ${spec.blurSamples}
-#define MAX_RADIUS       ${glslFloat(spec.maxRadius.toDouble())}
-#define GLOW_INTENSITY   ${glslFloat(spec.glowIntensity.toDouble())}
-#define SAT_BOOST        ${glslFloat(spec.satBoost.toDouble())}
-#define EDGE_BLEND       ${glslFloat(spec.shared.edgeBlend.toDouble())}
-#define VIGNETTE_STR     ${glslFloat(spec.shared.vignetteStrength.toDouble())}
-#define WARMTH           ${glslFloat(spec.warmth.toDouble())}
-#define OPACITY          ${glslFloat(spec.shared.opacity.toDouble())}
+#define BLUR_SAMPLES     18
 #define SCALE_X          ${glslFloat(spec.context.scaleX)}
 #define SCALE_Y          ${glslFloat(spec.context.scaleY)}
 
@@ -224,19 +189,19 @@ $GLSL_FX_COMMON
 vec4 hook() {
 ${buildPrologue()}
 
-    highp float reach = clamp(MAX_RADIUS * 2.5, 0.2, 1.5);
-    highp float dn = d / (thick * mix(0.7, 1.6, reach * 0.7));
-    if (dn >= 1.0 && !inside_video) {
+    // Reach from fx_ambient: mix(0.7, 1.6, 0.5) = 1.15
+    highp float dn = d / (thick * 1.15);
+    if (dn >= 1.0) {
         return vec4(0.0, 0.0, 0.0, 1.0);
     }
 
-    // Backdrop projection: enlarged frame centered behind picture
-    highp vec2 proj_uv = (p - vid_center) / (vid_size * (1.12 + 0.30 * reach)) + 0.5;
+    // Backdrop projection: enlarged frame centered behind picture (1.12 + 0.30 * 0.5 = 1.27)
+    highp vec2 proj_uv = (p - vid_center) / (vid_size * 1.27) + 0.5;
 
     // Soft wash blur radius expands with distance dn
     mediump float blur_rad = mix(0.03, 0.16, smoothstep(0.0, 1.0, dn));
     mediump float jitter = ign(uv * screen) * 6.2831853;
-    highp float tap_scale = blur_rad / max(MAX_RADIUS, 0.001);
+    highp float tap_scale = blur_rad / 0.28;
     highp mat2 rot = mat2(cos(jitter), sin(jitter), -sin(jitter), cos(jitter)) * tap_scale;
 
     mediump vec3 acc_c = vec3(0.0);
@@ -256,13 +221,11 @@ ${buildPrologue()}
     }
 
     mediump vec3 c = acc_c / max(acc_w, 1e-5);
-    c = rolloff(vibrance(c, 1.08 * SAT_BOOST), 0.55);
-    c = apply_warmth(c, WARMTH);
+    c = rolloff(vibrance(c, 1.08), 0.55);
 
     // Smooth subtle falloff - calm backdrop, never brighter than a whisper
     mediump float f = pow(1.0 - smoothstep(0.0, 1.0, dn), 1.15);
-    mediump vec3 ambient_rgb = c * (f * mix(0.25, 0.95, GLOW_INTENSITY * 0.75));
-    ambient_rgb = ditherOut(ambient_rgb, p);
+    mediump vec3 ambient_rgb = c * (f * 0.55);
 
 ${buildEpilogue()}
 }
@@ -270,9 +233,8 @@ ${buildEpilogue()}
   }
 
   /**
-   * Echo Mode:
-   * The picture's light travelling outward into the dark with fluid dynamic diffusion.
-   * Based on fx_ambient.frag mode 3 (echo).
+   * Echo Mode (Mode 3 from fx_ambient.frag):
+   * The picture's light travelling outward into the dark along the edges.
    */
   fun buildEcho(spec: AmbientGlowShaderSpec): String {
     return """
@@ -289,14 +251,6 @@ precision highp int;
 #define lowp
 #endif
 
-#define BLUR_SAMPLES     ${spec.blurSamples}
-#define MAX_RADIUS       ${glslFloat(spec.maxRadius.toDouble())}
-#define GLOW_INTENSITY   ${glslFloat(spec.glowIntensity.toDouble())}
-#define SAT_BOOST        ${glslFloat(spec.satBoost.toDouble())}
-#define EDGE_BLEND       ${glslFloat(spec.shared.edgeBlend.toDouble())}
-#define VIGNETTE_STR     ${glslFloat(spec.shared.vignetteStrength.toDouble())}
-#define WARMTH           ${glslFloat(spec.warmth.toDouble())}
-#define OPACITY          ${glslFloat(spec.shared.opacity.toDouble())}
 #define SCALE_X          ${glslFloat(spec.context.scaleX)}
 #define SCALE_Y          ${glslFloat(spec.context.scaleY)}
 
@@ -305,9 +259,9 @@ $GLSL_FX_COMMON
 vec4 hook() {
 ${buildPrologue()}
 
-    highp float reach = clamp(MAX_RADIUS * 2.2, 0.2, 1.5);
-    highp float dn = d / (thick * mix(0.55, 1.3, reach * 0.75));
-    if (dn >= 1.0 && !inside_video) {
+    // Reach from fx_ambient: mix(0.55, 1.3, 0.5) = 0.925
+    highp float dn = d / (thick * 0.925);
+    if (dn >= 1.0) {
         return vec4(0.0, 0.0, 0.0, 1.0);
     }
 
@@ -315,12 +269,9 @@ ${buildPrologue()}
     highp float dv = max(rect.y - p.y, p.y - rect.w);
     highp float dh = max(rect.x - p.x, p.x - rect.z);
 
-    // Multi-tap edge diffusion width grows with distance d
+    // Edge diffusion width grows with distance d
     highp float sw_x = (14.0 + 0.7 * d) / vid_size.x;
     highp float sw_y = (14.0 + 0.7 * d) / vid_size.y;
-
-    // Outward receding wave swell
-    mediump float wave_pulse = 1.0 + 0.08 * sin(dn * 14.0 - float(frame) * 0.06);
 
     highp vec2 edge_uv_h = vec2(norm_uv.x, p.y < rect.y ? 0.015 : 0.985);
     highp vec2 edge_uv_v = vec2(p.x < rect.x ? 0.015 : 0.985, norm_uv.y);
@@ -360,12 +311,10 @@ ${buildPrologue()}
         c = mix(c_h, c_v, wv);
     }
 
-    c = rolloff(vibrance(c, 1.15 * SAT_BOOST), 0.55);
-    c = apply_warmth(c, WARMTH);
+    c = rolloff(vibrance(c, 1.15), 0.55);
 
-    mediump float f = pow(1.0 - dn, 1.8) * wave_pulse;
-    mediump vec3 ambient_rgb = c * (f * mix(0.28, 1.10, GLOW_INTENSITY));
-    ambient_rgb = ditherOut(ambient_rgb, p);
+    mediump float f = pow(1.0 - dn, 1.8);
+    mediump vec3 ambient_rgb = c * (f * 0.66);
 
 ${buildEpilogue()}
 }
@@ -373,13 +322,12 @@ ${buildEpilogue()}
   }
 
   /**
-   * Mirror Mode:
+   * Mirror Mode (Mode 4 from fx_ambient.frag):
    * The frame standing on polished glass: continues as its own reflection, sharp at the
    * seam and dissolving with distance.
-   * Based on fx_ambient.frag mode 4 (mirror).
    */
   fun buildMirror(spec: AmbientGlowShaderSpec): String {
-    val tapsTable = buildSpiralTapTable(spec.blurSamples, spec.maxRadius)
+    val tapsTable = buildSpiralTapTable(16, 0.28f)
 
     return """
 //!HOOK OUTPUT
@@ -395,14 +343,7 @@ precision highp int;
 #define lowp
 #endif
 
-#define BLUR_SAMPLES     ${spec.blurSamples}
-#define MAX_RADIUS       ${glslFloat(spec.maxRadius.toDouble())}
-#define GLOW_INTENSITY   ${glslFloat(spec.glowIntensity.toDouble())}
-#define SAT_BOOST        ${glslFloat(spec.satBoost.toDouble())}
-#define EDGE_BLEND       ${glslFloat(spec.shared.edgeBlend.toDouble())}
-#define VIGNETTE_STR     ${glslFloat(spec.shared.vignetteStrength.toDouble())}
-#define WARMTH           ${glslFloat(spec.warmth.toDouble())}
-#define OPACITY          ${glslFloat(spec.shared.opacity.toDouble())}
+#define BLUR_SAMPLES     16
 #define SCALE_X          ${glslFloat(spec.context.scaleX)}
 #define SCALE_Y          ${glslFloat(spec.context.scaleY)}
 
@@ -413,9 +354,9 @@ $GLSL_FX_COMMON
 vec4 hook() {
 ${buildPrologue()}
 
-    highp float reach = clamp(MAX_RADIUS * 2.2, 0.2, 1.5);
-    highp float dn = d / (thick * mix(0.5, 1.25, reach * 0.75));
-    if (dn >= 1.0 && !inside_video) {
+    // Reach from fx_ambient: mix(0.5, 1.25, 0.5) = 0.875
+    highp float dn = d / (thick * 0.875);
+    if (dn >= 1.0) {
         return vec4(0.0, 0.0, 0.0, 1.0);
     }
 
@@ -426,9 +367,9 @@ ${buildPrologue()}
     ref_uv = clamp(ref_uv, 0.0, 1.0);
 
     // Reflection blur dissolves with distance from seam
-    mediump float blur_rad = pow(clamp(dn, 0.0, 1.0), 0.7) * 0.08 * MAX_RADIUS;
+    mediump float blur_rad = pow(clamp(dn, 0.0, 1.0), 0.7) * 0.08 * 0.28;
     mediump float jitter = ign(uv * screen) * 6.2831853;
-    highp float tap_scale = blur_rad / max(MAX_RADIUS, 0.001);
+    highp float tap_scale = blur_rad / 0.28;
     highp mat2 rot = mat2(cos(jitter), sin(jitter), -sin(jitter), cos(jitter)) * tap_scale;
 
     mediump vec3 acc_c = vec3(0.0);
@@ -439,8 +380,8 @@ ${buildPrologue()}
         highp vec2 tap_off = rot * tap.xy;
 
         highp vec2 s_uv = clamp(ref_uv + tap_off, 0.0, 1.0);
-        highp vec2 s_hooked = (s_uv - 0.5) * inv_scale + 0.5;
-        mediump vec3 rgb = HOOKED_tex(clamp(s_hooked, safe_min, safe_max)).rgb;
+        highp vec2 hooked_uv = (s_uv - 0.5) * inv_scale + 0.5;
+        mediump vec3 rgb = HOOKED_tex(clamp(hooked_uv, safe_min, safe_max)).rgb;
 
         mediump float wt = tap.z;
         acc_c += rgb * wt;
@@ -448,16 +389,13 @@ ${buildPrologue()}
     }
 
     mediump vec3 c = acc_c / max(acc_w, 1e-5);
-    // Gentler roll-off than glows: reflection preserves contrast
-    c = rolloff(vibrance(c, 0.92 * SAT_BOOST), 0.3);
-    c = apply_warmth(c, WARMTH);
+    c = rolloff(vibrance(c, 0.92), 0.30);
 
     mediump float f = pow(1.0 - dn, 2.0) * (0.55 + 0.45 * exp(-6.0 * dn));
     // A floor reflects more than a ceiling
     if (p.y < rect.y) f *= 0.7;
 
-    mediump vec3 ambient_rgb = c * (f * mix(0.22, 0.90, GLOW_INTENSITY * 1.15));
-    ambient_rgb = ditherOut(ambient_rgb, p);
+    mediump vec3 ambient_rgb = c * (f * 0.45);
 
 ${buildEpilogue()}
 }
@@ -465,13 +403,12 @@ ${buildEpilogue()}
   }
 
   /**
-   * Ambilight (FX Glow) Mode:
+   * Ambilight Mode (Mode 1 from fx_ambient.frag):
    * Edge-sampled soft emitter curve with bright core relaxing into a long quiet tail,
    * pulling light deeper into the picture as distance increases.
-   * Based on fx_ambient.frag mode 1 (glow).
    */
   fun buildAmbilight(spec: AmbientGlowShaderSpec): String {
-    val tapsTable = buildSpiralTapTable(spec.blurSamples, spec.maxRadius)
+    val tapsTable = buildSpiralTapTable(18, 0.28f)
 
     return """
 //!HOOK OUTPUT
@@ -487,14 +424,7 @@ precision highp int;
 #define lowp
 #endif
 
-#define BLUR_SAMPLES     ${spec.blurSamples}
-#define MAX_RADIUS       ${glslFloat(spec.maxRadius.toDouble())}
-#define GLOW_INTENSITY   ${glslFloat(spec.glowIntensity.toDouble())}
-#define SAT_BOOST        ${glslFloat(spec.satBoost.toDouble())}
-#define EDGE_BLEND       ${glslFloat(spec.shared.edgeBlend.toDouble())}
-#define VIGNETTE_STR     ${glslFloat(spec.shared.vignetteStrength.toDouble())}
-#define WARMTH           ${glslFloat(spec.warmth.toDouble())}
-#define OPACITY          ${glslFloat(spec.shared.opacity.toDouble())}
+#define BLUR_SAMPLES     18
 #define SCALE_X          ${glslFloat(spec.context.scaleX)}
 #define SCALE_Y          ${glslFloat(spec.context.scaleY)}
 
@@ -505,9 +435,9 @@ $GLSL_FX_COMMON
 vec4 hook() {
 ${buildPrologue()}
 
-    highp float reach = clamp(MAX_RADIUS * 2.2, 0.2, 1.5);
-    highp float dn = d / (thick * mix(0.45, 1.3, reach * 0.75));
-    if (dn >= 1.0 && !inside_video) {
+    // Reach from fx_ambient: mix(0.45, 1.3, 0.5) = 0.875
+    highp float dn = d / (thick * 0.875);
+    if (dn >= 1.0) {
         return vec4(0.0, 0.0, 0.0, 1.0);
     }
 
@@ -518,7 +448,7 @@ ${buildPrologue()}
     // Blur grows with distance from the edge
     mediump float blur_rad = (18.0 + 0.85 * d) / max(min(vid_size.x, vid_size.y), 1.0) * 0.35;
     mediump float jitter = ign(uv * screen) * 6.2831853;
-    highp float tap_scale = blur_rad / max(MAX_RADIUS, 0.001);
+    highp float tap_scale = blur_rad / 0.28;
     highp mat2 rot = mat2(cos(jitter), sin(jitter), -sin(jitter), cos(jitter)) * tap_scale;
 
     mediump vec3 acc_c = vec3(0.0);
@@ -538,13 +468,11 @@ ${buildPrologue()}
     }
 
     mediump vec3 c = acc_c / max(acc_w, 1e-5);
-    c = rolloff(vibrance(c, 1.18 * SAT_BOOST), 0.55);
-    c = apply_warmth(c, WARMTH);
+    c = rolloff(vibrance(c, 1.18), 0.55);
 
     // Soft emitter curve: bright core relaxing into a long, quiet tail
     mediump float f = pow(1.0 - dn, 2.4) * (0.6 + 0.4 * exp(-5.0 * dn));
-    mediump vec3 ambient_rgb = c * (f * mix(0.3, 1.25, GLOW_INTENSITY));
-    ambient_rgb = ditherOut(ambient_rgb, p);
+    mediump vec3 ambient_rgb = c * (f * 0.775);
 
 ${buildEpilogue()}
 }
