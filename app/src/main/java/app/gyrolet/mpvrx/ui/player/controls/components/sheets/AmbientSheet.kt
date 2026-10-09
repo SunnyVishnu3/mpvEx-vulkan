@@ -17,6 +17,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +29,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
@@ -77,7 +80,7 @@ fun AmbientSheet(
   val opacity by viewModel.ambientOpacity.collectAsState()
   val glowEdgeBlend by viewModel.ambientGlowEdgeBlend.collectAsState()
   val youTubeEdgeBlend by viewModel.ambientYouTubeEdgeBlend.collectAsState()
-  val edgeBlend = if (ambientStyle == AmbientStyle.Glow) glowEdgeBlend else youTubeEdgeBlend
+  val edgeBlend = if (ambientStyle.isShader) glowEdgeBlend else youTubeEdgeBlend
   val isFast =
     remember(
       blurSamples, maxRadius, glowIntensity, satBoost, vignetteStrength, warmth, fadeCurve, opacity,
@@ -108,23 +111,38 @@ fun AmbientSheet(
           .padding(vertical = 8.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-      SingleChoiceSegmentedButtonRow(
+      FlowRow(
         modifier =
           Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
       ) {
-        AmbientStyle.entries.forEachIndexed { index, style ->
-          SegmentedButton(
+        AmbientStyle.entries.forEach { style ->
+          FilterChip(
             selected = ambientStyle == style,
             onClick = { viewModel.setAmbientStyle(style) },
-            shape = SegmentedButtonDefaults.itemShape(index, AmbientStyle.entries.size),
-            colors = themedSegmentedButtonColors(),
-          ) {
-            Text(text = stringResource(style.titleRes))
-          }
+            label = { Text(stringResource(style.titleRes)) },
+            colors = FilterChipDefaults.filterChipColors(),
+          )
         }
       }
+
+      val styleDescRes = when (ambientStyle) {
+        AmbientStyle.Glow -> R.string.ambient_glow_desc
+        AmbientStyle.Ambilight -> R.string.ambient_ambilight_desc
+        AmbientStyle.Cinema -> R.string.ambient_cinema_desc
+        AmbientStyle.Echo -> R.string.ambient_echo_desc
+        AmbientStyle.Mirror -> R.string.ambient_mirror_desc
+        AmbientStyle.YouTube -> R.string.ambient_youtube_auto_hint
+      }
+      Text(
+        text = stringResource(styleDescRes),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
+      )
 
       HorizontalDivider(
         modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
@@ -149,7 +167,7 @@ fun AmbientSheet(
         },
       )
 
-      if (ambientStyle == AmbientStyle.Glow) {
+      if (ambientStyle.isShader) {
       // ── Quality Presets ──────────────────────────────────────────────
       Row(
         modifier =
@@ -181,10 +199,10 @@ fun AmbientSheet(
         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
       )
 
-      // ── Section: Glow ────────────────────────────────────────────────
+      // ── Section: Parameters ──────────────────────────────────────────
       var glowExpanded by remember { mutableStateOf(true) }
       SectionHeader(
-        title = stringResource(R.string.ambient_glow),
+        title = stringResource(ambientStyle.titleRes),
         isExpanded = glowExpanded,
         onClick = { glowExpanded = !glowExpanded },
       )
@@ -434,14 +452,6 @@ fun AmbientSheet(
       }
 
       Spacer(modifier = Modifier.height(8.dp))
-      } else {
-        Text(
-          text = stringResource(R.string.ambient_youtube_auto_hint),
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-          modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large, vertical = 8.dp),
-        )
-        Spacer(modifier = Modifier.height(8.dp))
       }
     }
   }

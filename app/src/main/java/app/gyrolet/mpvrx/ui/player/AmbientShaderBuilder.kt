@@ -26,6 +26,7 @@ data class AmbientSharedShaderConfig(
 )
 
 data class AmbientGlowShaderSpec(
+  val style: AmbientStyle = AmbientStyle.Glow,
   val context: AmbientRenderContext,
   val shared: AmbientSharedShaderConfig,
   val blurSamples: Int,
@@ -237,10 +238,36 @@ private val GLSL_AMBIENT_EPILOGUE =
   """.trimIndent().prependIndent("    ")
 
 object AmbientShaderBuilder {
+  private val shaderCache = LruCache<AmbientGlowShaderSpec, String>(24)
+
+  fun build(spec: AmbientGlowShaderSpec): String = build(null, spec)
+
   fun build(
-    @Suppress("UNUSED_PARAMETER") context: Context,
+    @Suppress("UNUSED_PARAMETER") context: Context?,
     spec: AmbientGlowShaderSpec,
   ): String {
+    shaderCache.get(spec)?.let { return it }
+
+    val shader =
+      when (spec.style) {
+        AmbientStyle.Ambilight -> FxAmbientShaderBuilder.buildAmbilight(spec)
+        AmbientStyle.Cinema -> FxAmbientShaderBuilder.buildCinema(spec)
+        AmbientStyle.Echo -> FxAmbientShaderBuilder.buildEcho(spec)
+        AmbientStyle.Mirror -> FxAmbientShaderBuilder.buildMirror(spec)
+        AmbientStyle.Glow, AmbientStyle.YouTube -> buildLegacy(spec)
+      }
+
+    shaderCache.put(spec, shader)
+    return shader
+  }
+
+  fun clearCache() {
+    shaderCache.evictAll()
+    tapTableCache.evictAll()
+    FxAmbientShaderBuilder.clearCache()
+  }
+
+  fun buildLegacy(spec: AmbientGlowShaderSpec): String {
     val invRadiusScale = 3.0 / spec.maxRadius.toDouble().coerceAtLeast(0.001)
 
     return """

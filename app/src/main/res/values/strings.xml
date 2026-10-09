@@ -1346,6 +1346,15 @@
   <string name="ui_view_options">View Options</string>
   <string name="ambient_glow">Glow</string>
   <string name="ambient_style_youtube">YouTube</string>
+  <string name="ambient_style_ambilight">Ambilight</string>
+  <string name="ambient_style_cinema">Cinema</string>
+  <string name="ambient_style_echo">Echo</string>
+  <string name="ambient_style_mirror">Mirror</string>
+  <string name="ambient_glow_desc">Edge-sampled glow bleeding outward from the video borders with configurable falloff.</string>
+  <string name="ambient_ambilight_desc">Ambilight soft emitter: edge light with a bright core relaxing into a quiet tail.</string>
+  <string name="ambient_cinema_desc">Cinema dissolves the entire picture into a calm, wide wash behind the frame.</string>
+  <string name="ambient_echo_desc">Echo projects the picture’s light outward through the dark with fluid dynamic diffusion.</string>
+  <string name="ambient_mirror_desc">Mirror projects the picture as a glass floor reflection, dissolving softly with distance.</string>
   <string name="ambient_color">Color</string>
   <string name="ambient_edge_blend">Edge blend</string>
   <string name="ambient_compositing">Compositing</string>

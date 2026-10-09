@@ -112,6 +112,22 @@ enum class AmbientStyle(
 
   /** Soft blurred projection of the whole frame, like YouTube's Ambient Mode. */
   YouTube(R.string.ambient_style_youtube),
+
+  /** Ambilight soft emitter curve pulling edge light into the bars (fx_ambient glow). */
+  Ambilight(R.string.ambient_style_ambilight),
+
+  /** Wide dissolved wash of the whole picture, soft and cinematic. */
+  Cinema(R.string.ambient_style_cinema),
+
+  /** Dynamic outward light propagation with fluid diffusion. */
+  Echo(R.string.ambient_style_echo),
+
+  /** Polished glass reflection continuing the frame into the bars. */
+  Mirror(R.string.ambient_style_mirror),
+  ;
+
+  val isShader: Boolean
+    get() = this != YouTube
 }
 
 enum class MPVProfile(
