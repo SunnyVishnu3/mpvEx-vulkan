@@ -122,7 +122,7 @@ private fun buildSpiralTapTable(
       val y = sin(theta) * radiusScaled
       "    vec3(${glslFloat(x)}, ${glslFloat(y)}, ${glslFloat(thirdComponents[index])})"
     }
-  val table = "const vec3 $name[$count] = vec3[$count](\n$taps\n);"
+  val table = "const highp vec3 $name[$count] = vec3[$count](\n$taps\n);"
   tapTableCache.put(key, table)
   return table
 }
@@ -141,7 +141,7 @@ private fun glowTapWeights(spec: AmbientGlowShaderSpec): DoubleArray {
 }
 
 /**
- * Common GLSL helpers using mediump (FP16) where safe on mobile GPUs.
+ * Common GLSL helpers using highp for smooth, sub-texel precision.
  * Uses Jorge Jimenez's Interleaved Gradient Noise (IGN) for cache-coherent,
  * zero-trig screen-space dither.
  */
@@ -207,7 +207,7 @@ private val GLSL_VIDEO_PROLOGUE =
     highp float video_weight = 0.0;
     if (inside_video) {
       highp vec2 video_size = HOOKED_size / vec2(SCALE_X, SCALE_Y);
-      highp float blend_width = EDGE_BLEND * min(video_size.x, video_size.y);
+      highp float blend_width = float(EDGE_BLEND) * min(video_size.x, video_size.y);
       highp float inside_dist = blend_width;
       if (CENTER_X - 0.5 / SCALE_X > 0.0) {
         inside_dist = min(inside_dist, video_uv.x * video_size.x);
@@ -228,15 +228,11 @@ private val GLSL_VIDEO_PROLOGUE =
     }
 
     highp vec2 edge_origin = clamp(video_uv, safe_min, safe_max);
-    highp float edge_dist = length(video_uv - clamp(video_uv, 0.0, 1.0));
-
-    // Interleaved Gradient Noise jitter: avoids rand() sin() overhead and improves GPU cache hits
-    highp float jitter = ign(uv * HOOKED_size) * 6.2831853;
-    highp float jitter_s = sin(jitter);
-    highp float jitter_c = cos(jitter);
+    highp float dx = max(max(-video_uv.x, video_uv.x - 1.0), 0.0);
+    highp float dy = max(max(-video_uv.y, video_uv.y - 1.0), 0.0);
+    bool in_side_bar = (SCALE_X > SCALE_Y) && (dx > dy);
+    highp float edge_dist = length(vec2(dx, dy));
     highp float aspect_x = HOOKED_size.y / HOOKED_size.x;
-    highp float jitter_c_aspect = jitter_c * aspect_x;
-    highp float jitter_s_aspect = jitter_s * aspect_x;
   """.trimIndent().prependIndent("    ")
 
 /** End of hook(): vignette, opacity, and the optional edge and bezel blends. */
@@ -320,11 +316,11 @@ $GLSL_VIDEO_PROLOGUE
     // Normalised reach distance: 0.0 at frame edge, >= 1.0 beyond glow reach.
     highp float dn = edge_dist * INV_RADIUS_SCALE;
     if (dn >= 1.0) {
-        return vec4(dither_out(vec3(0.0), uv * HOOKED_size), 1.0);
+        return vec4(0.0, 0.0, 0.0, 1.0);
     }
 
-    // Dynamic depth inset (from fx_ambient): pulls deeper from picture further into the glow.
-    highp vec2 sample_origin = mix(edge_origin, vec2(0.5), 0.03 + 0.10 * dn);
+    // Anchor sample origin at the nearest video edge with a fixed 1.5% inward inset.
+    highp vec2 sample_origin = mix(edge_origin, vec2(0.5), 0.015);
 
     // Physical dual-phase emitter curve (from fx_ambient):
     // luminous core relaxing into a smooth tail that cleanly lands on true black at dn = 1.0.
@@ -336,14 +332,17 @@ $GLSL_VIDEO_PROLOGUE
     for (int i = 0; i < BLUR_SAMPLES; i++) {
         vec3 tap = GLOW_TAPS[i];
 
-        // tap.xy is already pre-scaled by maxRadius; aspect_x is folded into jitter_aspect
-        highp vec2 offset = vec2(
-            tap.x * jitter_c_aspect - tap.y * jitter_s_aspect,
-            tap.x * jitter_s + tap.y * jitter_c
-        );
+        highp vec2 tap_rot = vec2(tap.x * aspect_x, tap.y);
+        // Compress perpendicular penetration to stay within the edge margin (≤ 0.02)
+        // so internal moving objects (e.g. hands, faces, text) are never sampled as ghost reflections,
+        // while allowing full wide diffuse glow along the bar.
+        highp vec2 offset = in_side_bar
+            ? vec2(tap_rot.x * 0.12, tap_rot.y)
+            : vec2(tap_rot.x, tap_rot.y * 0.12);
+
         highp vec3 sample_rgb = HOOKED_tex(clamp(sample_origin + offset, safe_min, safe_max)).rgb;
 
-        highp float weight = tap.z * (1.0 + luma(sample_rgb) * 2.0);
+        highp float weight = tap.z;
 
         acc_color += sample_rgb * weight;
         acc_weight += weight;

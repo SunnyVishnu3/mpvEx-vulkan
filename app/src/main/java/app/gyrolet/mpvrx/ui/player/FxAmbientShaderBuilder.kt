@@ -245,7 +245,7 @@ highp vec3 dither_out(highp vec3 c, highp vec2 p) {
 
     val warmthLine = if (abs(warmthVal) > 0.0001) "    col = apply_warmth(col, ${f(warmthVal)});\n" else ""
     val vignetteLine = if (vignetteVal > 0.0001) """
-    highp float vig_r = length(uv - 0.5) * 2.0;
+    mediump float vig_r = length(uv - 0.5) * 2.0;
     ambient_rgb *= mix(1.0, smoothstep(1.3, 0.1, vig_r), ${f(vignetteVal)});
 """ else ""
     val opacityLine = if (abs(opacityVal - 1.0) > 0.0001) "    ambient_rgb *= ${f(opacityVal)};\n" else ""
@@ -269,14 +269,8 @@ ${videoPrologue(reachScale)}
     // Determine whether this bar is pillarbox (dx > dy) or letterbox.
     bool in_side_bar = (SCALE_X > SCALE_Y) && (dx > dy);
 
-    // -- Per-pixel Jorge Jimenez IGN jitter rotation -------------------------
-    highp float jitter   = ign(uv * HOOKED_size) * 6.2831853;
-    highp float jitter_s = sin(jitter);
-    highp float jitter_c = cos(jitter);
     // Aspect correction uses video dimensions so the Poisson disk stays circular in video space.
     highp float aspect_x = (HOOKED_size.y / SCALE_Y) / (HOOKED_size.x / SCALE_X);
-    highp float jitter_c_aspect = jitter_c * aspect_x;
-    highp float jitter_s_aspect = jitter_s * aspect_x;
 
     // -- $tapCount-tap spiral Gaussian blur ------------------------------------------
     // Blend radius grows from baseRadius (crisp theater edge) to farRadius (diffuse).
@@ -284,25 +278,18 @@ ${videoPrologue(reachScale)}
     highp float br_scale = br / ${f(farRadius)};
 
     highp vec3  acc = vec3(0.0);
-    highp float twt = 0.0;
     for (int i = 0; i < $tapCount; i++) {
         vec2 tap = CINEMA_TAPS[i] * br_scale;
-        highp vec2 tap_rot = vec2(
-            tap.x * jitter_c_aspect - tap.y * jitter_s_aspect,
-            tap.x * jitter_s + tap.y * jitter_c
-        );
+        highp vec2 tap_rot = vec2(tap.x * aspect_x, tap.y);
         // Compress perpendicular penetration to stay within the edge margin (≤ 0.02)
         // while allowing full wide diffusion along the bar.
         highp vec2 tap_off = in_side_bar
-            ? vec2(tap_rot.x * 0.20, tap_rot.y)
-            : vec2(tap_rot.x, tap_rot.y * 0.20);
+            ? vec2(tap_rot.x * 0.12, tap_rot.y)
+            : vec2(tap_rot.x, tap_rot.y * 0.12);
 
-        highp vec3  s = HOOKED_tex(clamp(sample_origin + tap_off, safe_min, safe_max)).rgb;
-        highp float w = 1.0 + luma(s) * 1.5;
-        acc += s * w;
-        twt += w;
+        acc += HOOKED_tex(clamp(sample_origin + tap_off, safe_min, safe_max)).rgb;
     }
-    highp vec3 col = acc / max(twt, 0.001);
+    highp vec3 col = acc / float($tapCount);
 
     // -- Colour grade --------------------------------------------------------
     col = vibrance(col, ${f(vibranceVal)});
@@ -398,16 +385,12 @@ ${videoPrologue(reachScale)}
     // Smear width grows from tight at edge to wide at depth.
     highp float sw = ${f(swBase)} + ${f(swFar)} * dn;
 
-    // High-frequency stochastic jitter along smear axis to dissolve tap banding
-    highp float jitter = (ign(uv * HOOKED_size) - 0.5);
-    highp vec2 jitter_off = smear_dir * (jitter * sw * 0.35);
-
     // -- $tapCount-tap Gaussian along smear axis -----------------------------
     highp vec3 col = vec3(0.0);
     for (int i = 0; i < $tapCount; i++) {
         float step_factor = ECHO_OFFSETS[i];
         highp vec2 tap_pos = clamp(
-            echo_origin + smear_dir * (step_factor * sw) + jitter_off,
+            echo_origin + smear_dir * (step_factor * sw),
             safe_min, safe_max
         );
         col += HOOKED_tex(tap_pos).rgb * ECHO_WEIGHTS[i];
