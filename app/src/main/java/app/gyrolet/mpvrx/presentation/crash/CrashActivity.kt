@@ -520,7 +520,8 @@ class CrashActivity : AppCompatActivity() {
         } else {
           SelectionContainer(Modifier.fillMaxSize().padding(padding)) {
             LazyColumn(contentPadding = PaddingValues(16.dp), modifier = Modifier.fillMaxSize()) {
-              items(reportLines) { line ->
+              items(count = reportLines.size, key = { it }) { index ->
+                val line = reportLines[index]
                 Text(
                   text = line.ifEmpty { " " },
                   fontFamily = FontFamily.Monospace,

@@ -1799,7 +1799,7 @@ class MediaInfoActivity : AppCompatActivity() {
             .background(colors.surfaceContainerLow),
           contentPadding = PaddingValues(vertical = 8.dp),
         ) {
-          items(count = lines.size) { index ->
+          items(count = lines.size, key = { it }) { index ->
             val line = lines[index]
             val trimmed = line.trim()
             val delimiter = line.indexOf(" : ")

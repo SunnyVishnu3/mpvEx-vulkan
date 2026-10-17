@@ -58,7 +58,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -698,8 +700,18 @@ private fun RoundedCheckbox(
         .graphicsLayer {
           if (!enabled) alpha = disabledAlpha
         }
-        .background(animatedBgColor, CircleShape)
-        .border(2.dp, animatedBorderColor, CircleShape)
+        .drawBehind {
+          val strokeWidth = 2.dp.toPx()
+          val radius = (size.minDimension - strokeWidth) / 2f
+          if (animatedBgColor != Color.Transparent) {
+            drawCircle(color = animatedBgColor)
+          }
+          drawCircle(
+            color = animatedBorderColor,
+            radius = radius,
+            style = Stroke(width = strokeWidth),
+          )
+        }
         .then(interactionModifier),
     contentAlignment = Alignment.Center,
   ) {

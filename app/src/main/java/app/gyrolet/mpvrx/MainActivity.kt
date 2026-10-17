@@ -58,6 +58,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import app.gyrolet.mpvrx.preferences.AppearancePreferences
 import app.gyrolet.mpvrx.preferences.PlayerPreferences
@@ -694,7 +695,7 @@ open class MainActivity : AppCompatActivity() {
                   .fillMaxWidth()
                   .windowInsetsPadding(WindowInsets.navigationBars)
                   .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
-                  .offset(y = -portraitLift)
+                  .offset { IntOffset(0, -portraitLift.roundToPx()) }
 
               // Landscape/tablet single-pane: sit on the right side of the nav bar,
               // which slides left when the mini player appears.
