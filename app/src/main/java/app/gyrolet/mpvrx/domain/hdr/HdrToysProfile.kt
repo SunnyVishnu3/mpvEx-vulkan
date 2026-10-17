@@ -28,7 +28,13 @@ enum class HdrToysProfile(
         "hdr-toys/gamut-mapping/bottosson.glsl",
         "hdr-toys/transfer-function/bt1886.glsl",
       ),
-    shaderOptions = listOf("auto_exposure_limit_positive" to "1.02"),
+    shaderOptions =
+      listOf(
+        "auto_exposure_limit_positive" to "1.02",
+        "enable_metering" to "1",
+        "spatial_stable_level" to "0",
+        "temporal_stable_duration" to "0.0",
+      ),
   ),
   BT_2100_HLG(
     configSection = "bt.2100-hlg",
@@ -41,6 +47,12 @@ enum class HdrToysProfile(
         "hdr-toys/tone-mapping/astra.glsl",
         "hdr-toys/gamut-mapping/bottosson.glsl",
         "hdr-toys/transfer-function/bt1886.glsl",
+      ),
+    shaderOptions =
+      listOf(
+        "enable_metering" to "1",
+        "spatial_stable_level" to "0",
+        "temporal_stable_duration" to "0.0",
       ),
   ),
   BT_2020(
@@ -68,8 +80,8 @@ enum class HdrToysProfile(
       ),
     shaderOptions =
       listOf(
-        "spatial_stable_iterations" to "0",
-        "temporal_stable_window" to "0",
+        "spatial_stable_level" to "0",
+        "temporal_stable_duration" to "0.0",
         "enable_metering" to "1",
       ),
   ),
