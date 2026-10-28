@@ -8012,7 +8012,7 @@ fun restartFromBeginning() {
           sy = geometry.picture.scaleY,
           cx = geometry.picture.centerX,
           cy = geometry.picture.centerY,
-          samples = 16,
+          samples = 8,
         )
         AmbientStyle.YouTube -> return
       }
