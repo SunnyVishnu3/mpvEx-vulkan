@@ -214,9 +214,9 @@ fun MoreSheet(
               }
             }
           }
-          val discTitles = PlaybackSession.propInt["disc-titles"].value ?: 0
-          val isDiscMenuActive = PlaybackSession.propBoolean["disc-menu-active"].value == true
-          if (discTitles > 0 || isDiscMenuActive) {
+          val discTitles by PlaybackSession.propInt["disc-titles"].collectAsState()
+          val isDiscMenuActive by PlaybackSession.propBoolean["disc-menu-active"].collectAsState()
+          if ((discTitles ?: 0) > 0 || isDiscMenuActive == true) {
             TextButton(
               onClick = {
                 PlaybackSession.command("discnav", "menu")
@@ -228,7 +228,7 @@ fun MoreSheet(
                 horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
               ) {
                 Icon(
-                  imageVector = Icons.RoundedFilled.Movie,
+                  imageVector = Icons.RoundedFilled.Album,
                   contentDescription = stringResource(R.string.disc_menu_button),
                 )
                 if (showActionLabels) Text(stringResource(R.string.disc_menu_button))
