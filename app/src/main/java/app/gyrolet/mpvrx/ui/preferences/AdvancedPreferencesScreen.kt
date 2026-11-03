@@ -772,6 +772,46 @@ object AdvancedPreferencesScreen : Screen {
 
               PreferenceDivider()
 
+              val cacheOnDisk by preferences.cacheOnDisk.collectAsState()
+              val demuxerCacheSecs by preferences.demuxerCacheSecs.collectAsState()
+
+              SwitchPreference(
+                modifier = Modifier.settingsSearchTarget(R.string.pref_cache_on_disk_title),
+                value = cacheOnDisk,
+                onValueChange = preferences.cacheOnDisk::set,
+                title = { Text(stringResource(R.string.pref_cache_on_disk_title)) },
+                summary = {
+                  Text(
+                    stringResource(R.string.pref_cache_on_disk_summary),
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+
+              if (cacheOnDisk) {
+                PreferenceDivider()
+                ExpressivePreferenceItem {
+                  SliderPreference(
+                    modifier = Modifier.settingsSearchTarget(R.string.pref_cache_secs_title),
+                    value = demuxerCacheSecs.toFloat(),
+                    onValueChange = { preferences.demuxerCacheSecs.set(it.toInt()) },
+                    title = { Text(stringResource(R.string.pref_cache_secs_title)) },
+                    valueRange = 30f..300f,
+                    valueSteps = 8,
+                    summary = {
+                      Text(
+                        stringResource(R.string.pref_cache_secs_summary, demuxerCacheSecs),
+                        color = MaterialTheme.colorScheme.outline,
+                      )
+                    },
+                    onSliderValueChange = { preferences.demuxerCacheSecs.set(it.toInt()) },
+                    sliderValue = demuxerCacheSecs.toFloat(),
+                  )
+                }
+              }
+
+              PreferenceDivider()
+
               val playbackHistorySummary =
                 if (recentlyPlayedCount > 0) {
                   stringResource(R.string.pref_clear_playback_history_recently_played, recentlyPlayedCount)

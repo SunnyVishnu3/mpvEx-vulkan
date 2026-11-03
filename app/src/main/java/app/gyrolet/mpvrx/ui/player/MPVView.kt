@@ -515,6 +515,23 @@ class MPVView(
     // Avoid forcing CPU-side film-grain synthesis globally; this can spike thermals on mobile SoCs.
     // Let mpv choose the safest path for the active decoder/backend.
     PlaybackSession.setOptionString("vd-lavc-film-grain", "auto")
+    if (decoderPreferences.demuxerDoviProfile7.get() &&
+      !MpvConfigOverridePolicy.isOwnedByMpvConf("demuxer-dovi-profile7")
+    ) {
+      PlaybackSession.setOptionString("demuxer-dovi-profile7", "yes")
+    }
+
+    if (advancedPreferences.cacheOnDisk.get() &&
+      !MpvConfigOverridePolicy.isOwnedByMpvConf("cache-on-disk")
+    ) {
+      val diskCacheDir = java.io.File(context.cacheDir, "demuxer_cache")
+      if (!diskCacheDir.exists()) diskCacheDir.mkdirs()
+      PlaybackSession.setOptionString("cache", "yes")
+      PlaybackSession.setOptionString("cache-on-disk", "yes")
+      PlaybackSession.setOptionString("demuxer-cache-dir", diskCacheDir.absolutePath)
+      val cacheSecs = advancedPreferences.demuxerCacheSecs.get().coerceAtLeast(30).toString()
+      PlaybackSession.setOptionString("demuxer-readahead-secs", cacheSecs)
+    }
 
     // Cache, TLS, cookie and reconnect settings are applied by PlaybackSession on the first
     // item that actually opens over the network, so a local file never pays for them.
@@ -847,6 +864,8 @@ class MPVView(
       "video-params/rotate" to MPVLib.MpvFormat.MPV_FORMAT_INT64,
       "container-fps" to MPVLib.MpvFormat.MPV_FORMAT_DOUBLE,
       "eof-reached" to MPVLib.MpvFormat.MPV_FORMAT_FLAG,
+      "disc-menu-active" to MPVLib.MpvFormat.MPV_FORMAT_FLAG,
+      "disc-titles" to MPVLib.MpvFormat.MPV_FORMAT_INT64,
       "user-data/mpvrx/show_text" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
       "user-data/mpvrx/toggle_ui" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
       "user-data/mpvrx/show_panel" to MPVLib.MpvFormat.MPV_FORMAT_STRING,
@@ -945,6 +964,9 @@ class MPVView(
       addAll(windowOptions)
       // Secondary has its own position/scale only.
       add("secondary-sub-scale" to subtitlesPreferences.secondarySubScale.get().toString())
+      val imageBrightness = (subtitlesPreferences.imageSubsBrightness.get() / 100.0).toString()
+      add("image-subs-brightness" to imageBrightness)
+      add("image-subs-override" to "yes")
       add(
         "secondary-sub-pos" to
           clampSubtitlePosition(subtitlesPreferences.secondarySubPos.get()).toString(),

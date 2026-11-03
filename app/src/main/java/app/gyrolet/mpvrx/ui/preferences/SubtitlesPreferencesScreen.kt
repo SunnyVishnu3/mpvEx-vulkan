@@ -101,6 +101,7 @@ import kotlinx.serialization.Serializable
 import app.gyrolet.mpvrx.ui.preferences.components.AppListPreference as ListPreference
 import app.gyrolet.mpvrx.ui.preferences.components.PreferenceAction
 import app.gyrolet.mpvrx.ui.preferences.components.AppPreference as Preference
+import app.gyrolet.mpvrx.ui.preferences.components.AppSliderPreference as SliderPreference
 import app.gyrolet.mpvrx.ui.preferences.components.AppTextFieldPreference as TextFieldPreference
 import org.koin.compose.koinInject
 
@@ -393,6 +394,28 @@ object SubtitlesPreferencesScreen : Screen {
                   )
                 },
               )
+
+              PreferenceDivider()
+
+              val imageSubsBrightness by preferences.imageSubsBrightness.collectAsState()
+              ExpressivePreferenceItem {
+                SliderPreference(
+                  modifier = Modifier.settingsSearchTarget(R.string.pref_sub_image_subs_brightness_title),
+                  value = imageSubsBrightness.toFloat(),
+                  enabled = "image-subs-brightness" !in configOwnedOptions,
+                  onValueChange = { preferences.imageSubsBrightness.set(it.toInt()) },
+                  title = { Text(stringResource(R.string.pref_sub_image_subs_brightness_title)) },
+                  valueRange = 10f..100f,
+                  summary = {
+                    Text(
+                      "$imageSubsBrightness%",
+                      color = MaterialTheme.colorScheme.outline,
+                    )
+                  },
+                  onSliderValueChange = { preferences.imageSubsBrightness.set(it.toInt()) },
+                  sliderValue = imageSubsBrightness.toFloat(),
+                )
+              }
 
               PreferenceDivider()
 

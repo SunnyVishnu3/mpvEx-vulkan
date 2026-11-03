@@ -517,6 +517,73 @@ object AudioPreferencesScreen : Screen {
               )
 
               PreferenceDivider()
+              val peakLimiter by preferences.peakLimiter.collectAsState()
+              SwitchPreference(
+                modifier = Modifier.settingsSearchTarget(R.string.pref_audio_peak_limiter_title),
+                value = peakLimiter,
+                enabled = "af" !in configOwnedOptions,
+                onValueChange = { preferences.peakLimiter.set(it) },
+                title = { Text(stringResource(R.string.pref_audio_peak_limiter_title)) },
+                summary = {
+                  Text(
+                    stringResource(R.string.pref_audio_peak_limiter_summary),
+                    color = MaterialTheme.colorScheme.outline,
+                  )
+                },
+              )
+
+              PreferenceDivider()
+              val dialogueBoost by preferences.dialogueBoost.collectAsState()
+              ExpressivePreferenceItem {
+                SliderPreference(
+                  modifier = Modifier.settingsSearchTarget(R.string.pref_audio_dialogue_boost_title),
+                  value = dialogueBoost.toFloat(),
+                  enabled = "af" !in configOwnedOptions,
+                  onValueChange = { preferences.dialogueBoost.set(it.toInt()) },
+                  title = { Text(stringResource(R.string.pref_audio_dialogue_boost_title)) },
+                  valueRange = 0f..10f,
+                  valueSteps = 9,
+                  summary = {
+                    Text(
+                      if (dialogueBoost == 0) {
+                        stringResource(R.string.generic_disabled)
+                      } else {
+                        "+$dialogueBoost"
+                      },
+                      color = MaterialTheme.colorScheme.outline,
+                    )
+                  },
+                  onSliderValueChange = { preferences.dialogueBoost.set(it.toInt()) },
+                  sliderValue = dialogueBoost.toFloat(),
+                )
+              }
+
+              PreferenceDivider()
+              val audioBalance by preferences.audioBalance.collectAsState()
+              ExpressivePreferenceItem {
+                SliderPreference(
+                  modifier = Modifier.settingsSearchTarget(R.string.pref_audio_balance_title),
+                  value = audioBalance.toFloat(),
+                  enabled = "af" !in configOwnedOptions,
+                  onValueChange = { preferences.audioBalance.set(it.toInt()) },
+                  title = { Text(stringResource(R.string.pref_audio_balance_title)) },
+                  valueRange = -100f..100f,
+                  summary = {
+                    Text(
+                      when {
+                        audioBalance < 0 -> stringResource(R.string.pref_audio_balance_left, -audioBalance)
+                        audioBalance > 0 -> stringResource(R.string.pref_audio_balance_right, audioBalance)
+                        else -> stringResource(R.string.pref_audio_balance_center)
+                      },
+                      color = MaterialTheme.colorScheme.outline,
+                    )
+                  },
+                  onSliderValueChange = { preferences.audioBalance.set(it.toInt()) },
+                  sliderValue = audioBalance.toFloat(),
+                )
+              }
+
+              PreferenceDivider()
               val ignoreAudioFocus by preferences.ignoreAudioFocus.collectAsState()
               SwitchPreference(
                 modifier = Modifier.settingsSearchTarget(R.string.pref_ignore_audio_focus_title),

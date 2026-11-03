@@ -48,6 +48,7 @@ import app.gyrolet.mpvrx.preferences.preference.collectAsState
 import app.gyrolet.mpvrx.presentation.components.PlayerSheet
 import app.gyrolet.mpvrx.presentation.components.PlayerSheetAction
 import app.gyrolet.mpvrx.presentation.components.PlayerSheetSectionHeader
+import app.gyrolet.mpvrx.presentation.components.SliderItem
 import app.gyrolet.mpvrx.ui.components.IconSwitch
 import app.gyrolet.mpvrx.ui.icons.Icons
 import app.gyrolet.mpvrx.ui.player.TrackNode
@@ -208,6 +209,47 @@ fun AudioTracksSheet(
                 style = MaterialTheme.typography.bodyLarge)
               IconSwitch(checked = drcEnabled, onCheckedChange = null, enabled = audioEffectsEnabled)
             }
+            val peakLimiter by audioPreferences.peakLimiter.collectAsState()
+            Row(
+              modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp).heightIn(min = 56.dp)
+                .animatedPlayerSheetBackground(peakLimiter, MaterialTheme.shapes.medium)
+                .toggleable(value = peakLimiter, enabled = audioEffectsEnabled, role = Role.Switch,
+                  onValueChange = audioPreferences.peakLimiter::set)
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+              horizontalArrangement = Arrangement.spacedBy(16.dp),
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Text(stringResource(R.string.pref_audio_peak_limiter_title), modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge)
+              IconSwitch(checked = peakLimiter, onCheckedChange = null, enabled = audioEffectsEnabled)
+            }
+            val dialogueBoost by audioPreferences.dialogueBoost.collectAsState()
+            SliderItem(
+              label = stringResource(R.string.pref_audio_dialogue_boost_title),
+              value = dialogueBoost,
+              valueText = if (dialogueBoost == 0) stringResource(R.string.generic_disabled) else "+$dialogueBoost",
+              onChange = audioPreferences.dialogueBoost::set,
+              max = 10,
+              min = 0,
+              enabled = audioEffectsEnabled,
+              modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            )
+            val audioBalance by audioPreferences.audioBalance.collectAsState()
+            SliderItem(
+              label = stringResource(R.string.pref_audio_balance_title),
+              value = audioBalance,
+              valueText = when {
+                audioBalance < 0 -> stringResource(R.string.pref_audio_balance_left, -audioBalance)
+                audioBalance > 0 -> stringResource(R.string.pref_audio_balance_right, audioBalance)
+                else -> stringResource(R.string.pref_audio_balance_center)
+              },
+              onChange = audioPreferences.audioBalance::set,
+              max = 100,
+              min = -100,
+              enabled = audioEffectsEnabled,
+              hapticLandmarks = listOf(0),
+              modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            )
           }
         }
       }

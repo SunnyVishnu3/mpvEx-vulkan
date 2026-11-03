@@ -171,6 +171,7 @@ import app.gyrolet.mpvrx.ui.player.controls.components.ControlsButton
 import app.gyrolet.mpvrx.ui.player.controls.components.LocalForceDarkPlayerButtonsBackground
 import app.gyrolet.mpvrx.ui.player.controls.components.LocalPlayerButtonsOpacity
 import app.gyrolet.mpvrx.ui.player.controls.components.asPlayerButtonBackground
+import app.gyrolet.mpvrx.ui.player.controls.components.DiscNavPadOverlay
 import app.gyrolet.mpvrx.ui.player.controls.components.MediaScopesOverlay
 import app.gyrolet.mpvrx.ui.player.controls.components.fadingHorizontalScroll
 import app.gyrolet.mpvrx.ui.player.controls.components.MultipleSpeedPlayerUpdate
@@ -1102,7 +1103,13 @@ fun PlayerControls(
       modifier = Modifier.fillMaxSize(),
     )
 
-        CompositionLocalProvider(
+    DiscNavPadOverlay(
+      modifier = Modifier
+        .align(Alignment.CenterEnd)
+        .padding(end = 24.dp),
+    )
+
+    CompositionLocalProvider(
           LocalRippleConfiguration provides playerRippleConfiguration,
           LocalPlayerButtonsClickEvent provides { resetControlsTimestamp = System.currentTimeMillis() },
           LocalKyantPlayerBackdrop provides playerKyantBackdrop,

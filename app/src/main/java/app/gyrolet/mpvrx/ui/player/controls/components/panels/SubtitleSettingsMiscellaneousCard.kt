@@ -98,7 +98,7 @@ fun SubtitlesMiscellaneousCard(
         }
         val secondarySid by PlaybackSession.propInt["secondary-sid"].collectAsState()
         val isSecondaryActive = (secondarySid ?: PlaybackSession.getPropertyString("secondary-sid")?.toIntOrNull() ?: 0) > 0
-        val connectedItemCount = if (isSecondaryActive) 10 else 8
+        val connectedItemCount = if (isSecondaryActive) 11 else 9
         SwitchPreference(
           overrideAssSubs,
           groupIndex = 0,
@@ -258,6 +258,25 @@ fun SubtitlesMiscellaneousCard(
               },
             )
           }
+        }
+        val imageSubsBrightness by preferences.imageSubsBrightness.collectAsState()
+        PanelConnectedTile(index = if (isSecondaryActive) 9 else 7, itemCount = connectedItemCount) {
+          SliderItem(
+            label = stringResource(R.string.pref_sub_image_subs_brightness_title),
+            value = imageSubsBrightness,
+            valueText = "$imageSubsBrightness%",
+            onChange = {
+              preferences.imageSubsBrightness.set(it)
+              PlaybackSession.setPropertyDouble("image-subs-brightness", it / 100.0)
+              PlaybackSession.setPropertyString("image-subs-override", "yes")
+            },
+            min = 10,
+            max = 100,
+            enabled = "image-subs-brightness" !in configOwnedOptions,
+            icon = {
+              Icon(Icons.RoundedFilled.BrightnessMedium, null)
+            },
+          )
         }
         PanelConnectedTile(index = connectedItemCount - 1, itemCount = connectedItemCount) {
         Row(
