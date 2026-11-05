@@ -68,8 +68,6 @@ class AdvancedPreferences(
   }
 
   val enableP2pStreaming = preferenceStore.getBoolean("enable_p2p_streaming", true)
-  val cacheOnDisk = preferenceStore.getBoolean("cache_on_disk", false)
-  val demuxerCacheSecs = preferenceStore.getInt("demuxer_cache_secs", 120)
 
   /** Notification style for the playback service (Media vs Progress-centric on Android 16+). */
   val notificationStyle = preferenceStore.getEnum("notification_style", NotificationStyle.Media)

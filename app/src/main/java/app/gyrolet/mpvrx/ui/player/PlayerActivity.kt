@@ -7175,22 +7175,6 @@ private suspend fun restorePlaybackPosition(state: PlaybackStateEntity?, loadGen
     event: KeyEvent?,
   ): Boolean {
     if (!mpvInitialized) return super.onKeyDown(keyCode, event)
-    if (viewModel.isDiscMenuActive.value == true) {
-      val action = when (keyCode) {
-        KeyEvent.KEYCODE_DPAD_UP -> "up"
-        KeyEvent.KEYCODE_DPAD_DOWN -> "down"
-        KeyEvent.KEYCODE_DPAD_LEFT -> "left"
-        KeyEvent.KEYCODE_DPAD_RIGHT -> "right"
-        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> "select"
-        KeyEvent.KEYCODE_BACK -> "prev"
-        KeyEvent.KEYCODE_MEDIA_TOP_MENU, KeyEvent.KEYCODE_MENU -> "menu"
-        else -> null
-      }
-      if (action != null) {
-        viewModel.discNav(action)
-        return true
-      }
-    }
     val isTrackSheetOpen =
       viewModel.sheetShown.value == Sheets.SubtitleTracks ||
         viewModel.sheetShown.value == Sheets.AudioTracks

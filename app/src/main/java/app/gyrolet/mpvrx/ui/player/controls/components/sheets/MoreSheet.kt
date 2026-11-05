@@ -214,27 +214,6 @@ fun MoreSheet(
               }
             }
           }
-          val discTitles = PlaybackSession.propInt["disc-titles"].value ?: 0
-          val isDiscMenuActive = PlaybackSession.propBoolean["disc-menu-active"].value == true
-          if (discTitles > 0 || isDiscMenuActive) {
-            TextButton(
-              onClick = {
-                PlaybackSession.command("discnav", "menu")
-                onDismissRequest()
-              },
-            ) {
-              Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-              ) {
-                Icon(
-                  imageVector = Icons.RoundedFilled.Movie,
-                  contentDescription = stringResource(R.string.disc_menu_button),
-                )
-                if (showActionLabels) Text(stringResource(R.string.disc_menu_button))
-              }
-            }
-          }
           if (onEnterSettingsPanel != null) {
             TextButton(onClick = onEnterSettingsPanel) {
               Row(

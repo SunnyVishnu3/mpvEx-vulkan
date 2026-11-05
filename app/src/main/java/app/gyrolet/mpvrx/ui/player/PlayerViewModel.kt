@@ -1781,20 +1781,6 @@ class PlayerViewModel(
       filterList.add("pan=[stereo|c0=c1|c1=c0]")
     }
 
-    // 5. Dialogue / Center Channel Boost
-    val dialogueBoost = audioPreferences.dialogueBoost.get()
-    if (dialogueBoost > 0) {
-      val boostDb = formatEqualizerNumber(dialogueBoost * 0.8f)
-      filterList.add("lavfi=[equalizer=f=1800:t=q:w=1.2:g=$boostDb]")
-    }
-
-    // 6. Left / Right Audio Balance
-    val balance = audioPreferences.audioBalance.get()
-    if (balance != 0) {
-      val balanceNorm = String.format(java.util.Locale.US, "%.2f", balance / 100f)
-      filterList.add("lavfi=[stereotools=balance_out=$balanceNorm]")
-    }
-
     // 5. Equalizer filters (if enabled). One lavfi graph owns the whole curve so Android AudioFx
     // cannot apply a second, device-dependent EQ on top of it.
     if (state.isEnabled) {
@@ -1816,11 +1802,6 @@ class PlayerViewModel(
           }
         filterList.add("lavfi=[$graph]")
       }
-    }
-
-    // Peak Limiter to prevent clipping/distortion when volume boost, EQ or dialogue boost is active
-    if (audioPreferences.peakLimiter.get() || state.isEnabled || dialogueBoost > 0) {
-      filterList.add("lavfi=[alimiter=limit=0.98:attack=5:release=50:asc=1]")
     }
 
     val afString = filterList.joinToString(",")
@@ -2053,12 +2034,6 @@ fun restartFromBeginning() {
     if (bookmark.mediaId != bookmarkMediaId(PlaybackSession.state.value.currentItem)) return
     if (bookmark.bookTrackId != null) AudiobookPlayback.seekToBookmark(bookmark.bookTrackId, bookmark.positionMs)
     else PlaybackSession.command("seek", (bookmark.positionMs / 1000.0).toString(), "absolute+exact")
-  }
-
-  val isDiscMenuActive = PlaybackSession.propBoolean["disc-menu-active"]
-
-  fun discNav(action: String) {
-    PlaybackSession.command("discnav", action)
   }
 
   fun seekToPlaybackChapter(chapter: dev.vivvvek.seeker.Segment) {
@@ -2661,7 +2636,11 @@ fun restartFromBeginning() {
     }
     // Observe audio effect changes to update mpv af filters
     viewModelScope.launch(playbackStateDispatcher) {
-      combine(combine(audioPreferences.volumeNormalization.changes(), audioPreferences.drcEnabled.changes(), audioPreferences.audioChannels.changes()) { _, _, _ -> }, combine(audioPreferences.dialogueBoost.changes(), audioPreferences.audioBalance.changes(), audioPreferences.peakLimiter.changes()) { _, _, _ -> }) { _, _ -> }
+      combine(
+        audioPreferences.volumeNormalization.changes(),
+        audioPreferences.drcEnabled.changes(),
+        audioPreferences.audioChannels.changes(),
+      ) { _, _, _ -> }
         // Re-sending the unchanged filter chain to a playing core rebuilds it and audibly hiccups.
         .drop(if (hostedInBrowser) 1 else 0)
         .collect {

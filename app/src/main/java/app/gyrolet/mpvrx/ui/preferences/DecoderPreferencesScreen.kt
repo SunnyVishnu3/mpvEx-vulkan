@@ -331,26 +331,6 @@ object DecoderPreferencesScreen : Screen {
 
               PreferenceDivider()
 
-              val demuxerDoviProfile7 by preferences.demuxerDoviProfile7.collectAsState()
-              val doviConfigOwned = "demuxer-dovi-profile7" in configOwnedOptions
-              SwitchPreference(
-                modifier = Modifier.settingsSearchTarget(R.string.pref_decoder_demuxer_dovi_profile7_title),
-                value = demuxerDoviProfile7,
-                enabled = !doviConfigOwned,
-                onValueChange = {
-                  preferences.demuxerDoviProfile7.set(it)
-                },
-                title = { Text(stringResource(R.string.pref_decoder_demuxer_dovi_profile7_title)) },
-                summary = {
-                  Text(
-                    stringResource(R.string.pref_decoder_demuxer_dovi_profile7_summary),
-                    color = MaterialTheme.colorScheme.outline,
-                  )
-                },
-              )
-
-              PreferenceDivider()
-
               val enableAnime4K by preferences.enableAnime4K.collectAsState()
               SwitchPreference(
                 modifier = Modifier.settingsSearchTarget(R.string.pref_anime4k_title),

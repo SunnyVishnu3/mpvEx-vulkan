@@ -38,7 +38,6 @@ enum class MpvConfigOverride(
         "hwdec-codecs",
         "vd-lavc-dr",
         "vd-lavc-film-grain",
-        "demuxer-dovi-profile7",
       ),
   ),
   HDR_AND_SHADERS(
@@ -154,8 +153,6 @@ enum class MpvConfigOverride(
         "secondary-sub-pos",
         "secondary-sub-ass-override",
         "blend-subtitles",
-        "image-subs-brightness",
-        "image-subs-override",
       ),
   ),
   PLAYBACK_TIMING(
@@ -185,9 +182,6 @@ enum class MpvConfigOverride(
         "cache-pause-wait",
         "demuxer-max-bytes",
         "demuxer-lavf-o",
-        "cache-on-disk",
-        "demuxer-cache-dir",
-        "demuxer-readahead-secs",
       ),
   ),
   YTDLP(
