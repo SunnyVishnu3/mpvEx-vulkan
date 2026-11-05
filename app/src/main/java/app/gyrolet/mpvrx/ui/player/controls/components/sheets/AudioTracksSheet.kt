@@ -250,7 +250,6 @@ fun AudioTracksSheet(
               hapticLandmarks = listOf(0),
               modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
             )
-            }
           }
         }
       }
