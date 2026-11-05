@@ -36,7 +36,6 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.gyrolet.mpvrx.R
-import app.gyrolet.mpvrx.domain.motion.MotionInterpolation
 import app.gyrolet.mpvrx.data.network.client.NetworkMimeTypes
 import app.gyrolet.mpvrx.data.network.proxy.NetworkStreamingProxy
 import app.gyrolet.mpvrx.domain.anime4k.Anime4KManager
@@ -2314,7 +2313,6 @@ fun restartFromBeginning() {
       preferences = decoderPreferences,
       scope = viewModelScope,
       showText = { text -> playerUpdate.value = PlayerUpdates.ShowText(text) },
-      requireHdrOutput = ::ensureHdrForFrameGeneration,
     )
 
   // ==================== Custom Buttons ====================
@@ -2733,7 +2731,6 @@ fun restartFromBeginning() {
     _isMpvCoreReady.value = true
     scheduleAmbientUpdate(0)
     startMpvStateCollectors()
-    motionInterpolation.refresh()
     isMpvReadyForCustomButtons = true
     setupCustomButtons()
     reloadCustomButtonsScript("mpv_core_initialized")
@@ -7203,10 +7200,6 @@ fun restartFromBeginning() {
 
   fun setHdrScreenMode(mode: HdrScreenMode) {
     if (MpvConfigOverridePolicy.ownsAny(MpvConfigControlledFeatures.HDR_OUTPUT)) return
-    if (mode == HdrScreenMode.OFF && MotionInterpolation.requiresHdr(decoderPreferences)) {
-      showToast(appContext.getString(R.string.motion_hdr_required))
-      return
-    }
     val resolvedMode =
       if (mode == HdrScreenMode.LINEAR && !isLinearHdrAvailable.value) {
         HdrScreenMode.defaultEnabledMode
@@ -7234,7 +7227,6 @@ fun restartFromBeginning() {
     mode != HdrScreenMode.LINEAR || isLinearHdrAvailable.value
 
   private fun initialHdrScreenMode(): HdrScreenMode {
-    MotionInterpolation.ensureHdrEnabled(decoderPreferences)
     if (!decoderPreferences.hdrScreenOutput.get()) {
       return HdrScreenMode.OFF
     }
@@ -7245,16 +7237,6 @@ fun restartFromBeginning() {
     return if (savedMode == HdrScreenMode.LINEAR &&
       !(decoderPreferences.gpuNext.get() && decoderPreferences.useVulkan.get())
     ) HdrScreenMode.defaultEnabledMode else savedMode
-  }
-
-  private fun ensureHdrForFrameGeneration(): Boolean {
-    if (!_isMpvCoreReady.value || !MotionInterpolation.requiresHdr(decoderPreferences)) return false
-    val mode = initialHdrScreenMode()
-    val modeChanged = _hdrScreenMode.value != mode
-    _hdrScreenMode.value = mode
-    applyHdrScreenOutput(mode)
-    if (modeChanged) restartAmbientIfActive()
-    return _isHdrScreenOutputEnabled.value
   }
 
   private fun reconcileHdrModeWithRenderer() {

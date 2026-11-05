@@ -17,8 +17,8 @@ import app.gyrolet.mpvrx.preferences.MpvConfigOverridePolicy
 /**
  * Available HDR screen output modes.
  *
- * Every mode below owns the mpv HDR/color-output state needed by its pipeline. Linear HDR requires
- * inverse tone mapping and clipping; the other modes restore automatic tone mapping.
+ * Every mode below owns the mpv HDR/color-output state needed by its pipeline. Tone and gamut
+ * mapping remain under mpv/user control rather than being overwritten by mode transitions.
  *
  * - [OFF]         — restore mpv's normal automatic SDR/HDR handling.
  * - [BT_2100_PQ]  — HDR10 hdr-toys pipeline.
@@ -83,14 +83,12 @@ private val HDR_OWNED_PROPERTIES =
     "target-trc",
     "target-peak",
     "inverse-tone-mapping",
-    "tone-mapping",
     "hdr-compute-peak",
     "hdr-reference-white",
     "tone-mapping-visualize",
     "glsl-shader-opts",
   )
 
-@Suppress("UNUSED_PARAMETER")
 internal fun hdrScreenOutputSettings(
   mode: HdrScreenMode,
   pipelineReady: Boolean,
@@ -100,7 +98,7 @@ internal fun hdrScreenOutputSettings(
   val settings =
     when (activeMode) {
       HdrScreenMode.OFF -> offSettings()
-      HdrScreenMode.LINEAR -> linearHdrSettings()
+      HdrScreenMode.LINEAR -> linearHdrSettings(boostSdrToHdr)
       else -> hdrToysSettings(activeMode.hdrToysProfile ?: HdrToysProfile.BT_2100_PQ)
     }
 
@@ -120,7 +118,6 @@ private fun commonSettings(
   inverseToneMapping: String,
   hdrComputePeak: String,
   shaderOptions: String,
-  toneMapping: String = "auto",
 ): List<Pair<String, String>> =
   listOf(
     "target-colorspace-hint" to targetColorspaceHint,
@@ -129,7 +126,6 @@ private fun commonSettings(
     "target-trc" to targetTrc,
     "target-peak" to targetPeak,
     "inverse-tone-mapping" to inverseToneMapping,
-    "tone-mapping" to toneMapping,
     "hdr-compute-peak" to hdrComputePeak,
     "hdr-reference-white" to "203",
     "tone-mapping-visualize" to "no",
@@ -162,7 +158,7 @@ private fun hdrToysSettings(profile: HdrToysProfile): List<Pair<String, String>>
     shaderOptions = profile.shaderOptionsValue,
   )
 
-private fun linearHdrSettings(): List<Pair<String, String>> =
+private fun linearHdrSettings(boostSdrToHdr: Boolean): List<Pair<String, String>> =
   commonSettings(
     // Preserve the existing mpv-native HDR rendering policy, but reset every target value that a
     // previous PQ/HLG/BT.2020 mode may have overridden. Without these resets Linear HDR depends on
@@ -172,10 +168,9 @@ private fun linearHdrSettings(): List<Pair<String, String>> =
     targetPrim = "auto",
     targetTrc = "auto",
     targetPeak = "auto",
-    inverseToneMapping = "yes",
+    inverseToneMapping = if (boostSdrToHdr) "yes" else "no",
     hdrComputePeak = "yes",
     shaderOptions = "",
-    toneMapping = "clip",
   )
 
 /** Apply HDR settings as mpv init-time options (before playback starts). */
@@ -209,7 +204,7 @@ fun applyHdrScreenOutputProperties(
       }
   if (changedOptions.isEmpty()) return
 
-  // All HDR options are documented mpv properties. A single load-config-file command keeps
+  // All ten HDR options are documented mpv properties. A single load-config-file command keeps
   // the color profile changes together instead of repeatedly crossing JNI and triggering VO
   // reconfiguration between unrelated intermediate HDR/SDR configurations.
   val config = changedOptions.joinToString("\n") { (property, value) ->

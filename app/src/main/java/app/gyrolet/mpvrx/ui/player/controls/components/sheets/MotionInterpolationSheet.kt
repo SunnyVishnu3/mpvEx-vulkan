@@ -148,15 +148,6 @@ fun MotionInterpolationSheet(
         onCheckedChange = controller::setEnabled,
       )
 
-      if (MotionInterpolation.isBuildSupported && config.enabled) {
-        Text(
-          text = stringResource(R.string.motion_hdr_required),
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-          modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
-        )
-      }
-
       if (availability != MotionAvailability.READY) {
         BarrierCard(
           availability = availability,

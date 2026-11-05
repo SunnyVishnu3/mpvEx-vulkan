@@ -347,7 +347,6 @@ class MPVView(
   }
 
   private fun computeInitInputs(): InitInputs {
-    MotionInterpolation.ensureHdrEnabled(decoderPreferences)
     val screenshotDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
     screenshotDirectory.mkdirs()
     return InitInputs(

@@ -46,7 +46,6 @@ import app.gyrolet.mpvrx.ui.preferences.components.AppListPreference as ListPref
 internal fun MotionInterpolationPreferences(
   preferences: DecoderPreferences,
   rendererConfigOwned: Boolean,
-  hdrConfigOwned: Boolean = false,
 ) {
   val context = LocalContext.current
   val enabled by preferences.motionInterpolationEnabled.collectAsState()
@@ -56,9 +55,7 @@ internal fun MotionInterpolationPreferences(
   val targetFps by preferences.motionInterpolationTargetFps.collectAsState()
   val switchDisplayRate by preferences.motionInterpolationSwitchDisplayRate.collectAsState()
 
-  val barrier = remember(gpuNext, useVulkan, hdrConfigOwned) {
-    if (hdrConfigOwned) MotionAvailability.HDR_CONFIG_OWNED else MotionInterpolation.barrier(context, preferences)
-  }
+  val barrier = remember(gpuNext, useVulkan) { MotionInterpolation.barrier(context, preferences) }
   // Keep the stored switch in step with the barrier, e.g. after Vulkan is switched off.
   LaunchedEffect(barrier, enabled) {
     if (enabled && barrier.blocksEnabling) preferences.motionInterpolationEnabled.set(false)
@@ -72,16 +69,13 @@ internal fun MotionInterpolationPreferences(
     SwitchPreference(
       modifier = Modifier.settingsSearchTarget(R.string.motion_title),
       value = enabled && !barrier.blocksEnabling,
-      onValueChange = { MotionInterpolation.setEnabled(preferences, it) },
+      onValueChange = { preferences.motionInterpolationEnabled.set(it) },
       // Off is always reachable; on waits for the requirements below.
       enabled = enabled || !barrier.blocksEnabling,
       title = { Text(stringResource(R.string.motion_title)) },
       summary = {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
           Text(stringResource(R.string.motion_summary), color = MaterialTheme.colorScheme.outline)
-          if (MotionInterpolation.isBuildSupported && enabled) {
-            Text(stringResource(R.string.motion_hdr_required), color = MaterialTheme.colorScheme.onSurfaceVariant)
-          }
           barrier.messageRes?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
           if (barrier == MotionAvailability.NEEDS_RENDERER && !rendererConfigOwned) {
             FilledTonalButton(

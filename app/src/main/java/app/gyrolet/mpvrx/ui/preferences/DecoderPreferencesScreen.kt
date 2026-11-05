@@ -514,7 +514,6 @@ object DecoderPreferencesScreen : Screen {
               MotionInterpolationPreferences(
                 preferences = preferences,
                 rendererConfigOwned = rendererBackendConfigOwned,
-                hdrConfigOwned = MpvConfigControlledFeatures.HDR_OUTPUT.any(configOwnedOptions::contains),
               )
             }
           }
