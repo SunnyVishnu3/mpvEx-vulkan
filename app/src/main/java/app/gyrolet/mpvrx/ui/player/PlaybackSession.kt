@@ -466,6 +466,7 @@ internal fun userScriptsNeedReload(currentKey: String): Boolean {
         updateState { it.copy(phase = PlaybackPhase.INITIALIZING, error = null) }
         var coreCreated = false
         try {
+          app.gyrolet.mpvrx.utils.device.GpuDriverHelper.applyDriverToMpv(context)
           MPVLib.create(context.applicationContext)
           coreCreated = true
           MPVLib.setOptionString("config", "yes")

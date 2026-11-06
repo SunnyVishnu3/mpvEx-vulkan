@@ -28,6 +28,16 @@ object VulkanCapabilities {
 
   /** Returns whether the device meets mpvRx's Vulkan renderer requirements. */
   fun isDeviceSupported(context: Context): Boolean {
+    // Bypass OEM stock driver checks if custom GPU driver (e.g. Turnip) or force override is active
+    if (GpuDriverHelper.isCustomDriverActive(context) || GpuDriverHelper.forceEnableVulkan(context)) {
+      val isArm64 = Build.SUPPORTED_ABIS.contains("arm64-v8a")
+      val isApiSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P // Adreno Tools requires Android 9+
+      Log.d(TAG, "Custom GPU driver / override active: isArm64=$isArm64, isApiSupported=$isApiSupported")
+      if (isArm64 && isApiSupported) {
+        return true
+      }
+    }
+
     try {
       if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
         Log.d(TAG, "Vulkan unavailable: Android API ${Build.VERSION.SDK_INT} is below 33")

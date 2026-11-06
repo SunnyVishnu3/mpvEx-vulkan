@@ -62,7 +62,9 @@ import app.gyrolet.mpvrx.domain.motion.MotionInterpolation
 import app.gyrolet.mpvrx.ui.player.PlaybackSession
 import app.gyrolet.mpvrx.ui.player.RendererBackendPolicy
 import app.gyrolet.mpvrx.ui.preferences.components.SwitchPreference
+import app.gyrolet.mpvrx.ui.preferences.components.AppPreference as Preference
 import app.gyrolet.mpvrx.ui.utils.LocalBackStack
+import app.gyrolet.mpvrx.ui.utils.navigateTo
 import app.gyrolet.mpvrx.ui.utils.popSafely
 import app.gyrolet.mpvrx.utils.device.VulkanCapabilities
 import kotlinx.serialization.Serializable
@@ -90,7 +92,10 @@ object DecoderPreferencesScreen : Screen {
     val yuv420ConfigOwned = "vf" in configOwnedOptions
     val backstack = LocalBackStack.current
     val context = LocalContext.current
-    val isDeviceVulkanSupported = remember { VulkanCapabilities.isDeviceSupported(context) }
+    val useCustomDriver by preferences.useCustomGpuDriver.collectAsState()
+    val customDriverName by preferences.customDriverName.collectAsState()
+    val forceEnableVulkan by preferences.forceEnableVulkan.collectAsState()
+    val isDeviceVulkanSupported = remember(useCustomDriver, forceEnableVulkan) { VulkanCapabilities.isDeviceSupported(context) }
     val isVulkanSupported = BuildConfig.MPV_SUPPORTS_VULKAN && isDeviceVulkanSupported
     var showGpuNextWarning by remember { mutableStateOf(false) }
     var anime4kExpanded by remember { mutableStateOf(false) }
@@ -263,6 +268,7 @@ object DecoderPreferencesScreen : Screen {
                   Text(
                     stringResource(
                       when {
+                        useCustomDriver -> R.string.pref_custom_gpu_driver_summary
                         !BuildConfig.MPV_SUPPORTS_VULKAN && isDeviceVulkanSupported ->
                           R.string.pref_decoder_vulkan_excluded_supported_device
                         !BuildConfig.MPV_SUPPORTS_VULKAN ->
@@ -279,6 +285,24 @@ object DecoderPreferencesScreen : Screen {
                       },
                   )
                 },
+              )
+
+              PreferenceDivider()
+
+              Preference(
+                modifier = Modifier.settingsSearchTarget(R.string.pref_custom_gpu_driver_title),
+                title = { Text(stringResource(R.string.pref_custom_gpu_driver_title)) },
+                summary = {
+                  Text(
+                    if (useCustomDriver) {
+                      stringResource(R.string.pref_custom_gpu_driver_active, customDriverName.ifBlank { "Custom" }, "Turnip")
+                    } else {
+                      stringResource(R.string.pref_custom_gpu_driver_default)
+                    },
+                    color = MaterialTheme.colorScheme.outline
+                  )
+                },
+                onClick = { backstack.navigateTo(GpuDriverManagerScreen) }
               )
 
               PreferenceDivider()
