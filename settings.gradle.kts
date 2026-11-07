@@ -22,7 +22,17 @@ dependencyResolutionManagement {
     google()
     mavenCentral()
     exclusiveContent {
-      forRepository {
+      forRepositories(
+        ivy {
+          name = "mpvlibLocal"
+          url = uri("${rootDir}/local-repo")
+          patternLayout {
+            artifact("[artifact]-[revision].[ext]")
+          }
+          metadataSources {
+            artifact()
+          }
+        },
         ivy {
           name = "mpvlibGitHubReleases"
           url = uri("https://github.com/Riteshp2001/mpvlibAndroid/releases/download")
@@ -33,7 +43,7 @@ dependencyResolutionManagement {
             artifact()
           }
         }
-      }
+      )
       filter {
         includeGroup("app.gyrolet.mpvlib")
       }

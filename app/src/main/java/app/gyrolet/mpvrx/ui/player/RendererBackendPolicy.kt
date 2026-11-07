@@ -15,10 +15,11 @@ internal object RendererBackendPolicy {
     deviceSupportsVulkan: Boolean,
     userEnabledVulkan: Boolean,
     forceOpenGlFallback: Boolean,
+    customDriverActive: Boolean = false,
   ): Boolean =
     buildIncludesVulkan &&
       deviceSupportsVulkan &&
-      userEnabledVulkan &&
+      (userEnabledVulkan || customDriverActive) &&
       !forceOpenGlFallback
 
   fun canUseDirectMediaCodec(

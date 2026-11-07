@@ -162,6 +162,8 @@ object GpuDriverHelper {
     prefs.customDriverName.set(meta.name ?: zipFile.nameWithoutExtension)
     prefs.customDriverLibraryName.set(meta.libraryName!!)
     prefs.useCustomGpuDriver.set(true)
+    prefs.useVulkan.set(true)
+    prefs.gpuNext.set(true)
 
     Log.i(TAG, "Custom GPU driver installed: ${meta.name} (${meta.version}) -> ${meta.libraryName}")
     meta
@@ -206,7 +208,20 @@ object GpuDriverHelper {
   }
 
   fun applyDriverToMpv(context: Context) {
-    if (!isCustomDriverActive(context)) return
+    if (!isCustomDriverActive(context)) {
+      Log.i(TAG, "Custom GPU driver not active, resetting MPV to default system driver")
+      runCatching {
+        val method = `is`.xyz.mpv.MPVLib::class.java.getMethod(
+          "setCustomGpuDriver",
+          String::class.java,
+          String::class.java,
+          String::class.java,
+          String::class.java
+        )
+        method.invoke(null, null, null, null, null)
+      }
+      return
+    }
     val prefs = getPreferences(context)
     val libraryName = prefs.customDriverLibraryName.get()
     val driverDir = driverInstallationPath(context)

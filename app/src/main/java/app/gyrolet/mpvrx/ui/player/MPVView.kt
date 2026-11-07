@@ -360,6 +360,7 @@ class MPVView(
         deviceSupportsVulkan = VulkanCapabilities.isDeviceSupported(context),
         userEnabledVulkan = decoderPreferences.useVulkan.get(),
         forceOpenGlFallback = false,
+        customDriverActive = app.gyrolet.mpvrx.utils.device.GpuDriverHelper.isCustomDriverActive(context),
       ),
       hdrScreenOutputEnabled = decoderPreferences.hdrScreenOutput.get(),
       hdrScreenModePreference = decoderPreferences.hdrScreenMode.get(),
