@@ -155,3 +155,7 @@ lint/tmp/
 # Profiling
 # =========================
 *.hprof
+
+local-repo/
+
+app/libs/
