@@ -210,16 +210,7 @@ object GpuDriverHelper {
   fun applyDriverToMpv(context: Context) {
     if (!isCustomDriverActive(context)) {
       Log.i(TAG, "Custom GPU driver not active, resetting MPV to default system driver")
-      runCatching {
-        val method = `is`.xyz.mpv.MPVLib::class.java.getMethod(
-          "setCustomGpuDriver",
-          String::class.java,
-          String::class.java,
-          String::class.java,
-          String::class.java
-        )
-        method.invoke(null, null, null, null, null)
-      }
+      invokeMpvSetCustomGpuDriver(null, null, null, null)
       return
     }
     val prefs = getPreferences(context)
@@ -234,24 +225,42 @@ object GpuDriverHelper {
     // Apply Turnip debug flags if set
     if (debugFlags.isNotBlank()) {
       runCatching {
-        val setEnvMethod = `is`.xyz.mpv.MPVLib::class.java.getMethod("setFreedrenoEnv", String::class.java, String::class.java)
-        setEnvMethod.invoke(null, "TU_DEBUG", debugFlags)
+        val mpvLibClass = `is`.xyz.mpv.MPVLib::class.java
+        val receiver = runCatching { mpvLibClass.getField("INSTANCE").get(null) }.getOrElse { `is`.xyz.mpv.MPVLib }
+        val setEnvMethod = mpvLibClass.getMethod("setFreedrenoEnv", String::class.java, String::class.java)
+        val envResult = setEnvMethod.invoke(receiver, "TU_DEBUG", debugFlags)
+        Log.i(TAG, "setFreedrenoEnv(TU_DEBUG, $debugFlags) result: $envResult")
+      }.onFailure {
+        Log.w(TAG, "Failed to set Freedreno env: ${it.message}")
       }
     }
 
     // Call setCustomGpuDriver on MPVLib
-    runCatching {
-      val method = `is`.xyz.mpv.MPVLib::class.java.getMethod(
+    val success = invokeMpvSetCustomGpuDriver(hookDir, driverDir, libraryName, redirectDir)
+    Log.i(TAG, "invokeMpvSetCustomGpuDriver result: $success")
+  }
+
+  private fun invokeMpvSetCustomGpuDriver(
+    hookLibDir: String?,
+    customDriverDir: String?,
+    customDriverName: String?,
+    fileRedirectDir: String?
+  ): Boolean {
+    return runCatching {
+      val mpvLibClass = `is`.xyz.mpv.MPVLib::class.java
+      val receiver = runCatching { mpvLibClass.getField("INSTANCE").get(null) }.getOrElse { `is`.xyz.mpv.MPVLib }
+      val method = mpvLibClass.getMethod(
         "setCustomGpuDriver",
         String::class.java,
         String::class.java,
         String::class.java,
         String::class.java
       )
-      method.invoke(null, hookDir, driverDir, libraryName, redirectDir)
+      val result = method.invoke(receiver, hookLibDir, customDriverDir, customDriverName, fileRedirectDir)
+      (result as? Boolean) ?: false
     }.onFailure {
-      Log.w(TAG, "setCustomGpuDriver method not yet available in current mpvlib AAR: ${it.message}")
-    }
+      Log.w(TAG, "setCustomGpuDriver invocation failed: ${it.message}", it)
+    }.getOrDefault(false)
   }
 
   private fun getPreferences(context: Context): DecoderPreferences {
