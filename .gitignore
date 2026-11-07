@@ -159,3 +159,5 @@ lint/tmp/
 local-repo/
 
 app/libs/
+
+app/fongmi/
